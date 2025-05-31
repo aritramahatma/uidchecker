@@ -1,0 +1,123 @@
+# /update dual mode
+from telegram.ext import ConversationHandler
+MODE_SELECT, SINGLE_UID, BULK_IMG = range(3)
+
+def update_cmd(update: Update, context: CallbackContext):
+    if update.message.from_user.id != ADMIN_UID:
+        return
+    buttons = [[KeyboardButton("Single UID")], [KeyboardButton("Bulk Screenshot")]]
+    update.message.reply_text("Choose update mode:", reply_markup=ReplyKeyboardMarkup(buttons, one_time_keyboard=True, resize_keyboard=True))
+    return MODE_SELECT
+
+def handle_mode(update: Update, context: CallbackContext):
+    if update.message.text == "Single UID":
+        update.message.reply_text("Send the UID to update:", reply_markup=ReplyKeyboardRemove())
+        return SINGLE_UID
+    elif update.message.text == "Bulk Screenshot":
+        update.message.reply_text("Send screenshot(s) now:", reply_markup=ReplyKeyboardRemove())
+        return BULK_IMG
+    else:
+        update.message.reply_text("Invalid option.")
+        return ConversationHandler.END
+
+def handle_single_uid(update: Update, context: CallbackContext):
+    uid = update.message.text.strip()
+    uids_col.update_one({'uid': uid}, {'$set': {'verified': False, 'fully_verified': False}}, upsert=True)
+    update.message.reply_text(f"✅ UID {uid} updated.")
+    return ConversationHandler.END
+
+def handle_bulk_images(update: Update, context: CallbackContext):
+    photo = update.message.photo[-1].get_file()
+    img_bytes = photo.download_as_bytearray()
+    text = gemini_ocr(img_bytes)
+    found_uids = re.findall(r'\\d{6,8}', text)
+    last_extractions.append(found_uids)
+    for uid in found_uids:
+        uids_col.update_one({'uid': uid}, {'$set': {'verified': False, 'fully_verified': False}}, upsert=True)
+    update.message.reply_text(f"✅ {len(found_uids)} UID(s) updated.")
+    return BULK_IMG
+
+# Admin-only UID views
+def verified(update: Update, context: CallbackContext):
+    if update.message.from_user.id != ADMIN_UID: return
+    uids = uids_col.find({'fully_verified': True})
+    update.message.reply_text("\\n".join([doc['uid'] for doc in uids]) or "No verified UIDs.")
+
+def nonverified(update: Update, context: CallbackContext):
+    if update.message.from_user.id != ADMIN_UID: return
+    uids = uids_col.find({'fully_verified': False})
+    update.message.reply_text("\\n".join([doc['uid'] for doc in uids]) or "No non-verified UIDs.")
+
+def all(update: Update, context: CallbackContext):
+    if update.message.from_user.id != ADMIN_UID: return
+    uids = uids_col.find({})
+    update.message.reply_text("\\n".join([doc['uid'] for doc in uids]) or "No UIDs in DB.")
+
+# /dustbin to delete UIDs
+def dustbin(update: Update, context: CallbackContext):
+    if update.message.from_user.id != ADMIN_UID: return
+    if not context.args:
+        update.message.reply_text("Usage: /dustbin <uid1,uid2,...>")
+        return
+    uids = [x.strip() for x in context.args[0].split(',')]
+    result = uids_col.delete_many({\"uid\": {\"$in\": uids}})
+    update.message.reply_text(f"🗑️ Deleted {result.deleted_count} UID(s).")
+
+# /del deletes from last_extractions
+def del_command(update: Update, context: CallbackContext):
+    if update.message.from_user.id != ADMIN_UID: return
+    if not context.args:
+        update.message.reply_text("Usage: /del <1-5>")
+        return
+    try:
+        num = int(context.args[0])
+        to_delete = []
+        for block in last_extractions[:num]:
+            to_delete.extend(block)
+        result = uids_col.delete_many({\"uid\": {\"$in\": to_delete}})
+        update.message.reply_text(f"🗑️ Deleted {result.deleted_count} UID(s) from last {num} image(s).")
+    except:
+        update.message.reply_text("❌ Error deleting.")
+
+# Handle all messages
+def handle_all(update: Update, context: CallbackContext):
+    user_id = update.message.from_user.id
+    username = update.message.from_user.username or 'NoUsername'
+    if update.message.text:
+        match = re.search(r'(UID)?\\s*(\\d{6,8})', update.message.text.upper())
+        if match:
+            uid = match.group(2)
+            check_uid(update, uid, user_id, username)
+    elif update.message.photo:
+        handle_wallet(update, context)
+
+# MAIN
+def main():
+    updater = Updater(BOT_TOKEN)
+    dp = updater.dispatcher
+
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler('update', update_cmd)],
+        states={
+            MODE_SELECT: [MessageHandler(Filters.text & ~Filters.command, handle_mode)],
+            SINGLE_UID: [MessageHandler(Filters.text & ~Filters.command, handle_single_uid)],
+            BULK_IMG: [MessageHandler(Filters.photo, handle_bulk_images)]
+        },
+        fallbacks=[]
+    )
+
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CommandHandler("stats", stats))
+    dp.add_handler(CommandHandler("verified", verified))
+    dp.add_handler(CommandHandler("nonverified", nonverified))
+    dp.add_handler(CommandHandler("all", all))
+    dp.add_handler(CommandHandler("dustbin", dustbin))
+    dp.add_handler(CommandHandler("del", del_command))
+    dp.add_handler(conv_handler)
+    dp.add_handler(MessageHandler(Filters.all, handle_all))
+
+    updater.start_polling()
+    updater.idle()
+
+if __name__ == '__main__':
+    main()
