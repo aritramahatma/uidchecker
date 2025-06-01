@@ -9,7 +9,7 @@ import base64
 from PIL import Image
 from io import BytesIO
 from pymongo import MongoClient
-from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, ConversationHandler, CallbackQueryHandler
 
 # CONFIG - Using environment variables with fallbacks
@@ -148,7 +148,7 @@ def handle_back_button(update: Update, context: CallbackContext):
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # Send verification success message
+    # Main menu verification success message
     msg = (
         f"*✅ Verification Successful! 🎯*\n\n"
         f"*You're now eligible for VIP AI Predictions ⚡️& Daily Gift Codes worth up to ₹500 🎁*\n\n"
@@ -159,18 +159,29 @@ def handle_back_button(update: Update, context: CallbackContext):
         f"*⚠️ Note: Your access is valid for 7 days 📆*"
     )
 
-    # Send photo with verification success message and buttons
+    # Edit the current message to show main menu instead of sending new one
     try:
-        query.message.reply_photo(
-            photo="https://files.catbox.moe/3ae7md.webp",
-            caption=msg,
-            parse_mode='Markdown',
+        query.edit_message_media(
+            media=InputMediaPhoto(
+                media="https://files.catbox.moe/3ae7md.webp",
+                caption=msg,
+                parse_mode='Markdown'
+            ),
             reply_markup=reply_markup
         )
     except Exception as e:
-        logger.error(f"Error sending photo in back button: {e}")
-        # Fallback to text message if photo fails
-        query.message.reply_text(msg, parse_mode='Markdown', reply_markup=reply_markup)
+        logger.error(f"Error editing message in back button: {e}")
+        # Fallback to editing just caption if photo edit fails
+        try:
+            query.edit_message_caption(
+                caption=msg,
+                parse_mode='Markdown',
+                reply_markup=reply_markup
+            )
+        except Exception as e2:
+            logger.error(f"Error editing caption in back button: {e2}")
+            # Last fallback - send new message
+            query.message.reply_text(msg, parse_mode='Markdown', reply_markup=reply_markup)
 
 # BOT COMMAND HANDLERS
 
