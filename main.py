@@ -313,7 +313,11 @@ def check_uid(update, context, uid, user_id, username):
                     }}, 
                     upsert=True
                 )
-                update.message.reply_text(f"❌ UID {uid} not found in database. Admin has been notified.")
+                approval_message = (
+                    "*☑️ Your UID Successfully Sent For Approval !*\n\n"
+                    "*🔴 You Will Get Access Within Few Minutes If You Enter Correct Details*"
+                )
+                update.message.reply_text(approval_message, parse_mode='Markdown')
 
                 # Notify admin
                 try:
