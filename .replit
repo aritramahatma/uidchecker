@@ -6,7 +6,7 @@ channel = "stable-24_05"
 packages = ["freetype", "lcms2", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "tcl", "tk", "zlib"]
 
 [workflows]
-runButton = "Run Bot"
+runButton = "Start Bot"
 
 [[workflows.workflow]]
 name = "Project"
@@ -27,6 +27,15 @@ args = "pip install python-telegram-bot==13.15 pymongo pillow requests && python
 
 [[workflows.workflow]]
 name = "Run Bot"
+author = 43378888
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
+
+[[workflows.workflow]]
+name = "Start Bot"
 author = 43378888
 mode = "sequential"
 
