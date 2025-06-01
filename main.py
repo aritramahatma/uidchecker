@@ -50,15 +50,18 @@ def gemini_ocr(image_bytes):
     Process image using Gemini OCR to extract text
     """
     try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key={GEMINI_API_KEY}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
         img_base64 = base64.b64encode(image_bytes).decode('utf-8')
         
         data = {
             "contents": [{
-                "parts": [{"inline_data": {
-                    "mime_type": "image/jpeg",
-                    "data": img_base64
-                }}]
+                "parts": [
+                    {"text": "Extract all text from this image, especially focusing on UIDs and balance amounts:"},
+                    {"inline_data": {
+                        "mime_type": "image/jpeg",
+                        "data": img_base64
+                    }}
+                ]
             }]
         }
         
