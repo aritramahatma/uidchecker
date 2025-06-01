@@ -1018,14 +1018,18 @@ def done_command(update: Update, context: CallbackContext):
                 # Send rejection message to user
                 rejection_message = (
                     f"*❌ Your UID {uid} Got Rejected !*\n\n"
-                    f"*⚠️ Again Register With Official Link To Get VIP Hack Prediction & Gift Codes At Free !!*\n\n"
-                    f"*✅ Official Register Link : [Click Here](https://www.jalwagame4.com/#/register?invitationCode=16887113053)*"
+                    f"*⚠️ Again Register With Official Link To Get VIP Hack Prediction & Gift Codes At Free !!*"
                 )
+
+                # Create inline keyboard with registration button
+                keyboard = [[InlineKeyboardButton("✅ Official Register Link", url="https://www.jalwagame4.com/#/register?invitationCode=16887113053")]]
+                reply_markup = InlineKeyboardMarkup(keyboard)
 
                 context.bot.send_message(
                     chat_id=user_id,
                     text=rejection_message,
-                    parse_mode='Markdown'
+                    parse_mode='Markdown',
+                    reply_markup=reply_markup
                 )
 
                 # Mark as rejection notified
@@ -1102,14 +1106,18 @@ def reject_command(update: Update, context: CallbackContext):
                 # Send rejection message to user
                 rejection_message = (
                     f"*❌ Your UID {uid} Got Rejected !*\n\n"
-                    f"*⚠️ Again Register With Official Link To Get VIP Hack Prediction & Gift Codes At Free !!*\n\n"
-                    f"*✅ Official Register Link : [Click Here](https://www.jalwagame4.com/#/register?invitationCode=16887113053)*"
+                    f"*⚠️ Again Register With Official Link To Get VIP Hack Prediction & Gift Codes At Free !!*"
                 )
+
+                # Create inline keyboard with registration button
+                keyboard = [[InlineKeyboardButton("✅ Official Register Link", url="https://www.jalwagame4.com/#/register?invitationCode=16887113053")]]
+                reply_markup = InlineKeyboardMarkup(keyboard)
 
                 context.bot.send_message(
                     chat_id=user_id,
                     text=rejection_message,
-                    parse_mode='Markdown'
+                    parse_mode='Markdown',
+                    reply_markup=reply_markup
                 )
 
                 # Mark as rejection notified
