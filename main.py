@@ -892,7 +892,68 @@ def done_command(update: Update, context: CallbackContext):
         return
 
     update.message.reply_text("🔍 Checking for newly verified UIDs...")
-    check_newly_verified_uids(update, context)
+    
+    try:
+        # Find UIDs that are in database (verified=True) but users haven't been notified for wallet verification
+        newly_verified = list(uids_col.find({
+            'verified': True,
+            'fully_verified': False,
+            'user_id': {'$exists': True, '$ne': None},
+            'notified_for_wallet': {'$ne': True}
+        }))
+
+        if not newly_verified:
+            update.message.reply_text("ℹ️ No newly verified UIDs found in non-verified list.")
+            return
+
+        notified_count = 0
+        for doc in newly_verified:
+            try:
+                user_id = doc['user_id']
+                uid = doc['uid']
+                username = doc.get('username', 'User')
+
+                # Send notification to user
+                message = (
+                    f"🎉 *Great news!*\n\n"
+                    f"✅ Your UID {uid} has been verified and found in our database!\n\n"
+                    f"📸 Please send your wallet screenshot for balance verification.\n"
+                    f"💰 Minimum balance required: ₹100.00"
+                )
+
+                context.bot.send_message(
+                    chat_id=user_id,
+                    text=message,
+                    parse_mode='Markdown'
+                )
+
+                # Mark as notified and set up for wallet verification
+                uids_col.update_one(
+                    {'_id': doc['_id']},
+                    {'$set': {'notified_for_wallet': True}}
+                )
+
+                # Add to pending wallets
+                if 'pending_wallets' not in context.bot_data:
+                    context.bot_data['pending_wallets'] = {}
+                context.bot_data['pending_wallets'][user_id] = uid
+
+                notified_count += 1
+
+            except Exception as e:
+                logger.error(f"Error notifying user {doc.get('user_id', 'Unknown')}: {e}")
+
+        update.message.reply_text(
+            f"📢 *Notification Summary*\n\n"
+            f"✅ Found {len(newly_verified)} newly verified UIDs in non-verified list\n"
+            f"✅ Notified {notified_count} users about verified UIDs\n"
+            f"📸 They have been asked to send wallet screenshots",
+            parse_mode='Markdown'
+        )
+
+    except Exception as e:
+        logger.error(f"Error checking newly verified UIDs: {e}")
+        update.message.reply_text("❌ Error checking for newly verified UIDs.")
 
 # MESSAGE HANDLERS
 
