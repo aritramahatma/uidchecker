@@ -943,11 +943,52 @@ def done_command(update: Update, context: CallbackContext):
             except Exception as e:
                 logger.error(f"Error notifying user {doc.get('user_id', 'Unknown')}: {e}")
 
+        # Now check for UIDs that are still unverified and notify users of rejection
+        still_unverified = list(uids_col.find({
+            'verified': False,
+            'fully_verified': False,
+            'user_id': {'$exists': True, '$ne': None},
+            'rejection_notified': {'$ne': True}
+        }))
+
+        rejected_count = 0
+        for doc in still_unverified:
+            try:
+                user_id = doc['user_id']
+                uid = doc['uid']
+
+                # Send rejection message to user
+                rejection_message = (
+                    "**❌ Your UID Got Rejected !**\n\n"
+                    "**⚠️ Again Register With Official Link To Get Vip Hack Prediction & Gift Codes At Free !!**\n\n"
+                    "**✅ Official Register Link ::**\n"
+                    "**https://www.jalwagame4.com/#/register?invitationCode=16887113053**"
+                )
+
+                context.bot.send_message(
+                    chat_id=user_id,
+                    text=rejection_message,
+                    parse_mode='Markdown'
+                )
+
+                # Mark as rejection notified
+                uids_col.update_one(
+                    {'_id': doc['_id']},
+                    {'$set': {'rejection_notified': True}}
+                )
+
+                rejected_count += 1
+
+            except Exception as e:
+                logger.error(f"Error sending rejection to user {doc.get('user_id', 'Unknown')}: {e}")
+
         update.message.reply_text(
             f"📢 *Notification Summary*\n\n"
             f"✅ Found {len(newly_verified)} newly verified UIDs in non-verified list\n"
             f"✅ Notified {notified_count} users about verified UIDs\n"
-            f"📸 They have been asked to send wallet screenshots",
+            f"📸 They have been asked to send wallet screenshots\n\n"
+            f"❌ Found {len(still_unverified)} still unverified UIDs\n"
+            f"❌ Sent rejection messages to {rejected_count} users",
             parse_mode='Markdown'
         )
 
