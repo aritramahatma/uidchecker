@@ -149,57 +149,6 @@ def handle_screenshot_button(update: Update, context: CallbackContext):
         parse_mode='Markdown'
     )
 
-def handle_bonus_button(update: Update, context: CallbackContext):
-    """
-    Handle the 'Bonus' button callback
-    """
-    query = update.callback_query
-    query.answer()
-
-    # Create inline keyboard with Register Here and Back buttons
-    keyboard = [
-        [InlineKeyboardButton("Register Here", url="https://www.jalwa.fun/#/register?invitationCode=66385106362")],
-        [InlineKeyboardButton("Back", callback_data="back_to_main")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    # Send bonus offer message with image
-    try:
-        query.message.reply_photo(
-            photo="https://files.catbox.moe/iaooec.webp",
-            caption=(
-                "*😱 OMG! Highest Ever — TRIPLE Deposit Bonus Offer 🛍*\n\n"
-                "*⚡️ Register Now & Claim Your Bonus:*\n\n"
-                "*♙ Deposit ₹100 ⮕ Get ₹28 Bonus*\n"
-                "*♙ Deposit ₹300 ⮕ Get ₹48 Bonus*\n"
-                "*♙Deposit ₹500 ⮕ Get ₹108 Bonus*\n"
-                "*♙ Deposit ₹1000 ⮕ Get ₹188 Bonus*\n"
-                "*♙ Deposit ₹5000 ⮕ Get ₹488 Bonus*\n\n"
-                "*💎 PLUS — Daily Gift Codes Worth ₹50!*\n"
-                "*🎳 ₹20 + ₹20 + ₹10 — Every Day for All Users*\n\n"
-                "*⏳ Limited-Time Offer — Grab It Before It's Gone! 🚀*"
-            ),
-            parse_mode='Markdown',
-            reply_markup=reply_markup
-        )
-    except Exception as e:
-        logger.error(f"Error sending bonus photo: {e}")
-        # Fallback to text message if photo fails
-        query.message.reply_text(
-            "*😱 OMG! Highest Ever — TRIPLE Deposit Bonus Offer 🛍*\n\n"
-            "*⚡️ Register Now & Claim Your Bonus:*\n\n"
-            "*♙ Deposit ₹100 ⮕ Get ₹28 Bonus*\n"
-            "*♙ Deposit ₹300 ⮕ Get ₹48 Bonus*\n"
-            "*♙Deposit ₹500 ⮕ Get ₹108 Bonus*\n"
-            "*♙ Deposit ₹1000 ⮕ Get ₹188 Bonus*\n"
-            "*♙ Deposit ₹5000 ⮕ Get ₹488 Bonus*\n\n"
-            "*💎 PLUS — Daily Gift Codes Worth ₹50!*\n"
-            "*🎳 ₹20 + ₹20 + ₹10 — Every Day for All Users*\n\n"
-            "*⏳ Limited-Time Offer — Grab It Before It's Gone! 🚀*",
-            parse_mode='Markdown',
-            reply_markup=reply_markup
-        )
-
 def stats(update: Update, context: CallbackContext):
     """
     Show database statistics (Admin only)
@@ -1341,7 +1290,6 @@ def main():
         dp.add_handler(CommandHandler("done", done_command))
         dp.add_handler(CommandHandler("reject", reject_command))
         dp.add_handler(CallbackQueryHandler(handle_screenshot_button, pattern="send_screenshot"))
-        dp.add_handler(CallbackQueryHandler(handle_bonus_button, pattern="bonus"))
         dp.add_handler(conv_handler)
         dp.add_handler(MessageHandler(Filters.all, handle_all))
 
