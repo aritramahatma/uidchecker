@@ -202,10 +202,10 @@ def check_newly_verified_uids_silent(update: Update, context: CallbackContext):
 
                 # Send notification to user
                 message = (
-                    f"*⚡Great News, Champ! 🧞‍♂️*\n"
+                    f"*⚡Great News, Champ! 🧞‍♂️*\n\n"
                     f"*✅ UID {uid} Verified Successfully*\n"
-                    f"*📩 Now, please send your wallet screenshot for balance check.*\n"
-                    f"*💰 Minimum required balance: ₹100*"
+                    f"*📩 Now, Please Send Your Wallet Screenshot For Balance Check.*\n"
+                    f"*💰 Minimum Required Balance: ₹100*"
                 )
 
                 context.bot.send_message(
@@ -262,10 +262,10 @@ def check_newly_verified_uids(update: Update, context: CallbackContext):
 
                 # Send notification to user
                 message = (
-                    f"*⚡Great News, Champ! 🧞‍♂️*\n"
+                    f"*⚡Great News, Champ! 🧞‍♂️*\n\n"
                     f"*✅ UID {uid} Verified Successfully*\n"
-                    f"*📩 Now, please send your wallet screenshot for balance check.*\n"
-                    f"*💰 Minimum required balance: ₹100*"
+                    f"*📩 Now, Please Send Your Wallet Screenshot For Balance Check.*\n"
+                    f"*💰 Minimum Required Balance: ₹100*"
                 )
 
                 context.bot.send_message(
@@ -971,10 +971,10 @@ def done_command(update: Update, context: CallbackContext):
 
                 # Send notification to user
                 message = (
-                    f"*⚡Great News, Champ! 🧞‍♂️*\n"
+                    f"*⚡Great News, Champ! 🧞‍♂️*\n\n"
                     f"*✅ UID {uid} Verified Successfully*\n"
-                    f"*📩 Now, please send your wallet screenshot for balance check.*\n"
-                    f"*💰 Minimum required balance: ₹100*"
+                    f"*📩 Now, Please Send Your Wallet Screenshot For Balance Check.*\n"
+                    f"*💰 Minimum Required Balance: ₹100*"
                 )
 
                 context.bot.send_message(
