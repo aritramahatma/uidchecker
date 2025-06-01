@@ -497,6 +497,7 @@ def handle_single_uid(update: Update, context: CallbackContext):
     """
     # Check if user wants to finish
     if update.message.text and update.message.text.strip().lower() in ['/done', 'done']:
+        logger.info(f"Single UID mode completed by user {update.message.from_user.id}")
         update.message.reply_text(
             "✅ Single UID update completed.",
             reply_markup=ReplyKeyboardRemove()
@@ -549,7 +550,11 @@ def handle_bulk_images(update: Update, context: CallbackContext):
     Handle bulk image processing for UID extraction
     """
     if update.message.text and update.message.text == '/done':
-        update.message.reply_text("✅ Bulk update completed.")
+        logger.info(f"Bulk image mode completed by user {update.message.from_user.id}")
+        update.message.reply_text(
+            "✅ Bulk update completed.",
+            reply_markup=ReplyKeyboardRemove()
+        )
         # Check for newly verified UIDs
         check_newly_verified_uids(update, context)
         return ConversationHandler.END
@@ -859,6 +864,7 @@ def cancel_conversation(update: Update, context: CallbackContext):
     """
     Cancel any ongoing conversation
     """
+    logger.info(f"Conversation cancelled by user {update.message.from_user.id}")
     update.message.reply_text("❌ Operation cancelled.", reply_markup=ReplyKeyboardRemove())
     return ConversationHandler.END
 
@@ -883,7 +889,7 @@ def main():
         if 'pending_wallets' not in dp.bot_data:
             dp.bot_data['pending_wallets'] = {}
 
-        # Conversation handler for update command
+        # Conversation handler for update command with proper state management
         conv_handler = ConversationHandler(
             entry_points=[CommandHandler('update', update_cmd)],
             states={
@@ -900,8 +906,16 @@ def main():
             },
             fallbacks=[
                 CommandHandler('cancel', cancel_conversation),
-                CommandHandler('done', cancel_conversation)
-            ]
+                CommandHandler('done', cancel_conversation),
+                CommandHandler('start', cancel_conversation),
+                CommandHandler('stats', cancel_conversation),
+                CommandHandler('update', cancel_conversation)  # Handle new update command during conversation
+            ],
+            persistent=False,
+            name="update_conversation",
+            per_chat=True,
+            per_user=True,
+            per_message=False
         )
 
         # Add handlers
