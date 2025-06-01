@@ -1,4 +1,5 @@
 modules = ["python-3.11"]
+run = "npm start"
 
 [nix]
 channel = "stable-24_05"
@@ -25,4 +26,4 @@ task = "shell.exec"
 args = "pip install python-telegram-bot==13.15 pymongo pillow requests && python main.py"
 
 [deployment]
-run = ["sh", "-c", "pip install python-telegram-bot==13.15 pymongo pillow requests && python main.py"]
+run = ["sh", "-c", "npm start"]
