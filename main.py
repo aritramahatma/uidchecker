@@ -898,9 +898,9 @@ def done_command(update: Update, context: CallbackContext):
     update.message.reply_text("🔍 Checking for newly verified UIDs...")
     
     try:
-        # Find UIDs that are in database (admin_added=True) and have user_id but users haven't been notified for wallet verification
+        # Find UIDs that are verified (in database) and have user_id but users haven't been notified for wallet verification
         newly_verified = list(uids_col.find({
-            'admin_added': True,
+            'verified': True,
             'fully_verified': False,
             'user_id': {'$exists': True, '$ne': None},
             'notified_for_wallet': {'$ne': True}
