@@ -833,7 +833,7 @@ def nonverified(update: Update, context: CallbackContext):
 
 def all_uids(update: Update, context: CallbackContext):
     """
-    Show all UIDs in database (Admin only)
+    Show all UIDs in database (Adminonly)
     """
     if update.message.from_user.id != ADMIN_UID:
         update.message.reply_text("❌ Unauthorized access.")
@@ -1320,3 +1320,43 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+def handle_back_button(update: Update, context: CallbackContext):
+    """
+    Handle the 'Back' button callback - return to verification success main menu
+    """
+    query = update.callback_query
+    query.answer()
+
+    # Create inline keyboard with 4 buttons (verification success menu)
+    keyboard = [
+        [InlineKeyboardButton("Prediction", callback_data="prediction"),
+         InlineKeyboardButton("Gift Codes", callback_data="gift_codes")],
+        [InlineKeyboardButton("Bonus", callback_data="bonus"),
+         InlineKeyboardButton("Support", callback_data="support")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Send verification success message
+    msg = (
+        f"*✅ Verification Successful! 🎯*\n\n"
+        f"*You're now eligible for VIP AI Predictions ⚡️& Daily Gift Codes worth up to ₹500 🎁*\n\n"
+        f"*📋 UID: 9413264*\n"
+        f"*💰 Balance: ₹607.56*\n"
+        f"*🏆 Status: Fully Verified*\n\n"
+        f"*👤Approved by Admin!*\n"
+        f"*⚠️ Note: Your access is valid for 7 days 📆*"
+    )
+
+    # Send photo with verification success message and buttons
+    try:
+        query.message.reply_photo(
+            photo="https://files.catbox.moe/3ae7md.webp",
+            caption=msg,
+            parse_mode='Markdown',
+            reply_markup=reply_markup
+        )
+    except Exception as e:
+        logger.error(f"Error sending photo in back button: {e}")
+        # Fallback to text message if photo fails
+        query.message.reply_text(msg, parse_mode='Markdown', reply_markup=reply_markup)
