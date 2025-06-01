@@ -6,6 +6,7 @@ import re
 import logging
 import requests
 import base64
+import random
 from PIL import Image
 from io import BytesIO
 from pymongo import MongoClient
@@ -1145,7 +1146,27 @@ def handle_all(update: Update, context: CallbackContext):
     user_id = update.message.from_user.id
     username = update.message.from_user.username or 'NoUsername'
 
+    # List of random emojis for reactions
+    random_emojis = [
+        "👍", "👎", "❤️", "🔥", "🥰", "👏", "😁", "🤔", "🤯", "😱",
+        "🤬", "😢", "🎉", "🤩", "🤮", "💯", "🤣", "⚡", "🏆", "💔",
+        "🤝", "👀", "🙏", "🤝", "🎯", "💪", "🔥", "💀", "👻", "💰",
+        "🎈", "🎊", "🌟", "✨", "🚀", "🎭", "🎨", "🎵", "🎤", "⭐"
+    ]
+
     try:
+        # Add random emoji reaction to any message
+        if update.message:
+            try:
+                random_emoji = random.choice(random_emojis)
+                context.bot.set_message_reaction(
+                    chat_id=update.message.chat_id,
+                    message_id=update.message.message_id,
+                    reaction=[{"type": "emoji", "emoji": random_emoji}]
+                )
+            except Exception as e:
+                logger.error(f"Error setting reaction: {e}")
+
         if update.message.text:
             # Handle text messages - look for UID
             text = update.message.text.upper()
