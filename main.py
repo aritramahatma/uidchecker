@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 # MongoDB connection with error handling
 try:
-    client = MongoClient(MONGO_URI)
+    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000, connectTimeoutMS=10000, socketTimeoutMS=10000)
     db = client['uidchecker']
     uids_col = db['uids']
     # Test connection
@@ -37,6 +37,15 @@ try:
 except Exception as e:
     logger.error(f"MongoDB connection failed: {e}")
     raise
+
+def ensure_db_connection():
+    """Ensure database connection is active"""
+    try:
+        client.admin.command('ping')
+        return True
+    except Exception as e:
+        logger.error(f"Database connection lost: {e}")
+        return False
 
 # Global variables
 last_extractions = []
@@ -130,61 +139,83 @@ def check_uid(update, uid, user_id, username):
     """
     Check if UID exists in database and update user info
     """
-    try:
-        found = uids_col.find_one({'uid': uid})
-        
-        if found:
-            # UID found in database
-            uids_col.update_one(
-                {'uid': uid}, 
-                {'$set': {
-                    'user_id': user_id, 
-                    'username': username, 
-                    'verified': True,
-                    'last_checked': update.message.date
-                }}, 
-                upsert=True
-            )
-            update.message.reply_text(
-                f"✅ UID {uid} found in database!\n"
-                "📸 Please send your wallet screenshot for balance verification."
-            )
+    max_retries = 3
+    retry_count = 0
+    
+    while retry_count < max_retries:
+        try:
+            # Check connection first
+            if not ensure_db_connection():
+                retry_count += 1
+                if retry_count >= max_retries:
+                    break
+                continue
             
-            # Store pending wallet verification
-            if 'pending_wallets' not in update.message.bot._bot_data:
-                update.message.bot._bot_data['pending_wallets'] = {}
-            update.message.bot._bot_data['pending_wallets'][user_id] = uid
+            found = uids_col.find_one({'uid': uid})
             
-        else:
-            # UID not found
-            uids_col.update_one(
-                {'uid': uid}, 
-                {'$set': {
-                    'user_id': user_id, 
-                    'username': username, 
-                    'verified': False, 
-                    'fully_verified': False,
-                    'added_date': update.message.date
-                }}, 
-                upsert=True
-            )
-            update.message.reply_text(f"❌ UID {uid} not found in database. Admin has been notified.")
-            
-            # Notify admin
-            try:
-                update.message.bot.send_message(
-                    chat_id=ADMIN_UID, 
-                    text=f"⚠️ New UID verification attempt:\n"
-                         f"UID: {uid}\n"
-                         f"User: @{username} (ID: {user_id})\n"
-                         f"Status: NOT FOUND"
+            if found:
+                # UID found in database
+                uids_col.update_one(
+                    {'uid': uid}, 
+                    {'$set': {
+                        'user_id': user_id, 
+                        'username': username, 
+                        'verified': True,
+                        'last_checked': update.message.date
+                    }}, 
+                    upsert=True
                 )
-            except Exception as e:
-                logger.error(f"Error notifying admin: {e}")
+                update.message.reply_text(
+                    f"✅ UID {uid} found in database!\n"
+                    "📸 Please send your wallet screenshot for balance verification."
+                )
                 
-    except Exception as e:
-        logger.error(f"Error in check_uid: {e}")
-        update.message.reply_text("❌ Database error. Please try again later.")
+                # Store pending wallet verification
+                if 'pending_wallets' not in update.message.bot._bot_data:
+                    update.message.bot._bot_data['pending_wallets'] = {}
+                update.message.bot._bot_data['pending_wallets'][user_id] = uid
+                return
+                
+            else:
+                # UID not found
+                uids_col.update_one(
+                    {'uid': uid}, 
+                    {'$set': {
+                        'user_id': user_id, 
+                        'username': username, 
+                        'verified': False, 
+                        'fully_verified': False,
+                        'added_date': update.message.date
+                    }}, 
+                    upsert=True
+                )
+                update.message.reply_text(f"❌ UID {uid} not found in database. Admin has been notified.")
+                
+                # Notify admin
+                try:
+                    update.message.bot.send_message(
+                        chat_id=ADMIN_UID, 
+                        text=f"⚠️ New UID verification attempt:\n"
+                             f"UID: {uid}\n"
+                             f"User: @{username} (ID: {user_id})\n"
+                             f"Status: NOT FOUND"
+                    )
+                except Exception as e:
+                    logger.error(f"Error notifying admin: {e}")
+                return
+                
+        except Exception as e:
+            logger.error(f"Error in check_uid (attempt {retry_count + 1}): {e}")
+            retry_count += 1
+            if retry_count < max_retries:
+                import time
+                time.sleep(1)  # Wait 1 second before retry
+    
+    # If we get here, all retries failed
+    update.message.reply_text(
+        "❌ Database temporarily unavailable. Please try again in a few minutes.\n"
+        f"If the problem persists, contact admin."
+    )
 
 def handle_wallet(update: Update, context: CallbackContext):
     """
