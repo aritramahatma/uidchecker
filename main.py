@@ -772,7 +772,10 @@ def nonverified(update: Update, context: CallbackContext):
         return
 
     try:
-        uids = list(uids_col.find({'fully_verified': False}, {'uid': 1, 'username': 1}))
+        uids = list(uids_col.find({
+            'fully_verified': False,
+            'notified_for_wallet': {'$ne': True}  # Exclude UIDs already in wallet verification stage
+        }, {'uid': 1, 'username': 1}))
 
         if not uids:
             update.message.reply_text("📭 No non-verified UIDs found.")
@@ -1002,11 +1005,13 @@ def done_command(update: Update, context: CallbackContext):
                 logger.error(f"Error notifying user {doc.get('user_id', 'Unknown')}: {e}")
 
         # Now check for UIDs that are still unverified and notify users of rejection
+        # Exclude UIDs that have been notified for wallet verification
         still_unverified = list(uids_col.find({
             'verified': False,
             'fully_verified': False,
             'user_id': {'$exists': True, '$ne': None},
-            'rejection_notified': {'$ne': True}
+            'rejection_notified': {'$ne': True},
+            'notified_for_wallet': {'$ne': True}  # Exclude UIDs already in wallet verification stage
         }))
 
         rejected_count = 0
@@ -1091,9 +1096,11 @@ def reject_command(update: Update, context: CallbackContext):
 
     try:
         # Find all UIDs that are not fully verified and have user_id
+        # Exclude UIDs that have been notified for wallet verification
         non_verified_users = list(uids_col.find({
             'fully_verified': False,
-            'user_id': {'$exists': True, '$ne': None}
+            'user_id': {'$exists': True, '$ne': None},
+            'notified_for_wallet': {'$ne': True}  # Exclude UIDs already in wallet verification stage
         }))
 
         if not non_verified_users:
