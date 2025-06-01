@@ -392,13 +392,14 @@ def handle_wallet(update: Update, context: CallbackContext):
 
             # Notify admin of failed verification
             try:
+                balance_text = f"₹{balance:.2f}" if balance else "Not detected"
                 context.bot.send_message(
                     chat_id=ADMIN_UID,
                     text=f"❌ Failed wallet verification:\n"
                          f"UID: {uid}\n"
                          f"User: @{update.message.from_user.username}\n"
                          f"Extracted UID: {matched_uid}\n"
-                         f"Balance: ₹{balance:.2f if balance else 'Not detected'}\n"
+                         f"Balance: {balance_text}\n"
                          f"OCR Text: {extracted_text[:200]}..."
                 )
             except Exception as e:
