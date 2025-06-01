@@ -959,10 +959,10 @@ def done_command(update: Update, context: CallbackContext):
 
                 # Send rejection message to user
                 rejection_message = (
-                    "*❌ Your UID Got Rejected !*\n\n"
-                    "*⚠️ Again Register With Official Link To Get Vip Hack Prediction & Gift Codes At Free !!*\n\n"
-                    "*✅ Official Register Link ::*\n"
-                    "*https://www.jalwagame4.com/#/register?invitationCode=16887113053*"
+                    "**❌ Your UID Got Rejected !**\n\n"
+                    "**⚠️ Again Register With Official Link To Get Vip Hack Prediction & Gift Codes At Free !!**\n\n"
+                    "**✅ Official Register Link ::**\n"
+                    "**https://www.jalwagame4.com/#/register?invitationCode=16887113053**"
                 )
 
                 context.bot.send_message(
