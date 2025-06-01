@@ -702,8 +702,10 @@ def verified(update: Update, context: CallbackContext):
         for doc in uids[:50]:  # Limit to 50 to avoid message length issues
             balance = doc.get('wallet_balance', 'N/A')
             username = doc.get('username', 'Unknown')
+            # Escape markdown characters in username
+            safe_username = username.replace('_', '\\_').replace('*', '\\*').replace('[', '\\[').replace('`', '\\`')
             balance_str = f"{balance:.2f}" if isinstance(balance, (int, float)) and balance != 'N/A' else balance
-            uid_list.append(f"✅ {doc['uid']} (@{username}, ₹{balance_str})")
+            uid_list.append(f"✅ {doc['uid']} (@{safe_username}, ₹{balance_str})")
 
         message = f"🎉 *Verified UIDs ({len(uids)} total)*\n\n" + "\n".join(uid_list)
         if len(uids) > 50:
@@ -733,7 +735,9 @@ def nonverified(update: Update, context: CallbackContext):
         uid_list = []
         for doc in uids[:50]:  # Limit to 50
             username = doc.get('username', 'Unknown')
-            uid_list.append(f"❌ {doc['uid']} (@{username})")
+            # Escape markdown characters in username
+            safe_username = username.replace('_', '\\_').replace('*', '\\*').replace('[', '\\[').replace('`', '\\`')
+            uid_list.append(f"❌ {doc['uid']} (@{safe_username})")
 
         message = f"⏳ *Non-Verified UIDs ({len(uids)} total)*\n\n" + "\n".join(uid_list)
         if len(uids) > 50:
