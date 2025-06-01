@@ -135,7 +135,7 @@ def stats(update: Update, context: CallbackContext):
         logger.error(f"Error in stats command: {e}")
         update.message.reply_text("❌ Error retrieving statistics.")
 
-def check_uid(update, uid, user_id, username):
+def check_uid(update, context, uid, user_id, username):
     """
     Check if UID exists in database and update user info
     """
@@ -719,7 +719,7 @@ def handle_all(update: Update, context: CallbackContext):
 
             if uid_match:
                 uid = uid_match.group(1)
-                check_uid(update, uid, user_id, username)
+                check_uid(update, context, uid, user_id, username)
             else:
                 update.message.reply_text(
                     "❓ Please send a valid UID (6-12 digits) or screenshot.\n\n"
