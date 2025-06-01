@@ -579,7 +579,7 @@ def handle_single_uid(update: Update, context: CallbackContext):
         result = uids_col.update_one(
             {'uid': uid}, 
             {'$set': {
-                'verified': False, 
+                'verified': True,  # UID is verified since admin added it to database
                 'fully_verified': False,
                 'admin_added': True,
                 'added_date': update.message.date
@@ -654,7 +654,7 @@ def handle_bulk_images(update: Update, context: CallbackContext):
                 uids_col.update_one(
                     {'uid': uid}, 
                     {'$set': {
-                        'verified': False, 
+                        'verified': True,  # UID is verified since admin added it to database
                         'fully_verified': False,
                         'admin_added': True,
                         'bulk_added': True,
@@ -894,9 +894,9 @@ def done_command(update: Update, context: CallbackContext):
     update.message.reply_text("🔍 Checking for newly verified UIDs...")
     
     try:
-        # Find UIDs that are in database (verified=True) but users haven't been notified for wallet verification
+        # Find UIDs that are in database (admin_added=True) and have user_id but users haven't been notified for wallet verification
         newly_verified = list(uids_col.find({
-            'verified': True,
+            'admin_added': True,
             'fully_verified': False,
             'user_id': {'$exists': True, '$ne': None},
             'notified_for_wallet': {'$ne': True}
