@@ -986,15 +986,34 @@ def done_command(update: Update, context: CallbackContext):
             except Exception as e:
                 logger.error(f"Error sending rejection to user {doc.get('user_id', 'Unknown')}: {e}")
 
-        update.message.reply_text(
-            f"📢 *Notification Summary*\n\n"
-            f"✅ Found {len(newly_verified)} newly verified UIDs in non-verified list\n"
-            f"✅ Notified {notified_count} users about verified UIDs\n"
-            f"📸 They have been asked to send wallet screenshots\n\n"
-            f"❌ Found {len(still_unverified)} still unverified UIDs\n"
-            f"❌ Sent rejection messages to {rejected_count} users",
-            parse_mode='Markdown'
-        )
+        # Create list of newly verified UIDs for display
+        verified_uid_list = []
+        for doc in newly_verified:
+            uid = doc['uid']
+            username = doc.get('username', 'Unknown')
+            # Escape markdown characters in username
+            safe_username = username.replace('_', '\\_').replace('*', '\\*').replace('[', '\\[').replace('`', '\\`')
+            verified_uid_list.append(f"• {uid} (@{safe_username})")
+
+        # Prepare summary message
+        summary_message = f"📢 *Notification Summary*\n\n"
+        
+        if newly_verified:
+            summary_message += f"✅ Found {len(newly_verified)} newly verified UIDs in non-verified list\n"
+            summary_message += f"✅ Notified {notified_count} users about verified UIDs\n"
+            summary_message += f"📸 They have been asked to send wallet screenshots\n\n"
+            summary_message += f"🔄 *UIDs that changed from unverified to verified:*\n"
+            summary_message += "\n".join(verified_uid_list[:20])  # Show max 20 UIDs
+            if len(verified_uid_list) > 20:
+                summary_message += f"\n... and {len(verified_uid_list) - 20} more"
+            summary_message += "\n\n"
+        else:
+            summary_message += f"ℹ️ No newly verified UIDs found in non-verified list\n\n"
+        
+        summary_message += f"❌ Found {len(still_unverified)} still unverified UIDs\n"
+        summary_message += f"❌ Sent rejection messages to {rejected_count} users"
+
+        update.message.reply_text(summary_message, parse_mode='Markdown')
 
     except Exception as e:
         logger.error(f"Error checking newly verified UIDs: {e}")
