@@ -1010,6 +1010,8 @@ def done_command(update: Update, context: CallbackContext):
         }))
 
         rejected_count = 0
+        deleted_count = 0
+        rejected_uids = []
         for doc in still_unverified:
             try:
                 user_id = doc['user_id']
@@ -1032,11 +1034,11 @@ def done_command(update: Update, context: CallbackContext):
                     reply_markup=reply_markup
                 )
 
-                # Mark as rejection notified
-                uids_col.update_one(
-                    {'_id': doc['_id']},
-                    {'$set': {'rejection_notified': True}}
-                )
+                # Auto-delete the rejected UID from database
+                delete_result = uids_col.delete_one({'_id': doc['_id']})
+                if delete_result.deleted_count > 0:
+                    deleted_count += 1
+                    rejected_uids.append(uid)
 
                 rejected_count += 1
 
@@ -1068,7 +1070,8 @@ def done_command(update: Update, context: CallbackContext):
             summary_message += f"ℹ️ No newly verified UIDs found in non-verified list\n\n"
 
         summary_message += f"❌ Found {len(still_unverified)} still unverified UIDs\n"
-        summary_message += f"❌ Sent rejection messages to {rejected_count} users"
+        summary_message += f"❌ Sent rejection messages to {rejected_count} users\n"
+        summary_message += f"🗑️ Auto-deleted {deleted_count} rejected UIDs from database"
 
         update.message.reply_text(summary_message, parse_mode='Markdown')
 
@@ -1098,6 +1101,7 @@ def reject_command(update: Update, context: CallbackContext):
             return
 
         rejected_count = 0
+        deleted_count = 0
         for doc in non_verified_users:
             try:
                 user_id = doc['user_id']
@@ -1120,11 +1124,10 @@ def reject_command(update: Update, context: CallbackContext):
                     reply_markup=reply_markup
                 )
 
-                # Mark as rejection notified
-                uids_col.update_one(
-                    {'_id': doc['_id']},
-                    {'$set': {'rejection_notified': True}}
-                )
+                # Auto-delete the rejected UID from database
+                delete_result = uids_col.delete_one({'_id': doc['_id']})
+                if delete_result.deleted_count > 0:
+                    deleted_count += 1
 
                 rejected_count += 1
 
@@ -1134,7 +1137,8 @@ def reject_command(update: Update, context: CallbackContext):
         update.message.reply_text(
             f"📢 *Rejection Summary*\n\n"
             f"❌ Found {len(non_verified_users)} non-verified users\n"
-            f"❌ Sent rejection messages to {rejected_count} users",
+            f"❌ Sent rejection messages to {rejected_count} users\n"
+            f"🗑️ Auto-deleted {deleted_count} rejected UIDs from database",
             parse_mode='Markdown'
         )
 
