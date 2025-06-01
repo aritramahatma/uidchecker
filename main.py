@@ -462,15 +462,45 @@ def handle_wallet(update: Update, context: CallbackContext):
                     'verification_date': update.message.date
                 }}
             )
-            update.message.reply_text(
-                f"*✅ Verification Successful! 🎯*\n\n"
-                f"*You're now eligible for VIP AI Predictions ⚡️& Daily Gift Codes worth up to ₹500 🎁*\n\n"
-                f"*📋 UID: {uid}*\n"
-                f"*💰 Balance: ₹{balance:.2f}*\n"
-                f"*🏆 Status: Fully Verified*\n\n"
-                f"*👤Approved by Admin!*\n"
-                f"*⚠️ Note: Your access is valid for 7 days 📆*"
-            , parse_mode='Markdown')
+            # Create inline keyboard with 4 buttons
+            keyboard = [
+                [InlineKeyboardButton("Prediction", callback_data="prediction"),
+                 InlineKeyboardButton("Gift Codes", callback_data="gift_codes")],
+                [InlineKeyboardButton("Bonus", callback_data="bonus"),
+                 InlineKeyboardButton("Support", callback_data="support")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+
+            # Send photo with verification message and buttons
+            try:
+                update.message.reply_photo(
+                    photo="https://files.catbox.moe/3ae7md.webp",
+                    caption=(
+                        f"*✅ Verification Successful! 🎯*\n\n"
+                        f"*You're now eligible for VIP AI Predictions ⚡️& Daily Gift Codes worth up to ₹500 🎁*\n\n"
+                        f"*📋 UID: {uid}*\n"
+                        f"*💰 Balance: ₹{balance:.2f}*\n"
+                        f"*🏆 Status: Fully Verified*\n\n"
+                        f"*👤Approved by Admin!*\n"
+                        f"*⚠️ Note: Your access is valid for 7 days 📆*"
+                    ),
+                    parse_mode='Markdown',
+                    reply_markup=reply_markup
+                )
+            except Exception as e:
+                logger.error(f"Error sending photo in verification success: {e}")
+                # Fallback to text message if photo fails
+                update.message.reply_text(
+                    f"*✅ Verification Successful! 🎯*\n\n"
+                    f"*You're now eligible for VIP AI Predictions ⚡️& Daily Gift Codes worth up to ₹500 🎁*\n\n"
+                    f"*📋 UID: {uid}*\n"
+                    f"*💰 Balance: ₹{balance:.2f}*\n"
+                    f"*🏆 Status: Fully Verified*\n\n"
+                    f"*👤Approved by Admin!*\n"
+                    f"*⚠️ Note: Your access is valid for 7 days 📆*",
+                    parse_mode='Markdown',
+                    reply_markup=reply_markup
+                )
 
             # Notify admin of successful verification
             try:
