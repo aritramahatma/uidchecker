@@ -135,6 +135,71 @@ def stats(update: Update, context: CallbackContext):
         logger.error(f"Error in stats command: {e}")
         update.message.reply_text("❌ Error retrieving statistics.")
 
+def check_newly_verified_uids(update: Update, context: CallbackContext):
+    """
+    Check for UIDs that became verified after admin updates and notify users
+    """
+    try:
+        # Find UIDs that are verified but users haven't been notified yet
+        newly_verified = list(uids_col.find({
+            'verified': True,
+            'fully_verified': False,
+            'user_id': {'$exists': True, '$ne': None},
+            'notified_for_wallet': {'$ne': True}
+        }))
+
+        if not newly_verified:
+            update.message.reply_text("ℹ️ No newly verified UIDs found.")
+            return
+
+        notified_count = 0
+        for doc in newly_verified:
+            try:
+                user_id = doc['user_id']
+                uid = doc['uid']
+                username = doc.get('username', 'User')
+
+                # Send notification to user
+                message = (
+                    f"🎉 *Great news!*\n\n"
+                    f"✅ Your UID {uid} has been verified and found in our database!\n\n"
+                    f"📸 Please send your wallet screenshot for balance verification.\n"
+                    f"💰 Minimum balance required: ₹100.00"
+                )
+
+                context.bot.send_message(
+                    chat_id=user_id,
+                    text=message,
+                    parse_mode='Markdown'
+                )
+
+                # Mark as notified and set up for wallet verification
+                uids_col.update_one(
+                    {'_id': doc['_id']},
+                    {'$set': {'notified_for_wallet': True}}
+                )
+
+                # Add to pending wallets
+                if 'pending_wallets' not in context.bot_data:
+                    context.bot_data['pending_wallets'] = {}
+                context.bot_data['pending_wallets'][user_id] = uid
+
+                notified_count += 1
+
+            except Exception as e:
+                logger.error(f"Error notifying user {doc.get('user_id', 'Unknown')}: {e}")
+
+        update.message.reply_text(
+            f"📢 *Notification Summary*\n\n"
+            f"✅ Notified {notified_count} users about verified UIDs\n"
+            f"📸 They have been asked to send wallet screenshots",
+            parse_mode='Markdown'
+        )
+
+    except Exception as e:
+        logger.error(f"Error checking newly verified UIDs: {e}")
+        update.message.reply_text("❌ Error checking for newly verified UIDs.")
+
 def check_uid(update, context, uid, user_id, username):
     """
     Check if UID exists in database and update user info
@@ -435,6 +500,8 @@ def handle_single_uid(update: Update, context: CallbackContext):
             "✅ Single UID update completed.",
             reply_markup=ReplyKeyboardRemove()
         )
+        # Check for newly verified UIDs
+        check_newly_verified_uids(update, context)
         return ConversationHandler.END
 
     uid = update.message.text.strip()
@@ -482,6 +549,8 @@ def handle_bulk_images(update: Update, context: CallbackContext):
     """
     if update.message.text and update.message.text == '/done':
         update.message.reply_text("✅ Bulk update completed.")
+        # Check for newly verified UIDs
+        check_newly_verified_uids(update, context)
         return ConversationHandler.END
 
     if not update.message.photo:
@@ -739,6 +808,17 @@ def del_command(update: Update, context: CallbackContext):
         logger.error(f"Error in del command: {e}")
         update.message.reply_text("❌ Error deleting UIDs.")
 
+def done_command(update: Update, context: CallbackContext):
+    """
+    Standalone done command to check for newly verified UIDs (Admin only)
+    """
+    if update.message.from_user.id != ADMIN_UID:
+        update.message.reply_text("❌ Unauthorized access.")
+        return
+
+    update.message.reply_text("🔍 Checking for newly verified UIDs...")
+    check_newly_verified_uids(update, context)
+
 # MESSAGE HANDLERS
 
 def handle_all(update: Update, context: CallbackContext):
@@ -831,6 +911,7 @@ def main():
         dp.add_handler(CommandHandler("all", all_uids))
         dp.add_handler(CommandHandler("dustbin", dustbin))
         dp.add_handler(CommandHandler("del", del_command))
+        dp.add_handler(CommandHandler("done", done_command))
         dp.add_handler(conv_handler)
         dp.add_handler(MessageHandler(Filters.all, handle_all))
 
