@@ -321,33 +321,46 @@ def update_cmd(update: Update, context: CallbackContext):
     """
     Start dual mode update conversation (Admin only)
     """
+    logger.info(f"Update command called by user {update.message.from_user.id}")
+    
     if update.message.from_user.id != ADMIN_UID:
+        logger.warning(f"Unauthorized update access by user {update.message.from_user.id}")
         update.message.reply_text("❌ Unauthorized access.")
         return ConversationHandler.END
     
-    buttons = [
-        [KeyboardButton("Single UID")], 
-        [KeyboardButton("Bulk Screenshot")]
-    ]
-    reply_markup = ReplyKeyboardMarkup(buttons, one_time_keyboard=True, resize_keyboard=True)
-    
-    update.message.reply_text(
-        "🔧 *Admin Update Mode*\n\n"
-        "Choose update method:",
-        reply_markup=reply_markup,
-        parse_mode='Markdown'
-    )
-    return MODE_SELECT
+    try:
+        buttons = [
+            [KeyboardButton("Single UID")], 
+            [KeyboardButton("Bulk Screenshot")]
+        ]
+        reply_markup = ReplyKeyboardMarkup(buttons, one_time_keyboard=True, resize_keyboard=True)
+        
+        update.message.reply_text(
+            "🔧 *Admin Update Mode*\n\n"
+            "Choose update method:",
+            reply_markup=reply_markup,
+            parse_mode='Markdown'
+        )
+        logger.info("Update command keyboard sent successfully")
+        return MODE_SELECT
+        
+    except Exception as e:
+        logger.error(f"Error in update_cmd: {e}")
+        update.message.reply_text("❌ Error starting update mode.")
+        return ConversationHandler.END
 
 def handle_mode(update: Update, context: CallbackContext):
     """
     Handle mode selection in update conversation
     """
+    logger.info(f"Mode selection: {update.message.text}")
+    
     if update.message.text == "Single UID":
         update.message.reply_text(
             "📝 Send the UID to add/update:",
             reply_markup=ReplyKeyboardRemove()
         )
+        logger.info("Switched to SINGLE_UID mode")
         return SINGLE_UID
     elif update.message.text == "Bulk Screenshot":
         update.message.reply_text(
@@ -355,8 +368,10 @@ def handle_mode(update: Update, context: CallbackContext):
             "Send /done when finished.",
             reply_markup=ReplyKeyboardRemove()
         )
+        logger.info("Switched to BULK_IMG mode")
         return BULK_IMG
     else:
+        logger.warning(f"Invalid mode selection: {update.message.text}")
         update.message.reply_text("❌ Invalid option. Update cancelled.")
         return ConversationHandler.END
 
