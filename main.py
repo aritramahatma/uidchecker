@@ -332,8 +332,10 @@ def check_uid(update, context, uid, user_id, username):
                     upsert=True
                 )
                 update.message.reply_text(
-                    f"✅ UID {uid} found in database!\n"
-                    "📸 Please send your wallet screenshot for balance verification."
+                    f"*✅ UID {uid} Verified*\n"
+                    f"*📸 Please Send Your Wallet Screenshot For Balance Verification.*\n"
+                    f"*💰 Minimum Required Balance: ₹100*",
+                    parse_mode='Markdown'
                 )
 
                 # Store pending wallet verification
