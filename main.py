@@ -259,9 +259,9 @@ def handle_wallet(update: Update, context: CallbackContext):
         for pattern in balance_patterns:
             balance_match = re.search(pattern, extracted_text, re.IGNORECASE)
             if balance_match:
-                balance_str = balance_match.group(1).replace(',', '').replace('.', '')
+                balance_str = balance_match.group(1).replace(',', '')
                 try:
-                    balance = int(float(balance_str))
+                    balance = float(balance_str)
                     break
                 except ValueError:
                     continue
@@ -280,7 +280,7 @@ def handle_wallet(update: Update, context: CallbackContext):
                     break
 
         # Verify wallet
-        if matched_uid == uid and balance and balance >= 100:
+        if matched_uid == uid and balance and balance >= 100.0:
             # Successful verification
             uids_col.update_one(
                 {'uid': uid}, 
@@ -293,7 +293,7 @@ def handle_wallet(update: Update, context: CallbackContext):
             update.message.reply_text(
                 f"🎉 *Verification Successful!*\n\n"
                 f"✅ UID: {uid}\n"
-                f"💰 Balance: ₹{balance}\n"
+                f"💰 Balance: ₹{balance:.2f}\n"
                 f"🏆 Status: Fully Verified"
             , parse_mode='Markdown')
 
@@ -304,7 +304,7 @@ def handle_wallet(update: Update, context: CallbackContext):
                     text=f"✅ Successful verification:\n"
                          f"UID: {uid}\n"
                          f"User: @{update.message.from_user.username}\n"
-                         f"Balance: ₹{balance}"
+                         f"Balance: ₹{balance:.2f}"
                 )
             except Exception as e:
                 logger.error(f"Error notifying admin: {e}")
@@ -316,8 +316,8 @@ def handle_wallet(update: Update, context: CallbackContext):
                 failure_reasons.append(f"UID mismatch (found: {matched_uid}, expected: {uid})")
             if not balance:
                 failure_reasons.append("Could not detect balance")
-            elif balance < 100:
-                failure_reasons.append(f"Insufficient balance (₹{balance} < ₹100)")
+            elif balance < 100.0:
+                failure_reasons.append(f"Insufficient balance (₹{balance:.2f} < ₹100.00)")
 
             update.message.reply_text(
                 f"❌ Wallet verification failed.\n"
@@ -333,7 +333,7 @@ def handle_wallet(update: Update, context: CallbackContext):
                          f"UID: {uid}\n"
                          f"User: @{update.message.from_user.username}\n"
                          f"Extracted UID: {matched_uid}\n"
-                         f"Balance: ₹{balance if balance else 'Not detected'}\n"
+                         f"Balance: ₹{balance:.2f if balance else 'Not detected'}\n"
                          f"OCR Text: {extracted_text[:200]}..."
                 )
             except Exception as e:
@@ -526,7 +526,8 @@ def verified(update: Update, context: CallbackContext):
         for doc in uids[:50]:  # Limit to 50 to avoid message length issues
             balance = doc.get('wallet_balance', 'N/A')
             username = doc.get('username', 'Unknown')
-            uid_list.append(f"✅ {doc['uid']} (@{username}, ₹{balance})")
+            balance_str = f"{balance:.2f}" if isinstance(balance, (int, float)) and balance != 'N/A' else balance
+            uid_list.append(f"✅ {doc['uid']} (@{username}, ₹{balance_str})")
 
         message = f"🎉 *Verified UIDs ({len(uids)} total)*\n\n" + "\n".join(uid_list)
         if len(uids) > 50:
