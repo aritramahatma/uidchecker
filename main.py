@@ -362,13 +362,17 @@ def update_cmd(update: Update, context: CallbackContext):
     try:
         buttons = [
             [KeyboardButton("Single UID")], 
-            [KeyboardButton("Bulk Screenshot")]
+            [KeyboardButton("Bulk Screenshot")],
+            [KeyboardButton("Cancel")]
         ]
         reply_markup = ReplyKeyboardMarkup(buttons, one_time_keyboard=True, resize_keyboard=True)
 
         update.message.reply_text(
             "🔧 *Admin Update Mode*\n\n"
-            "Choose update method:",
+            "Choose update method:\n"
+            "• Single UID: Add one UID at a time\n"
+            "• Bulk Screenshot: Extract UIDs from images\n"
+            "• Cancel: Exit update mode",
             reply_markup=reply_markup,
             parse_mode='Markdown'
         )
@@ -388,33 +392,59 @@ def handle_mode(update: Update, context: CallbackContext):
 
     if update.message.text == "Single UID":
         update.message.reply_text(
-            "📝 Send the UID to add/update:",
-            reply_markup=ReplyKeyboardRemove()
+            "📝 *Single UID Mode*\n\n"
+            "Send the UID to add/update (6-12 digits).\n"
+            "Type /done when finished.",
+            reply_markup=ReplyKeyboardRemove(),
+            parse_mode='Markdown'
         )
         logger.info("Switched to SINGLE_UID mode")
         return SINGLE_UID
     elif update.message.text == "Bulk Screenshot":
         update.message.reply_text(
-            "📸 Send screenshot(s) containing UIDs.\n"
-            "Send /done when finished.",
-            reply_markup=ReplyKeyboardRemove()
+            "📸 *Bulk Screenshot Mode*\n\n"
+            "Send screenshot(s) containing UIDs.\n"
+            "Type /done when finished.",
+            reply_markup=ReplyKeyboardRemove(),
+            parse_mode='Markdown'
         )
         logger.info("Switched to BULK_IMG mode")
         return BULK_IMG
+    elif update.message.text == "Cancel":
+        update.message.reply_text(
+            "❌ Update mode cancelled.",
+            reply_markup=ReplyKeyboardRemove()
+        )
+        logger.info("Update mode cancelled by user")
+        return ConversationHandler.END
     else:
         logger.warning(f"Invalid mode selection: {update.message.text}")
-        update.message.reply_text("❌ Invalid option. Update cancelled.")
+        update.message.reply_text(
+            "❌ Invalid option. Please select from the buttons provided.",
+            reply_markup=ReplyKeyboardRemove()
+        )
         return ConversationHandler.END
 
 def handle_single_uid(update: Update, context: CallbackContext):
     """
     Handle single UID update
     """
+    # Check if user wants to finish
+    if update.message.text and update.message.text.strip().lower() in ['/done', 'done']:
+        update.message.reply_text(
+            "✅ Single UID update completed.",
+            reply_markup=ReplyKeyboardRemove()
+        )
+        return ConversationHandler.END
+
     uid = update.message.text.strip()
 
     # Validate UID format
     if not re.match(r'^\d{6,12}$', uid):
-        update.message.reply_text("❌ Invalid UID format. Must be 6-12 digits.")
+        update.message.reply_text(
+            "❌ Invalid UID format. Must be 6-12 digits.\n"
+            "Send another UID or type /done to finish."
+        )
         return SINGLE_UID
 
     try:
@@ -430,15 +460,21 @@ def handle_single_uid(update: Update, context: CallbackContext):
         )
 
         if result.upserted_id:
-            update.message.reply_text(f"✅ UID {uid} added to database.")
+            update.message.reply_text(
+                f"✅ UID {uid} added to database.\n"
+                f"Send another UID or type /done to finish."
+            )
         else:
-            update.message.reply_text(f"✅ UID {uid} updated in database.")
+            update.message.reply_text(
+                f"✅ UID {uid} updated in database.\n"
+                f"Send another UID or type /done to finish."
+            )
 
     except Exception as e:
         logger.error(f"Error updating single UID: {e}")
         update.message.reply_text("❌ Database error. Please try again.")
 
-    return ConversationHandler.END
+    return SINGLE_UID
 
 def handle_bulk_images(update: Update, context: CallbackContext):
     """
@@ -771,13 +807,20 @@ def main():
             entry_points=[CommandHandler('update', update_cmd)],
             states={
                 MODE_SELECT: [MessageHandler(Filters.text & ~Filters.command, handle_mode)],
-                SINGLE_UID: [MessageHandler(Filters.text & ~Filters.command, handle_single_uid)],
+                SINGLE_UID: [
+                    MessageHandler(Filters.text & ~Filters.command, handle_single_uid),
+                    CommandHandler('done', handle_single_uid)
+                ],
                 BULK_IMG: [
                     MessageHandler(Filters.photo, handle_bulk_images),
-                    MessageHandler(Filters.text & ~Filters.command, handle_bulk_images)
+                    MessageHandler(Filters.text & ~Filters.command, handle_bulk_images),
+                    CommandHandler('done', handle_bulk_images)
                 ]
             },
-            fallbacks=[CommandHandler('cancel', cancel_conversation)]
+            fallbacks=[
+                CommandHandler('cancel', cancel_conversation),
+                CommandHandler('done', cancel_conversation)
+            ]
         )
 
         # Add handlers
