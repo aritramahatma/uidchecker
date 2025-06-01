@@ -135,6 +135,65 @@ def stats(update: Update, context: CallbackContext):
         logger.error(f"Error in stats command: {e}")
         update.message.reply_text("❌ Error retrieving statistics.")
 
+def check_newly_verified_uids_silent(update: Update, context: CallbackContext):
+    """
+    Silently check for UIDs that became verified after admin updates and notify users
+    """
+    try:
+        # Find UIDs that are verified but users haven't been notified yet
+        newly_verified = list(uids_col.find({
+            'verified': True,
+            'fully_verified': False,
+            'user_id': {'$exists': True, '$ne': None},
+            'notified_for_wallet': {'$ne': True}
+        }))
+
+        if not newly_verified:
+            return
+
+        notified_count = 0
+        for doc in newly_verified:
+            try:
+                user_id = doc['user_id']
+                uid = doc['uid']
+                username = doc.get('username', 'User')
+
+                # Send notification to user
+                message = (
+                    f"🎉 *Great news!*\n\n"
+                    f"✅ Your UID {uid} has been verified and found in our database!\n\n"
+                    f"📸 Please send your wallet screenshot for balance verification.\n"
+                    f"💰 Minimum balance required: ₹100.00"
+                )
+
+                context.bot.send_message(
+                    chat_id=user_id,
+                    text=message,
+                    parse_mode='Markdown'
+                )
+
+                # Mark as notified and set up for wallet verification
+                uids_col.update_one(
+                    {'_id': doc['_id']},
+                    {'$set': {'notified_for_wallet': True}}
+                )
+
+                # Add to pending wallets
+                if 'pending_wallets' not in context.bot_data:
+                    context.bot_data['pending_wallets'] = {}
+                context.bot_data['pending_wallets'][user_id] = uid
+
+                notified_count += 1
+
+            except Exception as e:
+                logger.error(f"Error notifying user {doc.get('user_id', 'Unknown')}: {e}")
+
+        if notified_count > 0:
+            logger.info(f"Automatically notified {notified_count} users about newly verified UIDs")
+
+    except Exception as e:
+        logger.error(f"Error checking newly verified UIDs: {e}")
+
 def check_newly_verified_uids(update: Update, context: CallbackContext):
     """
     Check for UIDs that became verified after admin updates and notify users
@@ -538,6 +597,9 @@ def handle_single_uid(update: Update, context: CallbackContext):
                 f"✅ UID {uid} updated in database.\n"
                 f"Send another UID or type /done to finish."
             )
+        
+        # Check for newly verified UIDs after each single UID update
+        check_newly_verified_uids_silent(update, context)
 
     except Exception as e:
         logger.error(f"Error updating single UID: {e}")
@@ -609,6 +671,9 @@ def handle_bulk_images(update: Update, context: CallbackContext):
             f"Found UIDs: {', '.join(found_uids[:10])}{'...' if len(found_uids) > 10 else ''}\n\n"
             f"Send another image or /done to finish."
         )
+        
+        # Check for newly verified UIDs after each bulk update
+        check_newly_verified_uids_silent(update, context)
 
     except Exception as e:
         logger.error(f"Error in bulk image processing: {e}")
