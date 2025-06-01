@@ -9,8 +9,8 @@ import base64
 from PIL import Image
 from io import BytesIO
 from pymongo import MongoClient
-from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, ConversationHandler
+from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, ConversationHandler, CallbackQueryHandler
 
 # CONFIG - Using environment variables with fallbacks
 BOT_TOKEN = os.getenv('BOT_TOKEN', '8019817575:AAF5XlqAzVP2p5xakApDxQTxx96UqXoH79M')
@@ -95,17 +95,59 @@ def gemini_ocr(image_bytes):
 
 def start(update: Update, context: CallbackContext):
     """
-    Welcome message for new users
+    Welcome message for new users with image and buttons
     """
     msg = (
-        "👋 *Welcome to UID Verifier Bot!*\n\n"
-        "📋 How to use:\n"
-        "• Send your UID as text or screenshot\n"
-        "• If found in DB, send wallet screenshot\n"
-        "• Min balance ₹100 required for full verification\n\n"
-        "🔧 Admin commands: /stats, /verified, /nonverified, /all, /update, /dustbin, /del, /done, /reject"
+        "*Welcome To Tashan Win Prediction Bot !! 🧞‍♂*\n\n"
+        "*× To Access Premium Prediction ⚡+ Gift Code 🎁 + High Deposit Bonus 💰*\n\n"
+        "*1. Register With Official Link 🔗\n"
+        "2. Deposit ₹100 Atleast 📥\n"
+        "3. Send UID & Screenshot 📃\n"
+        "4. Wait For Admin Approval ⏰*\n\n"
+        "*Note : Access will expire in 7 Days 🗓️*"
     )
-    update.message.reply_text(msg, parse_mode='Markdown')
+    
+    # Create inline keyboard with buttons
+    keyboard = [
+        [InlineKeyboardButton("Registration Link", url="https://www.jalwa.fun/#/register?invitationCode=66385106362")],
+        [InlineKeyboardButton("Send Screenshot", callback_data="send_screenshot")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    # Send photo with caption and buttons
+    try:
+        update.message.reply_photo(
+            photo="https://files.catbox.moe/7zg38j.jpg",
+            caption=msg,
+            parse_mode='Markdown',
+            reply_markup=reply_markup
+        )
+    except Exception as e:
+        logger.error(f"Error sending photo in start command: {e}")
+        # Fallback to text message if photo fails
+        update.message.reply_text(msg, parse_mode='Markdown', reply_markup=reply_markup)
+
+def handle_screenshot_button(update: Update, context: CallbackContext):
+    """
+    Handle the 'Send Screenshot' button callback
+    """
+    query = update.callback_query
+    query.answer()
+    
+    # Send message asking for UID
+    query.edit_message_caption(
+        caption=(
+            "*Welcome To Tashan Win Prediction Bot !! 🧞‍♂*\n\n"
+            "*× To Access Premium Prediction ⚡+ Gift Code 🎁 + High Deposit Bonus 💰*\n\n"
+            "*1. Register With Official Link 🔗\n"
+            "2. Deposit ₹100 Atleast 📥\n"
+            "3. Send UID & Screenshot 📃\n"
+            "4. Wait For Admin Approval ⏰*\n\n"
+            "*Note : Access will expire in 7 Days 🗓️*\n\n"
+            "*📝 Please send your UID for verification (6-12 digits):*"
+        ),
+        parse_mode='Markdown'
+    )
 
 def stats(update: Update, context: CallbackContext):
     """
@@ -1195,6 +1237,7 @@ def main():
         dp.add_handler(CommandHandler("del", del_command))
         dp.add_handler(CommandHandler("done", done_command))
         dp.add_handler(CommandHandler("reject", reject_command))
+        dp.add_handler(CallbackQueryHandler(handle_screenshot_button, pattern="send_screenshot"))
         dp.add_handler(conv_handler)
         dp.add_handler(MessageHandler(Filters.all, handle_all))
 
