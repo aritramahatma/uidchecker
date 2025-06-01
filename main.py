@@ -103,7 +103,7 @@ def start(update: Update, context: CallbackContext):
         "• Send your UID as text or screenshot\n"
         "• If found in DB, send wallet screenshot\n"
         "• Min balance ₹100 required for full verification\n\n"
-        "🔧 Admin commands: /stats, /verified, /nonverified, /all, /update, /dustbin, /del"
+        "🔧 Admin commands: /stats, /verified, /nonverified, /all, /update, /dustbin, /del, /done, /reject"
     )
     update.message.reply_text(msg, parse_mode='Markdown')
 
@@ -996,6 +996,69 @@ def done_command(update: Update, context: CallbackContext):
         logger.error(f"Error checking newly verified UIDs: {e}")
         update.message.reply_text("❌ Error checking for newly verified UIDs.")
 
+def reject_command(update: Update, context: CallbackContext):
+    """
+    Send rejection message to all non-verified users (Admin only)
+    """
+    if update.message.from_user.id != ADMIN_UID:
+        update.message.reply_text("❌ Unauthorized access.")
+        return
+
+    update.message.reply_text("🔄 Sending rejection messages to all non-verified users...")
+    
+    try:
+        # Find all UIDs that are not fully verified and have user_id
+        non_verified_users = list(uids_col.find({
+            'fully_verified': False,
+            'user_id': {'$exists': True, '$ne': None}
+        }))
+
+        if not non_verified_users:
+            update.message.reply_text("ℹ️ No non-verified users found.")
+            return
+
+        rejected_count = 0
+        for doc in non_verified_users:
+            try:
+                user_id = doc['user_id']
+                uid = doc['uid']
+
+                # Send rejection message to user
+                rejection_message = (
+                    "*❌ Your UID Got Rejected !*\n\n"
+                    "*⚠️ Again Register With Official Link To Get Vip Hack Prediction & Gift Codes At Free !!*\n\n"
+                    "*✅ Official Register Link ::*\n"
+                    "*https://www.jalwagame4.com/#/register?invitationCode=16887113053*"
+                )
+
+                context.bot.send_message(
+                    chat_id=user_id,
+                    text=rejection_message,
+                    parse_mode='Markdown'
+                )
+
+                # Mark as rejection notified
+                uids_col.update_one(
+                    {'_id': doc['_id']},
+                    {'$set': {'rejection_notified': True}}
+                )
+
+                rejected_count += 1
+
+            except Exception as e:
+                logger.error(f"Error sending rejection to user {doc.get('user_id', 'Unknown')}: {e}")
+
+        update.message.reply_text(
+            f"📢 *Rejection Summary*\n\n"
+            f"❌ Found {len(non_verified_users)} non-verified users\n"
+            f"❌ Sent rejection messages to {rejected_count} users",
+            parse_mode='Markdown'
+        )
+
+    except Exception as e:
+        logger.error(f"Error sending rejection messages: {e}")
+        update.message.reply_text("❌ Error sending rejection messages.")
+
 # MESSAGE HANDLERS
 
 def handle_all(update: Update, context: CallbackContext):
@@ -1098,6 +1161,7 @@ def main():
         dp.add_handler(CommandHandler("dustbin", dustbin))
         dp.add_handler(CommandHandler("del", del_command))
         dp.add_handler(CommandHandler("done", done_command))
+        dp.add_handler(CommandHandler("reject", reject_command))
         dp.add_handler(conv_handler)
         dp.add_handler(MessageHandler(Filters.all, handle_all))
 
