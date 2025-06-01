@@ -106,14 +106,14 @@ def start(update: Update, context: CallbackContext):
         "4. Wait For Admin Approval ⏰*\n\n"
         "*Note : Access will expire in 7 Days 🗓️*"
     )
-    
+
     # Create inline keyboard with buttons
     keyboard = [
         [InlineKeyboardButton("Registration Link", url="https://www.jalwa.fun/#/register?invitationCode=66385106362")],
         [InlineKeyboardButton("Send Screenshot", callback_data="send_screenshot")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    
+
     # Send photo with caption and buttons
     try:
         update.message.reply_photo(
@@ -133,7 +133,7 @@ def handle_screenshot_button(update: Update, context: CallbackContext):
     """
     query = update.callback_query
     query.answer()
-    
+
     # Send message asking for UID
     query.edit_message_caption(
         caption=(
@@ -202,10 +202,10 @@ def check_newly_verified_uids_silent(update: Update, context: CallbackContext):
 
                 # Send notification to user
                 message = (
-                    f"🎉 *Great news!*\n\n"
-                    f"✅ Your UID {uid} has been verified and found in our database!\n\n"
-                    f"📸 Please send your wallet screenshot for balance verification.\n"
-                    f"💰 Minimum balance required: ₹100.00"
+                    f"*⚡Great News, Champ! 🧞‍♂️*\n"
+                    f"*✅ UID {uid} Verified Successfully*\n"
+                    f"*📩 Now, please send your wallet screenshot for balance check.*\n"
+                    f"*💰 Minimum required balance: ₹100*"
                 )
 
                 context.bot.send_message(
@@ -262,10 +262,10 @@ def check_newly_verified_uids(update: Update, context: CallbackContext):
 
                 # Send notification to user
                 message = (
-                    f"🎉 *Great news!*\n\n"
-                    f"✅ Your UID {uid} has been verified and found in our database!\n\n"
-                    f"📸 Please send your wallet screenshot for balance verification.\n"
-                    f"💰 Minimum balance required: ₹100.00"
+                    f"*⚡Great News, Champ! 🧞‍♂️*\n"
+                    f"*✅ UID {uid} Verified Successfully*\n"
+                    f"*📩 Now, please send your wallet screenshot for balance check.*\n"
+                    f"*💰 Minimum required balance: ₹100*"
                 )
 
                 context.bot.send_message(
@@ -643,8 +643,8 @@ def handle_single_uid(update: Update, context: CallbackContext):
                 f"✅ UID {uid} updated in database.\n"
                 f"Send another UID or type /done to finish."
             )
-        
-        
+
+
 
     except Exception as e:
         logger.error(f"Error updating single UID: {e}")
@@ -716,8 +716,8 @@ def handle_bulk_images(update: Update, context: CallbackContext):
             f"Found UIDs: {', '.join(found_uids[:10])}{'...' if len(found_uids) > 10 else ''}\n\n"
             f"Send another image or /done to finish."
         )
-        
-        
+
+
 
     except Exception as e:
         logger.error(f"Error in bulk image processing: {e}")
@@ -936,7 +936,7 @@ def done_command(update: Update, context: CallbackContext):
         return
 
     update.message.reply_text("🔍 Checking for newly verified UIDs...")
-    
+
     try:
         # Find UIDs that are verified (in database) and have user_id but users haven't been notified for wallet verification
         # This includes both UIDs added by admin that users later tried to verify, and UIDs users submitted that were found in DB
@@ -971,10 +971,10 @@ def done_command(update: Update, context: CallbackContext):
 
                 # Send notification to user
                 message = (
-                    f"🎉 *Great news!*\n\n"
-                    f"✅ Your UID {uid} has been verified and found in our database!\n\n"
-                    f"📸 Please send your wallet screenshot for balance verification.\n"
-                    f"💰 Minimum balance required: ₹100.00"
+                    f"*⚡Great News, Champ! 🧞‍♂️*\n"
+                    f"*✅ UID {uid} Verified Successfully*\n"
+                    f"*📩 Now, please send your wallet screenshot for balance check.*\n"
+                    f"*💰 Minimum required balance: ₹100*"
                 )
 
                 context.bot.send_message(
@@ -1049,7 +1049,7 @@ def done_command(update: Update, context: CallbackContext):
 
         # Prepare summary message
         summary_message = f"📢 *Notification Summary*\n\n"
-        
+
         if newly_verified:
             summary_message += f"✅ Found {len(newly_verified)} newly verified UIDs in non-verified list\n"
             summary_message += f"✅ Notified {notified_count} users about verified UIDs\n"
@@ -1061,7 +1061,7 @@ def done_command(update: Update, context: CallbackContext):
             summary_message += "\n\n"
         else:
             summary_message += f"ℹ️ No newly verified UIDs found in non-verified list\n\n"
-        
+
         summary_message += f"❌ Found {len(still_unverified)} still unverified UIDs\n"
         summary_message += f"❌ Sent rejection messages to {rejected_count} users"
 
@@ -1080,7 +1080,7 @@ def reject_command(update: Update, context: CallbackContext):
         return
 
     update.message.reply_text("🔄 Sending rejection messages to all non-verified users...")
-    
+
     try:
         # Find all UIDs that are not fully verified and have user_id
         non_verified_users = list(uids_col.find({
@@ -1187,7 +1187,7 @@ def main():
         # Create updater and dispatcher with conflict resolution
         updater = Updater(BOT_TOKEN, use_context=True)
         dp = updater.dispatcher
-        
+
         # Clear any pending updates to prevent conflicts
         try:
             updater.bot.get_updates(offset=-1, timeout=1)
@@ -1257,7 +1257,7 @@ def main():
         updater.start_polling(drop_pending_updates=True)
         logger.info("Bot is running! Press Ctrl+C to stop.")
         updater.idle()
-        
+
         # Graceful shutdown
         logger.info("Bot stopped gracefully")
         updater.stop()
