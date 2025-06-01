@@ -833,9 +833,6 @@ def handle_bulk_images(update: Update, context: CallbackContext):
             f"Send another image or /done to finish."
         )
 
-
-
-```python
     except Exception as e:
         logger.error(f"Error in bulk image processing: {e}")
         update.message.reply_text("❌ Error processing image. Please try again.")
@@ -1401,88 +1398,6 @@ def main():
     except Exception as e:
         logger.error(f"Error starting bot: {e}")
         raise
-def handle_bonus_button(update: Update, context: CallbackContext):
-    """
-    Handle the 'Bonus' button callback
-    """
-    query = update.callback_query
-    query.answer()
-
-    # Create bonus message in bold mode
-    bonus_msg = (
-        "*😱 OMG! Highest Ever — TRIPLE Deposit Bonus Offer 🛍*\n\n"
-        "*⚡️ Register Now & Claim Your Bonus:*\n\n"
-        "*♙ Deposit ₹100 ⮕ Get ₹28 Bonus*\n"
-        "*♙ Deposit ₹300 ⮕ Get ₹48 Bonus*\n"
-        "*♙Deposit ₹500 ⮕ Get ₹108 Bonus*\n"
-        "*♙ Deposit ₹1000 ⮕ Get ₹188 Bonus*\n"
-        "*♙ Deposit ₹5000 ⮕ Get ₹488 Bonus*\n\n"
-        "*💎 PLUS — Daily Gift Codes Worth ₹50!*\n"
-        "*🎳 ₹20 + ₹20 + ₹10 — Every Day for All Users*\n\n"
-        "*⏳ Limited-Time Offer — Grab It Before It's Gone!*"
-    )
-
-    # Create inline keyboard with Register Here and Back buttons
-    keyboard = [
-        [InlineKeyboardButton("Register Here", url="https://www.jalwa.fun/#/register?invitationCode=66385106362")],
-        [InlineKeyboardButton("Back", callback_data="back")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    # Send photo with bonus message and buttons
-    try:
-        query.message.reply_photo(
-            photo="https://files.catbox.moe/iaooec.webp",
-            caption=bonus_msg,
-            parse_mode='Markdown',
-            reply_markup=reply_markup
-        )
-    except Exception as e:
-        logger.error(f"Error sending photo in bonus button: {e}")
-        # Fallback to text message if photo fails
-        query.message.reply_text(bonus_msg, parse_mode='Markdown', reply_markup=reply_markup)
-
-def handle_back_button(update: Update, context: CallbackContext):
-    """
-    Handle the 'Back' button callback - return to verification success main menu
-    """
-    query = update.callback_query
-    query.answer()
-
-    # Create inline keyboard with 4 buttons (verification success menu)
-    keyboard = [
-        [InlineKeyboardButton("Prediction", callback_data="prediction"),
-         InlineKeyboardButton("Gift Codes", callback_data="gift_codes")],
-        [InlineKeyboardButton("Bonus", callback_data="bonus"),
-         InlineKeyboardButton("Support", callback_data="support")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    # Send verification success message
-    msg = (
-        f"*✅ Verification Successful! 🎯*\n\n"
-        f"*You're now eligible for VIP AI Predictions ⚡️& Daily Gift Codes worth up to ₹500 🎁*\n\n"
-        f"*📋 UID: 9413264*\n"
-        f"*💰 Balance: ₹607.56*\n"
-        f"*🏆 Status: Fully Verified*\n\n"
-        f"*👤Approved by Admin!*\n"
-        f"*⚠️ Note: Your access is valid for 7 days 📆*"
-    )
-
-    # Send photo with verification success message and buttons
-    try:
-        query.message.reply_photo(
-            photo="https://files.catbox.moe/3ae7md.webp",
-            caption=msg,
-            parse_mode='Markdown',
-            reply_markup=reply_markup
-        )
-    except Exception as e:
-        logger.error(f"Error sending photo in back button: {e}")
-        # Fallback to text message if photo fails
-        query.message.reply_text(msg, parse_mode='Markdown', reply_markup=reply_markup)
 
 if __name__ == '__main__':
-    # Define handlers for bonus and back buttons *before* main() is called
-    # or, alternatively, move main() to the top
     main()
