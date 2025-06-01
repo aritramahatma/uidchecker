@@ -751,9 +751,15 @@ def main():
     Main function to start the bot
     """
     try:
-        # Create updater and dispatcher
+        # Create updater and dispatcher with conflict resolution
         updater = Updater(BOT_TOKEN, use_context=True)
         dp = updater.dispatcher
+        
+        # Clear any pending updates to prevent conflicts
+        try:
+            updater.bot.get_updates(offset=-1, timeout=1)
+        except Exception as e:
+            logger.warning(f"Could not clear pending updates: {e}")
 
         # Initialize bot data
         if 'pending_wallets' not in dp.bot_data:
@@ -784,17 +790,26 @@ def main():
         dp.add_handler(conv_handler)
         dp.add_handler(MessageHandler(Filters.all, handle_all))
 
-        # Error handler
+        # Error handler with conflict detection
         def error_handler(update, context):
-            logger.error(f"Update {update} caused error {context.error}")
+            error_msg = str(context.error)
+            if "Conflict" in error_msg and "getUpdates" in error_msg:
+                logger.error("Bot conflict detected - another instance may be running")
+                logger.error("Please stop all other bot instances and restart")
+            else:
+                logger.error(f"Update {update} caused error {context.error}")
 
         dp.add_error_handler(error_handler)
 
         # Start bot
         logger.info("Starting UID Verification Bot...")
-        updater.start_polling()
+        updater.start_polling(drop_pending_updates=True)
         logger.info("Bot is running! Press Ctrl+C to stop.")
         updater.idle()
+        
+        # Graceful shutdown
+        logger.info("Bot stopped gracefully")
+        updater.stop()
 
     except Exception as e:
         logger.error(f"Error starting bot: {e}")
