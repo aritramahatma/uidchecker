@@ -602,8 +602,7 @@ def handle_single_uid(update: Update, context: CallbackContext):
                 f"Send another UID or type /done to finish."
             )
         
-        # Check for newly verified UIDs after each single UID update
-        check_newly_verified_uids_silent(update, context)
+        
 
     except Exception as e:
         logger.error(f"Error updating single UID: {e}")
@@ -676,8 +675,7 @@ def handle_bulk_images(update: Update, context: CallbackContext):
             f"Send another image or /done to finish."
         )
         
-        # Check for newly verified UIDs after each bulk update
-        check_newly_verified_uids_silent(update, context)
+        
 
     except Exception as e:
         logger.error(f"Error in bulk image processing: {e}")
@@ -899,11 +897,23 @@ def done_command(update: Update, context: CallbackContext):
     
     try:
         # Find UIDs that are verified (in database) and have user_id but users haven't been notified for wallet verification
+        # This includes both UIDs added by admin that users later tried to verify, and UIDs users submitted that were found in DB
         newly_verified = list(uids_col.find({
-            'verified': True,
-            'fully_verified': False,
-            'user_id': {'$exists': True, '$ne': None},
-            'notified_for_wallet': {'$ne': True}
+            '$or': [
+                {
+                    'admin_added': True,
+                    'verified': True,
+                    'fully_verified': False,
+                    'user_id': {'$exists': True, '$ne': None},
+                    'notified_for_wallet': {'$ne': True}
+                },
+                {
+                    'verified': True,
+                    'fully_verified': False,
+                    'user_id': {'$exists': True, '$ne': None},
+                    'notified_for_wallet': {'$ne': True}
+                }
+            ]
         }))
 
         if not newly_verified:
