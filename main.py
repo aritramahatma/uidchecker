@@ -463,10 +463,13 @@ def handle_wallet(update: Update, context: CallbackContext):
                 }}
             )
             update.message.reply_text(
-                f"🎉 *Verification Successful!*\n\n"
-                f"✅ UID: {uid}\n"
-                f"💰 Balance: ₹{balance:.2f}\n"
-                f"🏆 Status: Fully Verified"
+                f"*✅ Verification Successful! 🎯*\n\n"
+                f"*You're now eligible for VIP AI Predictions ⚡️& Daily Gift Codes worth up to ₹500 🎁*\n\n"
+                f"*📋 UID: {uid}*\n"
+                f"*💰 Balance: ₹{balance:.2f}*\n"
+                f"*🏆 Status: Fully Verified*\n\n"
+                f"*👤Approved by Admin!*\n"
+                f"*⚠️ Note: Your access is valid for 7 days 📆*"
             , parse_mode='Markdown')
 
             # Notify admin of successful verification
