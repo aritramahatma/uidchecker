@@ -110,11 +110,7 @@ def start(update: Update, context: CallbackContext):
     # Create inline keyboard with buttons
     keyboard = [
         [InlineKeyboardButton("Registration Link", url="https://www.jalwa.fun/#/register?invitationCode=66385106362")],
-        [InlineKeyboardButton("Send Screenshot", callback_data="send_screenshot")],
-        [InlineKeyboardButton("Prediction", callback_data="prediction"),
-         InlineKeyboardButton("Gift Codes", callback_data="gift_codes")],
-        [InlineKeyboardButton("Bonus", callback_data="bonus"),
-         InlineKeyboardButton("Support", callback_data="support")]
+        [InlineKeyboardButton("Send Screenshot", callback_data="send_screenshot")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -181,7 +177,7 @@ def handle_bonus_button(update: Update, context: CallbackContext):
                 "*♙ Deposit ₹5000 ⮕ Get ₹488 Bonus*\n\n"
                 "*💎 PLUS — Daily Gift Codes Worth ₹50!*\n"
                 "*🎳 ₹20 + ₹20 + ₹10 — Every Day for All Users*\n\n"
-                "*⏳ Limited-Time Offer — Grab It Before It's Gone!*"
+                "*⏳ Limited-Time Offer — Grab It Before It's Gone! 🚀*"
             ),
             parse_mode='Markdown',
             reply_markup=reply_markup
@@ -199,98 +195,7 @@ def handle_bonus_button(update: Update, context: CallbackContext):
             "*♙ Deposit ₹5000 ⮕ Get ₹488 Bonus*\n\n"
             "*💎 PLUS — Daily Gift Codes Worth ₹50!*\n"
             "*🎳 ₹20 + ₹20 + ₹10 — Every Day for All Users*\n\n"
-            "*⏳ Limited-Time Offer — Grab It Before It's Gone!*",
-            parse_mode='Markdown',
-            reply_markup=reply_markup
-        )
-
-def handle_prediction_button(update: Update, context: CallbackContext):
-    """
-    Handle the 'Prediction' button callback
-    """
-    query = update.callback_query
-    query.answer()
-    
-    query.message.reply_text(
-        "*🔮 VIP AI Predictions*\n\n"
-        "*Coming Soon...*\n"
-        "*Premium prediction features will be available here.*",
-        parse_mode='Markdown'
-    )
-
-def handle_gift_codes_button(update: Update, context: CallbackContext):
-    """
-    Handle the 'Gift Codes' button callback
-    """
-    query = update.callback_query
-    query.answer()
-    
-    query.message.reply_text(
-        "*🎁 Daily Gift Codes*\n\n"
-        "*Coming Soon...*\n"
-        "*Daily gift codes worth up to ₹500 will be available here.*",
-        parse_mode='Markdown'
-    )
-
-def handle_support_button(update: Update, context: CallbackContext):
-    """
-    Handle the 'Support' button callback
-    """
-    query = update.callback_query
-    query.answer()
-    
-    query.message.reply_text(
-        "*🆘 Support*\n\n"
-        "*For any assistance, please contact our support team.*\n"
-        "*We're here to help you 24/7!*",
-        parse_mode='Markdown'
-    )
-
-def handle_back_button(update: Update, context: CallbackContext):
-    """
-    Handle the 'Back' button callback - return to home menu
-    """
-    query = update.callback_query
-    query.answer()
-
-    # Create inline keyboard with buttons (same as start command)
-    keyboard = [
-        [InlineKeyboardButton("Registration Link", url="https://www.jalwa.fun/#/register?invitationCode=66385106362")],
-        [InlineKeyboardButton("Send Screenshot", callback_data="send_screenshot")],
-        [InlineKeyboardButton("Prediction", callback_data="prediction"),
-         InlineKeyboardButton("Gift Codes", callback_data="gift_codes")],
-        [InlineKeyboardButton("Bonus", callback_data="bonus"),
-         InlineKeyboardButton("Support", callback_data="support")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    # Send home message with image (same as start command but without 🚀 emoji)
-    try:
-        query.message.reply_photo(
-            photo="https://files.catbox.moe/7zg38j.jpg",
-            caption=(
-                "*Welcome To Tashan Win Prediction Bot !! 🧞‍♂*\n\n"
-                "*× To Access Premium Prediction ⚡+ Gift Code 🎁 + High Deposit Bonus 💰*\n\n"
-                "*1. Register With Official Link 🔗\n"
-                "2. Deposit ₹100 Atleast 📥\n"
-                "3. Send UID & Screenshot 📃\n"
-                "4. Wait For Admin Approval ⏰*\n\n"
-                "*Note : Access will expire in 7 Days 🗓️*"
-            ),
-            parse_mode='Markdown',
-            reply_markup=reply_markup
-        )
-    except Exception as e:
-        logger.error(f"Error sending photo in back button: {e}")
-        # Fallback to text message if photo fails
-        query.message.reply_text(
-            "*Welcome To Tashan Win Prediction Bot !! 🧞‍♂*\n\n"
-            "*× To Access Premium Prediction ⚡+ Gift Code 🎁 + High Deposit Bonus 💰*\n\n"
-            "*1. Register With Official Link 🔗\n"
-            "2. Deposit ₹100 Atleast 📥\n"
-            "3. Send UID & Screenshot 📃\n"
-            "4. Wait For Admin Approval ⏰*\n\n"
-            "*Note : Access will expire in 7 Days 🗓️*",
+            "*⏳ Limited-Time Offer — Grab It Before It's Gone! 🚀*",
             parse_mode='Markdown',
             reply_markup=reply_markup
         )
@@ -1437,10 +1342,6 @@ def main():
         dp.add_handler(CommandHandler("reject", reject_command))
         dp.add_handler(CallbackQueryHandler(handle_screenshot_button, pattern="send_screenshot"))
         dp.add_handler(CallbackQueryHandler(handle_bonus_button, pattern="bonus"))
-        dp.add_handler(CallbackQueryHandler(handle_back_button, pattern="back_to_main"))
-        dp.add_handler(CallbackQueryHandler(handle_prediction_button, pattern="prediction"))
-        dp.add_handler(CallbackQueryHandler(handle_gift_codes_button, pattern="gift_codes"))
-        dp.add_handler(CallbackQueryHandler(handle_support_button, pattern="support"))
         dp.add_handler(conv_handler)
         dp.add_handler(MessageHandler(Filters.all, handle_all))
 
