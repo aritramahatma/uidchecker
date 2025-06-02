@@ -1,3 +1,4 @@
+
 # UID Verification Telegram Bot (Gemini OCR + MongoDB)
 # Author: Aritra Mahatma
 
@@ -745,7 +746,6 @@ def handle_prediction_button(update: Update, context: CallbackContext):
 
     # Edit existing message with new photo and content
     try:
-```python
         query.edit_message_media(
             media=InputMediaPhoto(
                 media="https://files.catbox.moe/ytmaec.jpg",
@@ -765,8 +765,6 @@ def handle_prediction_button(update: Update, context: CallbackContext):
             )
         except Exception as e2:
             logger.error(f"Error editing caption in prediction button: {e2}")
-
-
 
 def handle_start_prediction_button(update: Update, context: CallbackContext):
     """
@@ -812,10 +810,6 @@ def handle_start_prediction_button(update: Update, context: CallbackContext):
     if 'waiting_for_digits' not in context.bot_data:
         context.bot_data['waiting_for_digits'] = set()
     context.bot_data['waiting_for_digits'].add(user_id)
-
-
-
-
 
 def handle_support_button(update: Update, context: CallbackContext):
     """
@@ -1428,8 +1422,6 @@ def handle_single_uid(update: Update, context: CallbackContext):
                 f"Send another UID or type /done to finish."
             )
 
-
-
     except Exception as e:
         logger.error(f"Error updating single UID: {e}")
         update.message.reply_text("❌ Database error. Please try again.")
@@ -1580,8 +1572,7 @@ def nonverified(update: Update, context: CallbackContext):
 
 def all_uids(update: Update, context: CallbackContext):
     """
-    Show all UIDs in database (Adminonly)
-    ```python
+    Show all UIDs in database (Admin only)
     """
     if update.message.from_user.id != ADMIN_UID:
         update.message.reply_text("❌ Unauthorized access.")
