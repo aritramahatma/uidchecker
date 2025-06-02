@@ -2260,11 +2260,8 @@ def cast_command(update: Update, context: CallbackContext):
             try:
                 user_id = user_doc['user_id']
                 
-                # Format the broadcast message
-                formatted_message = (
-                    f"📢 *Admin Announcement*\n\n"
-                    f"{broadcast_message}"
-                )
+                # Format the broadcast message (send directly without header)
+                formatted_message = broadcast_message
 
                 # Send message using safe_send_message
                 sent = safe_send_message(
