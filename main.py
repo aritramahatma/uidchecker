@@ -656,13 +656,11 @@ def handle_start_prediction_button(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
 
-    # Start prediction message
-    start_prediction_msg = (
-        "*🚀 Starting VIP AI Predictions...*\n\n"
-        "*🎯 Analyzing current game patterns*\n"
-        "*🤖 AI is processing data*\n"
-        "*📊 Predictions will be available shortly*\n\n"
-        "*💡 Stay tuned for exclusive insights!*"
+    # Request 3 digits message
+    digits_request_msg = (
+        "*🔢 Send the Last 3 Digits of the Period Number*\n"
+        "*📟 To Instantly Receive Your VIP Prediction!*\n\n"
+        "*⚙️ Example: If Period is 456789, just send 789*"
     )
 
     # Create back button
@@ -671,15 +669,21 @@ def handle_start_prediction_button(update: Update, context: CallbackContext):
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # Edit existing message with start prediction content
+    # Edit existing message with digits request
     try:
         query.edit_message_caption(
-            caption=start_prediction_msg,
+            caption=digits_request_msg,
             parse_mode='Markdown',
             reply_markup=reply_markup
         )
     except Exception as e:
         logger.error(f"Error editing message in start prediction button: {e}")
+
+    # Set user state to waiting for 3 digits
+    user_id = query.from_user.id
+    if 'waiting_for_digits' not in context.bot_data:
+        context.bot_data['waiting_for_digits'] = set()
+    context.bot_data['waiting_for_digits'].add(user_id)
 
 
 def handle_support_button(update: Update, context: CallbackContext):
@@ -1852,6 +1856,55 @@ def handle_all(update: Update, context: CallbackContext):
 
     try:
         if update.message.text:
+            # Check if user is waiting for 3 digits
+            if ('waiting_for_digits' in context.bot_data and 
+                user_id in context.bot_data['waiting_for_digits']):
+                
+                text = update.message.text.strip()
+                
+                # Check if it's exactly 3 digits
+                if re.match(r'^\d{3}$', text):
+                    # Remove user from waiting state
+                    context.bot_data['waiting_for_digits'].discard(user_id)
+                    
+                    # Send sticker first
+                    try:
+                        update.message.reply_sticker(
+                            sticker="CAACAgQAAxkBAAEOn6RoPTKiSte1vk8IStJRTBsfRYRdCwAC4xgAAoo2OVGWcfjhDFS9nTYE"
+                        )
+                    except Exception as e:
+                        logger.error(f"Error sending sticker: {e}")
+                    
+                    # Send VIP prediction message
+                    vip_prediction_msg = (
+                        "*🔐 VIP Hack Prediction ⏳*\n\n"
+                        "*🎮 Game: Wingo 1 Minute*\n"
+                        f"*🆔 Period Number : {text}*\n"
+                        "*💸 Purchase: BIG*\n\n"
+                        "*⚠️ Important: Always maintain Level 5 funds*"
+                    )
+                    
+                    # Create keyboard with Next Prediction and Back buttons
+                    keyboard = [
+                        [InlineKeyboardButton("Next Prediction", callback_data="start_prediction")],
+                        [InlineKeyboardButton("Back 🢤", callback_data="back")]
+                    ]
+                    reply_markup = InlineKeyboardMarkup(keyboard)
+                    
+                    update.message.reply_text(
+                        vip_prediction_msg,
+                        parse_mode='Markdown',
+                        reply_markup=reply_markup
+                    )
+                    return
+                else:
+                    update.message.reply_text(
+                        "*❌ Please send exactly 3 digits*\n"
+                        "*Example: 789*",
+                        parse_mode='Markdown'
+                    )
+                    return
+            
             # Handle text messages - look for UID
             text = update.message.text.upper()
             uid_match = re.search(r'(?:UID\s*)?(\d{6,12})', text)
