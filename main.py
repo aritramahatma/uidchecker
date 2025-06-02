@@ -674,9 +674,8 @@ def handle_start_prediction_button(update: Update, context: CallbackContext):
         "*⚙️ Example: If Period is 456789, just send 789*"
     )
 
-    # Create keyboard with Risk Management and Back buttons
+    # Create keyboard with Back button only
     keyboard = [
-        [InlineKeyboardButton("Risk Management", callback_data="risk_management")],
         [InlineKeyboardButton("Back", callback_data="prediction")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -707,44 +706,7 @@ def handle_start_prediction_button(update: Update, context: CallbackContext):
     context.bot_data['waiting_for_digits'].add(user_id)
 
 
-def handle_risk_management_button(update: Update, context: CallbackContext):
-    """
-    Handle the 'Risk Management' button callback
-    """
-    query = update.callback_query
-    query.answer()
 
-    # Risk management message
-    risk_msg = (
-        "*⚠️ Risk Management Guidelines*\n\n"
-        "*🎯 Smart Betting Strategy:*\n"
-        "*• Never bet more than 10% of your balance*\n"
-        "*• Always maintain Level 5 funds*\n"
-        "*• Set daily loss limits*\n"
-        "*• Take breaks between sessions*\n\n"
-        "*💰 Bankroll Management:*\n"
-        "*• Start with small amounts*\n"
-        "*• Gradually increase with wins*\n"
-        "*• Withdraw profits regularly*\n\n"
-        "*🚫 Never chase losses!*\n"
-        "*🎲 Remember: Gambling should be fun!*"
-    )
-
-    # Create back button
-    keyboard = [
-        [InlineKeyboardButton("Back", callback_data="prediction")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    # Edit existing message
-    try:
-        query.edit_message_caption(
-            caption=risk_msg,
-            parse_mode='Markdown',
-            reply_markup=reply_markup
-        )
-    except Exception as e:
-        logger.error(f"Error editing message in risk management button: {e}")
 
 
 def handle_support_button(update: Update, context: CallbackContext):
@@ -2113,7 +2075,6 @@ def main():
         # Add handler for prediction button
         dp.add_handler(CallbackQueryHandler(handle_prediction_button, pattern="prediction"))
         dp.add_handler(CallbackQueryHandler(handle_start_prediction_button, pattern="start_prediction"))
-        dp.add_handler(CallbackQueryHandler(handle_risk_management_button, pattern="risk_management"))
         dp.add_handler(CallbackQueryHandler(handle_support_button, pattern="support"))
         dp.add_handler(conv_handler)
         dp.add_handler(MessageHandler(Filters.all, handle_all))
