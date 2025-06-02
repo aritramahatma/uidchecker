@@ -235,10 +235,19 @@ def handle_verify_membership(update: Update, context: CallbackContext):
                     logger.info(f"User {user_id} not properly joined channel {channel_id}: status = {member.status}")
 
             except Exception as e:
+                error_msg = str(e).lower()
                 logger.error(f"Error checking membership for channel {channel_id}: {e}")
-                # TEMPORARY FIX: If bot can't access channel, assume user is joined
-                logger.warning(f"Bot cannot access channel {channel_id}, allowing user {user_id} anyway")
-                verification_errors.append(str(e))
+                
+                # Check if it's a bot permission issue
+                if "bot was kicked" in error_msg or "forbidden" in error_msg or "chat not found" in error_msg:
+                    logger.error(f"Bot permission issue for channel {channel_id}: Bot needs to be admin with proper permissions")
+                    verification_errors.append(f"Bot access denied to channel {channel_id}")
+                    all_joined = False
+                    failed_channels.append(channel_id)
+                else:
+                    # Other errors - log but don't fail verification
+                    logger.warning(f"Bot cannot access channel {channel_id}, allowing user {user_id} anyway: {e}")
+                    verification_errors.append(str(e))
 
         # Grant access if no definitive failures (allowing bot access issues)
         if len(failed_channels) == 0:
