@@ -225,18 +225,15 @@ def handle_verify_membership(update: Update, context: CallbackContext):
         for channel_id in channels_to_check:
             try:
                 member = context.bot.get_chat_member(chat_id=channel_id, user_id=user_id)
-                # Check if user is actually a member (not left or kicked)
-                if member.status in ['left', 'kicked']:
-                    all_joined = False
-                    failed_channels.append(channel_id)
-                    logger.info(f"User {user_id} not joined channel {channel_id}: status = {member.status}")
-                elif member.status in ['member', 'administrator', 'creator']:
+                # Only allow actual members, administrators, and creators
+                # Exclude: left, kicked, restricted, and pending join requests
+                if member.status in ['member', 'administrator', 'creator']:
                     logger.info(f"User {user_id} successfully verified in channel {channel_id}: status = {member.status}")
                 else:
-                    # Unknown status, be safe and deny access
+                    # User is not an actual member (could be left, kicked, restricted, or pending)
                     all_joined = False
                     failed_channels.append(channel_id)
-                    logger.warning(f"User {user_id} has unknown status in channel {channel_id}: status = {member.status}")
+                    logger.info(f"User {user_id} not properly joined channel {channel_id}: status = {member.status}")
 
             except Exception as e:
                 logger.error(f"Error checking membership for channel {channel_id}: {e}")
