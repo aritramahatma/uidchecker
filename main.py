@@ -341,10 +341,10 @@ def handle_unlock_gift_code(update: Update, context: CallbackContext):
         )
 
         keyboard = [
-            [InlineKeyboardButton("JOIN", url="https://t.me/yourchannel1"), 
-             InlineKeyboardButton("JOIN", url="https://t.me/yourchannel2")],
-            [InlineKeyboardButton("JOIN", url="https://t.me/+your_private_link3"), 
-             InlineKeyboardButton("JOIN", url="https://t.me/+your_private_link4")],
+            [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
+             InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
+            [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
+             InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
             [InlineKeyboardButton("I Joined All Channels ✅", callback_data="verify_membership")],
             [InlineKeyboardButton("Unlock Gift Code 🔐", callback_data="unlock_gift_code")]
         ]
