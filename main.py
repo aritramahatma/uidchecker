@@ -147,12 +147,13 @@ def handle_gift_codes_button(update: Update, context: CallbackContext):
         "*🎁 Earn More Exclusive Gift Codes From Here*"
     )
 
-    # Create inline keyboard with new layout: 2 JOIN buttons per row for 2 rows, then Unlock button
+    # Create inline keyboard with different channel links (replace with your actual channel links)
     keyboard = [
-        [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
-         InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
-        [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
-         InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
+        [InlineKeyboardButton("📢 Channel 1", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
+         InlineKeyboardButton("📢 Channel 2", url="https://t.me/+xH5jHvfkXSI0Nzll")],
+        [InlineKeyboardButton("📢 Channel 3", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
+         InlineKeyboardButton("📢 Channel 4", url="https://t.me/+xH5jHvfkXSI0Nzll")],
+        [InlineKeyboardButton("✅ I Joined All Channels", callback_data="verify_membership")],
         [InlineKeyboardButton("Unlock Gift Code 🔐", callback_data="unlock_gift_code")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -180,9 +181,10 @@ def get_current_gift_code():
             return gift_code_doc
         else:
             # Create default gift code if none exists
+            current_time = datetime.now().strftime("%d/%m/%Y at %I:%M %p")
             default_code = {
                 'code': 'F0394C76A4CC0B6716EED375826CAEB',
-                'updated_date': 'Not Updated Yet',
+                'updated_date': current_time,
                 'active': True,
                 'created_at': datetime.now()
             }
@@ -190,16 +192,88 @@ def get_current_gift_code():
             return default_code
     except Exception as e:
         logger.error(f"Error getting gift code: {e}")
+        current_time = datetime.now().strftime("%d/%m/%Y at %I:%M %p")
         return {
             'code': 'F0394C76A4CC0B6716EED375826CAEB',
-            'updated_date': 'Not Updated Yet'
+            'updated_date': current_time
         }
+
+def handle_verify_membership(update: Update, context: CallbackContext):
+    """
+    Handle the 'I Joined All Channels' verification button
+    """
+    query = update.callback_query
+    user_id = query.from_user.id
+    
+    # Store user as verified (you can add additional verification logic here)
+    if 'verified_members' not in context.bot_data:
+        context.bot_data['verified_members'] = set()
+    
+    context.bot_data['verified_members'].add(user_id)
+    
+    query.answer("✅ Membership verified! You can now unlock gift codes.", show_alert=True)
+    
+    # Update the message to show verification success
+    verification_msg = (
+        "*✅ Membership Verified Successfully!*\n\n"
+        "*🎁 You can now unlock exclusive gift codes!*\n\n"
+        "*Thank you for joining all our channels! 🙏*"
+    )
+    
+    keyboard = [
+        [InlineKeyboardButton("Unlock Gift Code 🔐", callback_data="unlock_gift_code")],
+        [InlineKeyboardButton("Back", callback_data="back")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    try:
+        query.edit_message_caption(
+            caption=verification_msg,
+            parse_mode='Markdown',
+            reply_markup=reply_markup
+        )
+    except Exception as e:
+        logger.error(f"Error updating verification message: {e}")
 
 def handle_unlock_gift_code(update: Update, context: CallbackContext):
     """
-    Handle the 'Unlock Gift Code' button callback - now allows direct access
+    Handle the 'Unlock Gift Code' button callback with membership verification
     """
     query = update.callback_query
+    user_id = query.from_user.id
+    
+    # Check if user has verified membership
+    if ('verified_members' not in context.bot_data or 
+        user_id not in context.bot_data['verified_members']):
+        query.answer("❌ Please verify your channel membership first!", show_alert=True)
+        
+        # Show access denied message
+        access_denied_msg = (
+            "*⛔ Access Denied!*\n"
+            "*🔒 Please verify your channel membership first!*\n\n"
+            "*Click 'I Joined All Channels' after joining all channels.*"
+        )
+        
+        keyboard = [
+            [InlineKeyboardButton("📢 Channel 1", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
+             InlineKeyboardButton("📢 Channel 2", url="https://t.me/+xH5jHvfkXSI0Nzll")],
+            [InlineKeyboardButton("📢 Channel 3", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
+             InlineKeyboardButton("📢 Channel 4", url="https://t.me/+xH5jHvfkXSI0Nzll")],
+            [InlineKeyboardButton("✅ I Joined All Channels", callback_data="verify_membership")],
+            [InlineKeyboardButton("Unlock Gift Code 🔐", callback_data="unlock_gift_code")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        try:
+            query.edit_message_caption(
+                caption=access_denied_msg,
+                parse_mode='Markdown',
+                reply_markup=reply_markup
+            )
+        except Exception as e:
+            logger.error(f"Error showing access denied message: {e}")
+        return
+    
     query.answer()
     
     try:
@@ -1547,6 +1621,7 @@ def main():
         dp.add_handler(CallbackQueryHandler(handle_screenshot_button, pattern="send_screenshot"))
         dp.add_handler(CallbackQueryHandler(handle_bonus_button, pattern="bonus"))
         dp.add_handler(CallbackQueryHandler(handle_gift_codes_button, pattern="gift_codes"))
+        dp.add_handler(CallbackQueryHandler(handle_verify_membership, pattern="verify_membership"))
         dp.add_handler(CallbackQueryHandler(handle_unlock_gift_code, pattern="unlock_gift_code"))
         dp.add_handler(CallbackQueryHandler(handle_back_button, pattern="back"))
         dp.add_handler(conv_handler)
