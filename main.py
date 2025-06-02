@@ -1,4 +1,3 @@
-
 # UID Verification Telegram Bot (Gemini OCR + MongoDB)
 # Author: Aritra Mahatma
 
