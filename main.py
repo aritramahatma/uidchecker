@@ -33,6 +33,7 @@ try:
     db = client['uidchecker']
     uids_col = db['uids']
     gift_codes_col = db['gift_codes']
+    user_stats_col = db['user_stats']
     # Test connection
     client.admin.command('ping')
     logger.info("MongoDB connection successful")
@@ -48,6 +49,108 @@ def ensure_db_connection():
     except Exception as e:
         logger.error(f"Database connection lost: {e}")
         return False
+
+def update_user_stats(user_id, action):
+    """Update user statistics in database"""
+    try:
+        # Get or create user stats document
+        user_doc = user_stats_col.find_one({'user_id': user_id})
+        
+        if not user_doc:
+            # New user - create document
+            user_stats_col.insert_one({
+                'user_id': user_id,
+                'first_seen': datetime.now(),
+                'last_seen': datetime.now(),
+                'is_blocked': False,
+                'actions': [action]
+            })
+            
+            # Update global stats for new user
+            global_stats = user_stats_col.find_one({'_id': 'global_stats'})
+            if not global_stats:
+                user_stats_col.insert_one({
+                    '_id': 'global_stats',
+                    'total_users': 1,
+                    'blocked_users': 0
+                })
+            else:
+                user_stats_col.update_one(
+                    {'_id': 'global_stats'},
+                    {'$inc': {'total_users': 1}}
+                )
+        else:
+            # Update existing user
+            user_stats_col.update_one(
+                {'user_id': user_id},
+                {
+                    '$set': {'last_seen': datetime.now()},
+                    '$push': {'actions': action}
+                }
+            )
+    except Exception as e:
+        logger.error(f"Error updating user stats: {e}")
+
+def get_user_activity_stats():
+    """Get comprehensive user activity statistics"""
+    try:
+        # Get global stats
+        global_stats = user_stats_col.find_one({'_id': 'global_stats'})
+        if not global_stats:
+            global_stats = {'total_users': 0, 'blocked_users': 0}
+        
+        # Count current users (fallback if global stats not accurate)
+        actual_total_users = user_stats_col.count_documents({'user_id': {'$ne': 'global_stats'}})
+        if actual_total_users > global_stats.get('total_users', 0):
+            # Update global stats if count is higher
+            user_stats_col.update_one(
+                {'_id': 'global_stats'},
+                {'$set': {'total_users': actual_total_users}},
+                upsert=True
+            )
+            global_stats['total_users'] = actual_total_users
+        
+        # Count blocked users
+        blocked_users = user_stats_col.count_documents({'is_blocked': True})
+        
+        # UID statistics
+        total_uids = uids_col.count_documents({})
+        verified_uids = uids_col.count_documents({'verified': True})
+        fully_verified_users = uids_col.count_documents({'fully_verified': True})
+        non_verified_users = uids_col.count_documents({'fully_verified': False})
+        admin_updated_uids = uids_col.count_documents({'admin_added': True})
+        pending_wallet_verifications = uids_col.count_documents({
+            'verified': True,
+            'fully_verified': False,
+            'notified_for_wallet': True
+        })
+        users_with_valid_balance = uids_col.count_documents({
+            'fully_verified': True,
+            'wallet_balance': {'$gte': 100}
+        })
+        
+        return {
+            'total_users': global_stats.get('total_users', actual_total_users),
+            'blocked_users': blocked_users,
+            'verified_uids': verified_uids,
+            'fully_verified_users': fully_verified_users,
+            'non_verified_users': non_verified_users,
+            'admin_updated_uids': admin_updated_uids,
+            'pending_wallet_verifications': pending_wallet_verifications,
+            'users_with_valid_balance': users_with_valid_balance
+        }
+    except Exception as e:
+        logger.error(f"Error getting user activity stats: {e}")
+        return {
+            'total_users': 0,
+            'blocked_users': 0,
+            'verified_uids': 0,
+            'fully_verified_users': 0,
+            'non_verified_users': 0,
+            'admin_updated_uids': 0,
+            'pending_wallet_verifications': 0,
+            'users_with_valid_balance': 0
+        }
 
 # Global variables
 last_extractions = []
@@ -583,6 +686,10 @@ def start(update: Update, context: CallbackContext):
     """
     Welcome message for new users with image and buttons
     """
+    # Track user activity
+    user_id = update.message.from_user.id
+    update_user_stats(user_id, 'start_command')
+    
     msg = (
         "*Welcome To Tashan Win Prediction Bot !! 🧞‍♂*\n\n"
         "*× To Access Premium Prediction ⚡+ Gift Code 🎁 + High Deposit Bonus 💰*\n\n"
@@ -778,25 +885,26 @@ def handle_screenshot_button(update: Update, context: CallbackContext):
 
 def stats(update: Update, context: CallbackContext):
     """
-    Show database statistics (Admin only)
+    Show comprehensive user activity report (Admin only)
     """
     if update.message.from_user.id != ADMIN_UID:
         update.message.reply_text("❌ Unauthorized access.")
         return
 
     try:
-        total = uids_col.count_documents({})
-        verified = uids_col.count_documents({'fully_verified': True})
-        not_verified = uids_col.count_documents({'fully_verified': False})
-        users = len(uids_col.distinct('user_id'))
-
+        stats_data = get_user_activity_stats()
+        
         msg = (
-            f"📊 *Database Statistics*\n\n"
-            f"👥 Unique Users: {users}\n"
-            f"📂 Total UIDs: {total}\n"
-            f"✅ Fully Verified: {verified}\n"
-            f"❌ Not Verified: {not_verified}\n"
-            f"📈 Verification Rate: {(verified/total*100) if total > 0 else 0:.1f}%"
+            f"📊 *USER ACTIVITY REPORT*\n\n"
+            f"🤖 Total Bot Users: {stats_data['total_users']}\n"
+            f"🚫 Blocked Users: {stats_data['blocked_users']}\n"
+            f"✅ Verified UIDs: {stats_data['verified_uids']}\n"
+            f"🔒 Fully Verified Users: {stats_data['fully_verified_users']}\n"
+            f"⚠️ Non-Verified Users: {stats_data['non_verified_users']}\n"
+            f"🛠 UIDs Updated by Admin: {stats_data['admin_updated_uids']}\n"
+            f"⏳ Pending Wallet Verifications: {stats_data['pending_wallet_verifications']}\n"
+            f"💰 Users with Valid Balance: {stats_data['users_with_valid_balance']}\n\n"
+            f"📈 Verification Rate: {(stats_data['verified_uids']/stats_data['non_verified_users']*100) if stats_data['non_verified_users'] > 0 else 0:.1f}%"
         )
         update.message.reply_text(msg, parse_mode='Markdown')
 
@@ -1871,6 +1979,73 @@ def newcode_command(update: Update, context: CallbackContext):
         logger.error(f"Error updating gift code: {e}")
         update.message.reply_text("❌ Error updating gift code.")
 
+def block_user_command(update: Update, context: CallbackContext):
+    """
+    Block/unblock users (Admin only)
+    Usage: /block user_id or /unblock user_id
+    """
+    if update.message.from_user.id != ADMIN_UID:
+        update.message.reply_text("❌ Unauthorized access.")
+        return
+
+    command = update.message.text.split()[0].lower()
+    is_block = command == '/block'
+    
+    if not context.args:
+        action = "block" if is_block else "unblock"
+        update.message.reply_text(
+            f"🚫 *{action.title()} User*\n\n"
+            f"Usage: `/{action} <user_id>`\n"
+            f"Example: `/{action} 123456789`",
+            parse_mode='Markdown'
+        )
+        return
+
+    try:
+        target_user_id = int(context.args[0])
+        
+        # Update user stats
+        user_stats_col.update_one(
+            {'user_id': target_user_id},
+            {
+                '$set': {
+                    'is_blocked': is_block,
+                    'blocked_date': datetime.now() if is_block else None
+                }
+            },
+            upsert=True
+        )
+        
+        # Update global blocked count
+        if is_block:
+            user_stats_col.update_one(
+                {'_id': 'global_stats'},
+                {'$inc': {'blocked_users': 1}},
+                upsert=True
+            )
+        else:
+            user_stats_col.update_one(
+                {'_id': 'global_stats'},
+                {'$inc': {'blocked_users': -1}},
+                upsert=True
+            )
+        
+        action = "blocked" if is_block else "unblocked"
+        emoji = "🚫" if is_block else "✅"
+        
+        update.message.reply_text(
+            f"{emoji} User {target_user_id} has been {action} successfully!",
+            parse_mode='Markdown'
+        )
+        
+        logger.info(f"Admin {update.message.from_user.username} {action} user {target_user_id}")
+
+    except ValueError:
+        update.message.reply_text("❌ Invalid user ID format.")
+    except Exception as e:
+        logger.error(f"Error blocking/unblocking user: {e}")
+        update.message.reply_text("❌ Error processing request.")
+
 # MESSAGE HANDLERS
 
 def handle_all(update: Update, context: CallbackContext):
@@ -1879,6 +2054,18 @@ def handle_all(update: Update, context: CallbackContext):
     """
     user_id = update.message.from_user.id
     username = update.message.from_user.username or 'NoUsername'
+    
+    # Check if user is blocked
+    try:
+        user_doc = user_stats_col.find_one({'user_id': user_id})
+        if user_doc and user_doc.get('is_blocked', False):
+            update.message.reply_text("🚫 You have been blocked from using this bot.")
+            return
+    except Exception as e:
+        logger.error(f"Error checking blocked status: {e}")
+    
+    # Track user activity
+    update_user_stats(user_id, 'message_sent')
 
     try:
         if update.message.text:
@@ -2069,6 +2256,8 @@ def main():
         dp.add_handler(CommandHandler("done", done_command))
         dp.add_handler(CommandHandler("reject", reject_command))
         dp.add_handler(CommandHandler("newcode", newcode_command))
+        dp.add_handler(CommandHandler("block", block_user_command))
+        dp.add_handler(CommandHandler("unblock", block_user_command))
         dp.add_handler(CallbackQueryHandler(handle_screenshot_button, pattern="send_screenshot"))
         dp.add_handler(CallbackQueryHandler(handle_bonus_button, pattern="bonus"))
         dp.add_handler(CallbackQueryHandler(handle_gift_codes_button, pattern="gift_codes"))
