@@ -670,15 +670,17 @@ def handle_start_prediction_button(update: Update, context: CallbackContext):
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # Edit existing message with digits request
+    # Send new message with digits request instead of editing
     try:
-        query.edit_message_caption(
-            caption=digits_request_msg,
+        query.message.reply_text(
+            digits_request_msg,
             parse_mode='Markdown',
             reply_markup=reply_markup
         )
+        # Answer the callback query to remove loading state
+        query.answer()
     except Exception as e:
-        logger.error(f"Error editing message in start prediction button: {e}")
+        logger.error(f"Error sending new message in start prediction button: {e}")
 
     # Set user state to waiting for 3 digits
     user_id = query.from_user.id
