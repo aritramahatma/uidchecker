@@ -1989,8 +1989,10 @@ def handle_all(update: Update, context: CallbackContext):
                     return
                 else:
                     update.message.reply_text(
-                        "*❌ Please send exactly 3 digits*\n"
-                        "*Example: 789*",
+                        "*❌ Invalid Input*\n"
+                        "*🔢 Please send exactly 3 digits*\n"
+                        "*✅ Example: 789*\n\n"
+                        "*🧠 Let's keep it simple and accurate!*",
                         parse_mode='Markdown'
                     )
                     return
