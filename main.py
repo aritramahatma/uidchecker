@@ -197,106 +197,42 @@ def get_current_gift_code():
 
 def handle_unlock_gift_code(update: Update, context: CallbackContext):
     """
-    Handle the 'Unlock Gift Code' button callback with channel membership verification
+    Handle the 'Unlock Gift Code' button callback - now allows direct access
     """
     query = update.callback_query
-    user_id = query.from_user.id
+    query.answer()
     
     try:
-        # Check if user is member of the required channel
-        channel_username = "xH5jHvfkXSI0Nzll"  # Channel ID from the URL
+        # Get current gift code from database
+        gift_code_data = get_current_gift_code()
         
+        gift_code_msg = (
+            "*🎁 GIFT CODE CLAIM – Get Up to ₹500! ✅*\n\n"
+            f"`{gift_code_data['code']}`\n"
+            f"*🕒 Updated: {gift_code_data['updated_date']}*\n"
+            "*🔄 Next Update: 24 hours Later*\n\n"
+            "*⚠️ Condition :*\n"
+            "*➠ Must register using the official link to claim the gift code!*\n\n"
+            "*ENJOY & WIN BIG ! 🥷*"
+        )
+        
+        # Create back button
+        keyboard = [[InlineKeyboardButton("Back", callback_data="back")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        # Send new photo with gift code message
         try:
-            # Get chat member status
-            member = context.bot.get_chat_member(chat_id=f"@{channel_username}", user_id=user_id)
-            
-            # Check if user is a member (not left or kicked)
-            if member.status in ['member', 'administrator', 'creator']:
-                # User is a member, show gift code
-                query.answer()
-                
-                # Get current gift code from database
-                gift_code_data = get_current_gift_code()
-                
-                gift_code_msg = (
-                    "*🎁 GIFT CODE CLAIM – Get Up to ₹500! ✅*\n\n"
-                    f"`{gift_code_data['code']}`\n"
-                    f"*🕒 Updated: {gift_code_data['updated_date']}*\n"
-                    "*🔄 Next Update: 24 hours Later*\n\n"
-                    "*⚠️ Condition :*\n"
-                    "*➠ Must register using the official link to claim the gift code!*\n\n"
-                    "*ENJOY & WIN BIG ! 🥷*"
-                )
-                
-                # Create back button
-                keyboard = [[InlineKeyboardButton("Back", callback_data="back")]]
-                reply_markup = InlineKeyboardMarkup(keyboard)
-                
-                # Send new photo with gift code message
-                try:
-                    query.message.reply_photo(
-                        photo="https://files.catbox.moe/gyeskx.webp",
-                        caption=gift_code_msg,
-                        parse_mode='Markdown',
-                        reply_markup=reply_markup
-                    )
-                except Exception as e:
-                    logger.error(f"Error sending gift code photo: {e}")
-                    # Fallback to editing current message
-                    query.edit_message_caption(
-                        caption=gift_code_msg,
-                        parse_mode='Markdown',
-                        reply_markup=reply_markup
-                    )
-            else:
-                # User is not a member
-                query.answer("⛔ Access Denied! Join all channels first!", show_alert=True)
-                
-                access_denied_msg = (
-                    "*⛔ Access Denied!*\n"
-                    "*🔒 Join All Channels First To Unlock the Gift Code!*"
-                )
-                
-                # Keep the same keyboard layout
-                keyboard = [
-                    [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
-                     InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
-                    [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
-                     InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
-                    [InlineKeyboardButton("Unlock Gift Code 🔐", callback_data="unlock_gift_code")]
-                ]
-                reply_markup = InlineKeyboardMarkup(keyboard)
-                
-                # Edit message to show access denied
-                query.edit_message_caption(
-                    caption=access_denied_msg,
-                    parse_mode='Markdown',
-                    reply_markup=reply_markup
-                )
-                
-        except Exception as api_error:
-            logger.error(f"Error checking channel membership: {api_error}")
-            # If we can't check membership (bot not in channel, etc.), show access denied
-            query.answer("⛔ Access Denied! Join all channels first!", show_alert=True)
-            
-            access_denied_msg = (
-                "*⛔ Access Denied!*\n"
-                "*🔒 Join All Channels First To Unlock the Gift Code!*"
+            query.message.reply_photo(
+                photo="https://files.catbox.moe/gyeskx.webp",
+                caption=gift_code_msg,
+                parse_mode='Markdown',
+                reply_markup=reply_markup
             )
-            
-            # Keep the same keyboard layout
-            keyboard = [
-                [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
-                 InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
-                [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
-                 InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
-                [InlineKeyboardButton("Unlock Gift Code 🔐", callback_data="unlock_gift_code")]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            
-            # Edit message to show access denied
+        except Exception as e:
+            logger.error(f"Error sending gift code photo: {e}")
+            # Fallback to editing current message
             query.edit_message_caption(
-                caption=access_denied_msg,
+                caption=gift_code_msg,
                 parse_mode='Markdown',
                 reply_markup=reply_markup
             )
