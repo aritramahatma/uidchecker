@@ -6,6 +6,7 @@ import re
 import logging
 import requests
 import base64
+from datetime import datetime
 from PIL import Image
 from io import BytesIO
 from pymongo import MongoClient
@@ -31,6 +32,7 @@ try:
     client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000, connectTimeoutMS=10000, socketTimeoutMS=10000)
     db = client['uidchecker']
     uids_col = db['uids']
+    gift_codes_col = db['gift_codes']
     # Test connection
     client.admin.command('ping')
     logger.info("MongoDB connection successful")
@@ -168,6 +170,31 @@ def handle_gift_codes_button(update: Update, context: CallbackContext):
         # Fallback to text message if photo fails
         query.message.reply_text(gift_codes_msg, parse_mode='Markdown', reply_markup=reply_markup)
 
+def get_current_gift_code():
+    """
+    Get the current gift code from database
+    """
+    try:
+        gift_code_doc = gift_codes_col.find_one({'active': True})
+        if gift_code_doc:
+            return gift_code_doc
+        else:
+            # Create default gift code if none exists
+            default_code = {
+                'code': 'F0394C76A4CC0B6716EED375826CAEB',
+                'updated_date': 'Not Updated Yet',
+                'active': True,
+                'created_at': datetime.now()
+            }
+            gift_codes_col.insert_one(default_code)
+            return default_code
+    except Exception as e:
+        logger.error(f"Error getting gift code: {e}")
+        return {
+            'code': 'F0394C76A4CC0B6716EED375826CAEB',
+            'updated_date': 'Not Updated Yet'
+        }
+
 def handle_unlock_gift_code(update: Update, context: CallbackContext):
     """
     Handle the 'Unlock Gift Code' button callback with channel membership verification
@@ -188,28 +215,39 @@ def handle_unlock_gift_code(update: Update, context: CallbackContext):
                 # User is a member, show gift code
                 query.answer()
                 
+                # Get current gift code from database
+                gift_code_data = get_current_gift_code()
+                
                 gift_code_msg = (
-                    "*🎁 Congratulations! Here's Your Gift Code:*\n\n"
-                    "*🔐 GIFT CODE: TASHAN500*\n\n"
-                    "*💰 Value: ₹50*\n"
-                    "*⏰ Valid for 24 hours*\n\n"
-                    "*📋 How to use:*\n"
-                    "*1. Login to your account*\n"
-                    "*2. Go to Gift Code section*\n"
-                    "*3. Enter: TASHAN500*\n"
-                    "*4. Claim your ₹50 bonus!*"
+                    "*🎁 GIFT CODE CLAIM – Get Up to ₹500! ✅*\n\n"
+                    f"`{gift_code_data['code']}`\n"
+                    f"*🕒 Updated: {gift_code_data['updated_date']}*\n"
+                    "*🔄 Next Update: 24 hours Later*\n\n"
+                    "*⚠️ Condition :*\n"
+                    "*➠ Must register using the official link to claim the gift code!*\n\n"
+                    "*ENJOY & WIN BIG ! 🥷*"
                 )
                 
                 # Create back button
                 keyboard = [[InlineKeyboardButton("Back", callback_data="back")]]
                 reply_markup = InlineKeyboardMarkup(keyboard)
                 
-                # Edit message to show gift code
-                query.edit_message_caption(
-                    caption=gift_code_msg,
-                    parse_mode='Markdown',
-                    reply_markup=reply_markup
-                )
+                # Send new photo with gift code message
+                try:
+                    query.message.reply_photo(
+                        photo="https://files.catbox.moe/gyeskx.webp",
+                        caption=gift_code_msg,
+                        parse_mode='Markdown',
+                        reply_markup=reply_markup
+                    )
+                except Exception as e:
+                    logger.error(f"Error sending gift code photo: {e}")
+                    # Fallback to editing current message
+                    query.edit_message_caption(
+                        caption=gift_code_msg,
+                        parse_mode='Markdown',
+                        reply_markup=reply_markup
+                    )
             else:
                 # User is not a member
                 query.answer("⛔ Access Denied! Join all channels first!", show_alert=True)
@@ -1411,6 +1449,61 @@ def reject_command(update: Update, context: CallbackContext):
         logger.error(f"Error sending rejection messages: {e}")
         update.message.reply_text("❌ Error sending rejection messages.")
 
+def newcode_command(update: Update, context: CallbackContext):
+    """
+    Update gift code (Admin only)
+    Usage: /newcode NEWCODE123
+    """
+    if update.message.from_user.id != ADMIN_UID:
+        update.message.reply_text("❌ Unauthorized access.")
+        return
+
+    if not context.args:
+        update.message.reply_text(
+            "🎁 *Update Gift Code*\n\n"
+            "Usage: `/newcode <new_gift_code>`\n"
+            "Example: `/newcode ABC123XYZ789`",
+            parse_mode='Markdown'
+        )
+        return
+
+    try:
+        new_code = ' '.join(context.args).strip()
+        
+        if not new_code:
+            update.message.reply_text("❌ Gift code cannot be empty.")
+            return
+
+        # Get current date for updated_date
+        current_date = datetime.now().strftime("%d/%m/%Y at %I:%M %p")
+
+        # Deactivate old codes
+        gift_codes_col.update_many({'active': True}, {'$set': {'active': False}})
+
+        # Insert new gift code
+        new_gift_code = {
+            'code': new_code,
+            'updated_date': current_date,
+            'active': True,
+            'created_at': datetime.now()
+        }
+        
+        gift_codes_col.insert_one(new_gift_code)
+
+        update.message.reply_text(
+            f"✅ *Gift Code Updated Successfully!*\n\n"
+            f"🎁 New Code: `{new_code}`\n"
+            f"🕒 Updated: {current_date}\n"
+            f"🔄 Next Update: 24 hours Later",
+            parse_mode='Markdown'
+        )
+
+        logger.info(f"Admin {update.message.from_user.username} updated gift code to: {new_code}")
+
+    except Exception as e:
+        logger.error(f"Error updating gift code: {e}")
+        update.message.reply_text("❌ Error updating gift code.")
+
 # MESSAGE HANDLERS
 
 def handle_all(update: Update, context: CallbackContext):
@@ -1514,6 +1607,7 @@ def main():
         dp.add_handler(CommandHandler("del", del_command))
         dp.add_handler(CommandHandler("done", done_command))
         dp.add_handler(CommandHandler("reject", reject_command))
+        dp.add_handler(CommandHandler("newcode", newcode_command))
         dp.add_handler(CallbackQueryHandler(handle_screenshot_button, pattern="send_screenshot"))
         dp.add_handler(CallbackQueryHandler(handle_bonus_button, pattern="bonus"))
         dp.add_handler(CallbackQueryHandler(handle_gift_codes_button, pattern="gift_codes"))
