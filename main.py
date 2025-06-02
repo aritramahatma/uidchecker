@@ -582,6 +582,48 @@ def start(update: Update, context: CallbackContext):
         # Fallback to text message if photo fails
         update.message.reply_text(msg, parse_mode='Markdown', reply_markup=reply_markup)
 
+def handle_support_button(update: Update, context: CallbackContext):
+    """
+    Handle the 'Support' button callback
+    """
+    query = update.callback_query
+    query.answer()
+
+    # Support message in bold mode
+    support_msg = (
+        "*⚠️ DEPOSIT / WITHDRAWAL ISSUE ⁉️*\n\n"
+        "*💬 Contact our Official Support Bot:*\n"
+        "*🎯 @JalwaHelpCentre_bot*\n"
+        "*🕐 Support available 24/7*\n"
+        "*📢 Only use the official bot for help!*\n\n"
+        "*🚀 Get back in the game without delay!!*"
+    )
+
+    # Create back button
+    keyboard = [
+        [InlineKeyboardButton("Back", callback_data="back")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Send new message with support info
+    try:
+        query.message.reply_text(
+            support_msg,
+            parse_mode='Markdown',
+            reply_markup=reply_markup
+        )
+    except Exception as e:
+        logger.error(f"Error sending support message: {e}")
+        # Fallback to editing current message
+        try:
+            query.edit_message_caption(
+                caption=support_msg,
+                parse_mode='Markdown',
+                reply_markup=reply_markup
+            )
+        except Exception as e2:
+            logger.error(f"Error editing message with support info: {e2}")
+
 def handle_screenshot_button(update: Update, context: CallbackContext):
     """
     Handle the 'Send Screenshot' button callback
@@ -1808,7 +1850,7 @@ def main():
         dp.add_handler(CallbackQueryHandler(handle_back_button, pattern="back"))
         # Add handlers for other button callbacks
         dp.add_handler(CallbackQueryHandler(handle_screenshot_button, pattern="prediction"))
-        dp.add_handler(CallbackQueryHandler(handle_screenshot_button, pattern="support"))
+        dp.add_handler(CallbackQueryHandler(handle_support_button, pattern="support"))
         dp.add_handler(conv_handler)
         dp.add_handler(MessageHandler(Filters.all, handle_all))
 
