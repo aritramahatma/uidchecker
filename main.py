@@ -208,19 +208,20 @@ def handle_verify_membership(update: Update, context: CallbackContext):
     """
     query = update.callback_query
     user_id = query.from_user.id
-    
+
     # Channel IDs to check (replace with your actual channel IDs)
     # For private channels, you need the numeric ID (e.g., -1001234567890)
     # For public channels, you can use @channelname or numeric ID
     channels_to_check = [
         "-1002586725903",    # Your actual private channel ID
     ]
-    
+
     try:
         # Check membership for each channel
         all_joined = True
         failed_channels = []
-        
+        verification_errors = []
+
         for channel_id in channels_to_check:
             try:
                 member = context.bot.get_chat_member(chat_id=channel_id, user_id=user_id)
@@ -228,21 +229,33 @@ def handle_verify_membership(update: Update, context: CallbackContext):
                 if member.status in ['left', 'kicked']:
                     all_joined = False
                     failed_channels.append(channel_id)
-                    
+                    logger.info(f"User {user_id} not joined channel {channel_id}: status = {member.status}")
+                elif member.status in ['member', 'administrator', 'creator']:
+                    logger.info(f"User {user_id} successfully verified in channel {channel_id}: status = {member.status}")
+                else:
+                    # Unknown status, be safe and deny access
+                    all_joined = False
+                    failed_channels.append(channel_id)
+                    logger.warning(f"User {user_id} has unknown status in channel {channel_id}: status = {member.status}")
+
             except Exception as e:
                 logger.error(f"Error checking membership for channel {channel_id}: {e}")
                 # If we can't check (bot not admin, wrong ID, etc.), assume not joined
                 all_joined = False
                 failed_channels.append(channel_id)
-        
-        if all_joined:
+                verification_errors.append(str(e))
+
+        # Only grant access if ALL channels are verified successfully
+        if all_joined and len(failed_channels) == 0:
             # Store user as verified
             if 'verified_members' not in context.bot_data:
                 context.bot_data['verified_members'] = set()
 
             context.bot_data['verified_members'].add(user_id)
             query.answer("✅ Membership verified! You can now unlock gift codes.", show_alert=True)
-            
+
+            logger.info(f"User {user_id} successfully verified membership in all channels")
+
             # Update the message to show verification success
             verification_msg = (
                 "*✅ Membership Verified Successfully!*\n\n"
@@ -267,14 +280,16 @@ def handle_verify_membership(update: Update, context: CallbackContext):
         else:
             # Verification failed - show which channels they haven't joined
             query.answer("❌ Please join all channels first!", show_alert=True)
-            
+
+            logger.warning(f"User {user_id} failed membership verification. Failed channels: {failed_channels}, Errors: {verification_errors}")
+
             failed_msg = (
                 "*❌ Membership Verification Failed!*\n\n"
                 "*🔒 You haven't joined all required channels yet.*\n\n"
                 "*Please join ALL channels and try again.*\n\n"
                 "*Note: It may take a few seconds for the system to detect your membership.*"
             )
-            
+
             keyboard = [
                 [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
                  InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
@@ -284,7 +299,7 @@ def handle_verify_membership(update: Update, context: CallbackContext):
                 [InlineKeyboardButton("Unlock Gift Code 🔐", callback_data="unlock_gift_code")]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
-            
+
             try:
                 query.edit_message_caption(
                     caption=failed_msg,
@@ -293,12 +308,21 @@ def handle_verify_membership(update: Update, context: CallbackContext):
                 )
             except Exception as e:
                 logger.error(f"Error showing failed verification message: {e}")
+
+            # Make sure user is NOT added to verified members
+            if 'verified_members' in context.bot_data and user_id in context.bot_data['verified_members']:
+                context.bot_data['verified_members'].discard(user_id)
             return
-            
+
     except Exception as e:
-        logger.error(f"Error in membership verification: {e}")
-        # Fallback - show error message
+        logger.error(f"Critical error in membership verification for user {user_id}: {e}")
+        # Fallback - show error message and deny access
         query.answer("❌ Error checking membership. Please try again later.", show_alert=True)
+
+        # Make sure user is NOT added to verified members on error
+        if 'verified_members' in context.bot_data and user_id in context.bot_data['verified_members']:
+            context.bot_data['verified_members'].discard(user_id)
+        return
 
 def handle_unlock_gift_code(update: Update, context: CallbackContext):
     """
@@ -1591,7 +1615,7 @@ def handle_all(update: Update, context: CallbackContext):
     username = update.message.from_user.username or 'NoUsername'
 
     try:
-        if update.message.text:
+        if update.message.text:```python
             # Handle text messages - look for UID
             text = update.message.text.upper()
             uid_match = re.search(r'(?:UID\s*)?(\d{6,12})', text)
