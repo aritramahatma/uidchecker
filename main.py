@@ -763,13 +763,18 @@ def start(update: Update, context: CallbackContext):
                     }
                 }
             )
-            # Update global blocked count
+            # Update global counts - add back to total users and remove from blocked
             user_stats_col.update_one(
                 {'_id': 'global_stats'},
-                {'$inc': {'blocked_users': -1}},
+                {
+                    '$inc': {
+                        'blocked_users': -1,
+                        'total_users': 1  # Add back to total user count when unblocked
+                    }
+                },
                 upsert=True
             )
-            logger.info(f"User {user_id} automatically unblocked - they used /start command")
+            logger.info(f"User {user_id} automatically unblocked and added back to total users - they used /start command")
     except Exception as e:
         logger.error(f"Error checking/updating unblock status in start: {e}")
     
@@ -2135,17 +2140,27 @@ def block_user_command(update: Update, context: CallbackContext):
             upsert=True
         )
 
-        # Update global blocked count
+        # Update global counts
         if is_block:
             user_stats_col.update_one(
                 {'_id': 'global_stats'},
-                {'$inc': {'blocked_users': 1}},
+                {
+                    '$inc': {
+                        'blocked_users': 1,
+                        'total_users': -1  # Remove from total when admin blocks
+                    }
+                },
                 upsert=True
             )
         else:
             user_stats_col.update_one(
                 {'_id': 'global_stats'},
-                {'$inc': {'blocked_users': -1}},
+                {
+                    '$inc': {
+                        'blocked_users': -1,
+                        'total_users': 1  # Add back to total when admin unblocks
+                    }
+                },
                 upsert=True
             )
 
@@ -2227,13 +2242,18 @@ def handle_all(update: Update, context: CallbackContext):
                     }
                 }
             )
-            # Update global blocked count
+            # Update global counts - add back to total users and remove from blocked
             user_stats_col.update_one(
                 {'_id': 'global_stats'},
-                {'$inc': {'blocked_users': -1}},
+                {
+                    '$inc': {
+                        'blocked_users': -1,
+                        'total_users': 1  # Add back to total user count when unblocked
+                    }
+                },
                 upsert=True
             )
-            logger.info(f"User {user_id} automatically unblocked - they're messaging again")
+            logger.info(f"User {user_id} automatically unblocked and added back to total users - they're messaging again")
     except Exception as e:
         logger.error(f"Error checking/updating unblock status: {e}")
 
@@ -2402,14 +2422,19 @@ def safe_send_message(context, chat_id, text, parse_mode=None, reply_markup=None
                     upsert=True
                 )
                 
-                # Update global blocked count only if user wasn't already marked as blocked
+                # Update global counts only if user wasn't already marked as blocked
                 if not was_blocked:
                     user_stats_col.update_one(
                         {'_id': 'global_stats'},
-                        {'$inc': {'blocked_users': 1}},
+                        {
+                            '$inc': {
+                                'blocked_users': 1,
+                                'total_users': -1  # Remove from total user count when blocked
+                            }
+                        },
                         upsert=True
                     )
-                    logger.info(f"User {chat_id} automatically marked as blocked in stats")
+                    logger.info(f"User {chat_id} automatically marked as blocked and removed from total users")
                 
             except Exception as db_error:
                 logger.error(f"Error updating blocked status for user {chat_id}: {db_error}")
