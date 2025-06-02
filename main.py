@@ -149,11 +149,11 @@ def handle_gift_codes_button(update: Update, context: CallbackContext):
 
     # Create inline keyboard with different channel links (replace with your actual channel links)
     keyboard = [
-        [InlineKeyboardButton("📢 Channel 1", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
-         InlineKeyboardButton("📢 Channel 2", url="https://t.me/+xH5jHvfkXSI0Nzll")],
-        [InlineKeyboardButton("📢 Channel 3", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
-         InlineKeyboardButton("📢 Channel 4", url="https://t.me/+xH5jHvfkXSI0Nzll")],
-        [InlineKeyboardButton("✅ I Joined All Channels", callback_data="verify_membership")],
+        [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
+         InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
+        [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
+         InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
+        [InlineKeyboardButton("I Joined All Channels ✅", callback_data="verify_membership")],
         [InlineKeyboardButton("Unlock Gift Code 🔐", callback_data="unlock_gift_code")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -204,50 +204,17 @@ def get_current_gift_code():
 
 def handle_verify_membership(update: Update, context: CallbackContext):
     """
-    Handle the 'I Joined All Channels' verification button with real channel verification
+    Handle the 'I Joined All Channels' verification button - consider user as verified when they request
     """
     query = update.callback_query
     user_id = query.from_user.id
     
-    # Channel IDs to check (replace with your actual channel IDs)
-    channels_to_check = [
-        "-1001002586725903",  # Your private channel
-        # Add more channel IDs here if needed
-    ]
-    
-    try:
-        # Check membership for each channel
-        all_joined = True
-        for channel_id in channels_to_check:
-            try:
-                member = context.bot.get_chat_member(chat_id=channel_id, user_id=user_id)
-                if member.status in ['left', 'kicked']:
-                    all_joined = False
-                    break
-            except Exception as e:
-                logger.error(f"Error checking membership for channel {channel_id}: {e}")
-                # If we can't check, assume not joined
-                all_joined = False
-                break
-        
-        if all_joined:
-            # Store user as verified
-            if 'verified_members' not in context.bot_data:
-                context.bot_data['verified_members'] = set()
+    # Store user as verified when they click this button (request to join)
+    if 'verified_members' not in context.bot_data:
+        context.bot_data['verified_members'] = set()
 
-            context.bot_data['verified_members'].add(user_id)
-            query.answer("✅ Membership verified! You can now unlock gift codes.", show_alert=True)
-        else:
-            query.answer("❌ Please join all channels first!", show_alert=True)
-            return
-            
-    except Exception as e:
-        logger.error(f"Error in membership verification: {e}")
-        # Fallback - allow access but log the error
-        if 'verified_members' not in context.bot_data:
-            context.bot_data['verified_members'] = set()
-        context.bot_data['verified_members'].add(user_id)
-        query.answer("✅ Membership verified! You can now unlock gift codes.", show_alert=True)
+    context.bot_data['verified_members'].add(user_id)
+    query.answer("✅ Membership verified! You can now unlock gift codes.", show_alert=True)
 
     # Update the message to show verification success
     verification_msg = (
@@ -287,15 +254,15 @@ def handle_unlock_gift_code(update: Update, context: CallbackContext):
         access_denied_msg = (
             "*⛔ Access Denied!*\n"
             "*🔒 Please verify your channel membership first!*\n\n"
-            "*Click 'I Joined All Channels' after joining all channels.*"
+            "*Click 'I Joined All Channels ✅' after joining all channels.*"
         )
 
         keyboard = [
-            [InlineKeyboardButton("📢 Channel 1", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
-             InlineKeyboardButton("📢 Channel 2", url="https://t.me/+xH5jHvfkXSI0Nzll")],
-            [InlineKeyboardButton("📢 Channel 3", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
-             InlineKeyboardButton("📢 Channel 4", url="https://t.me/+xH5jHvfkXSI0Nzll")],
-            [InlineKeyboardButton("✅ I Joined All Channels", callback_data="verify_membership")],
+            [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
+             InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
+            [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
+             InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
+            [InlineKeyboardButton("I Joined All Channels ✅", callback_data="verify_membership")],
             [InlineKeyboardButton("Unlock Gift Code 🔐", callback_data="unlock_gift_code")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
