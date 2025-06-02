@@ -212,7 +212,7 @@ def handle_verify_membership(update: Update, context: CallbackContext):
     # For private channels, you need the numeric ID (e.g., -1001234567890)
     # For public channels, you can use @channelname or numeric ID
     channels_to_check = [
-        "@your_channel_username",    # Replace with your actual channel username
+        "-1001234567890",    # Replace with your actual private channel ID (starts with -100)
     ]
 
     try:
