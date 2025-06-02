@@ -154,13 +154,15 @@ def handle_gift_codes_button(update: Update, context: CallbackContext):
     gift_codes_msg = (
         "*📋 Join All Channels To Unlock the Gift Code!*\n\n"
         "*🎁 Earn More Exclusive Gift Codes From Here*\n\n"
-        "*⚠️ You must join BOTH channels below to unlock gift codes:*"
+        "*⚠️ You must join ALL 4 channels below to unlock gift codes:*"
     )
 
-    # Create inline keyboard with JOIN buttons for both channels and unlock button
+    # Create inline keyboard with JOIN buttons for all 4 channels and unlock button
     keyboard = [
         [InlineKeyboardButton("🔗 JOIN CHANNEL 1", url="https://t.me/+vge9Lu_k4wUyYTY9"),
          InlineKeyboardButton("🔗 JOIN CHANNEL 2", url="https://t.me/+7io6Ktb7WwQzZjll")],
+        [InlineKeyboardButton("🔗 JOIN CHANNEL 3", url="https://t.me/+mm3dF_L31cg2NjA1"),
+         InlineKeyboardButton("🔗 JOIN CHANNEL 4", url="https://t.me/+mm3dF_L31cg2NjA1")],
         [InlineKeyboardButton("🔐 Unlock Gift Code", callback_data="unlock_gift_code")],
         [InlineKeyboardButton("🔙 Back", callback_data="back")]
     ]
@@ -232,6 +234,8 @@ def handle_verify_membership(update: Update, context: CallbackContext):
     channels_to_check = [
         "-1002192358931",    # Your first private channel ID
         "-1002573774872",    # Your second private channel ID
+        "-1002586023209",    # Your third private channel ID
+        "-1002646737506",    # Your fourth private channel ID
     ]
 
     try:
@@ -311,13 +315,15 @@ def handle_verify_membership(update: Update, context: CallbackContext):
             failed_msg = (
                 "*❌ Membership Verification Failed!*\n\n"
                 "*🔒 You haven't joined all required channels yet.*\n\n"
-                "*Please join BOTH channels below and try again.*\n\n"
+                "*Please join ALL 4 channels below and try again.*\n\n"
                 "*⚠️ Note: It may take a few seconds for the system to detect your membership.*"
             )
 
             keyboard = [
                 [InlineKeyboardButton("🔗 JOIN CHANNEL 1", url="https://t.me/+vge9Lu_k4wUyYTY9"),
                  InlineKeyboardButton("🔗 JOIN CHANNEL 2", url="https://t.me/+7io6Ktb7WwQzZjll")],
+                [InlineKeyboardButton("🔗 JOIN CHANNEL 3", url="https://t.me/+mm3dF_L31cg2NjA1"),
+                 InlineKeyboardButton("🔗 JOIN CHANNEL 4", url="https://t.me/+mm3dF_L31cg2NjA1")],
                 [InlineKeyboardButton("🔐 Unlock Gift Code", callback_data="unlock_gift_code")],
                 [InlineKeyboardButton("🔙 Back", callback_data="back")]
             ]
@@ -358,6 +364,8 @@ def handle_unlock_gift_code(update: Update, context: CallbackContext):
     channels_to_check = [
         "-1002192358931",    # Your first private channel ID
         "-1002573774872",    # Your second private channel ID
+        "-1002586023209",    # Your third private channel ID
+        "-1002646737506",    # Your fourth private channel ID
     ]
 
     try:
@@ -436,12 +444,11 @@ def handle_unlock_gift_code(update: Update, context: CallbackContext):
                 "*🚫 ACCESS DENIED - NOT A CHANNEL MEMBER!*\n\n"
                 "*❌ You are NOT a confirmed member of our private channels!*\n\n"
                 "*🔒 TO UNLOCK GIFT CODES:*\n"
-                "*1️⃣ You must join BOTH private channels first*\n"
+                "*1️⃣ You must join ALL 4 private channels first*\n"
                 "*2️⃣ Actually JOIN the channels (not just visit)*\n"
                 "*3️⃣ Wait 60 seconds after joining*\n"
-                "*4️⃣ Click 'I Joined All Channels' button*\n"
-                "*5️⃣ Try unlocking again*\n\n"
-                "*⚠️ IMPORTANT: You must be a CONFIRMED MEMBER of BOTH channels!*\n"
+                "*4️⃣ Try unlocking again*\n\n"
+                "*⚠️ IMPORTANT: You must be a CONFIRMED MEMBER of ALL 4 channels!*\n"
                 "*🚫 Visiting or previewing the channels is NOT enough!*"
             )
 
