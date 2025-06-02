@@ -57,4 +57,4 @@ task = "shell.exec"
 args = "python main.py"
 
 [deployment]
-run = ["sh", "-c", "npm start"]
+run = ["sh", "-c", "pip install -r requirements.txt && python main.py"]
