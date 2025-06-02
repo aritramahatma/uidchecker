@@ -157,11 +157,10 @@ def handle_gift_codes_button(update: Update, context: CallbackContext):
         "*⚠️ You must join BOTH channels below to unlock gift codes:*"
     )
 
-    # Create inline keyboard with JOIN buttons for both channels and verification
+    # Create inline keyboard with JOIN buttons for both channels and unlock button
     keyboard = [
         [InlineKeyboardButton("🔗 JOIN CHANNEL 1", url="https://t.me/+vge9Lu_k4wUyYTY9"),
          InlineKeyboardButton("🔗 JOIN CHANNEL 2", url="https://t.me/+7io6Ktb7WwQzZjll")],
-        [InlineKeyboardButton("✅ I Joined All Channels", callback_data="verify_membership")],
         [InlineKeyboardButton("🔐 Unlock Gift Code", callback_data="unlock_gift_code")],
         [InlineKeyboardButton("🔙 Back", callback_data="back")]
     ]
@@ -319,7 +318,6 @@ def handle_verify_membership(update: Update, context: CallbackContext):
             keyboard = [
                 [InlineKeyboardButton("🔗 JOIN CHANNEL 1", url="https://t.me/+vge9Lu_k4wUyYTY9"),
                  InlineKeyboardButton("🔗 JOIN CHANNEL 2", url="https://t.me/+7io6Ktb7WwQzZjll")],
-                [InlineKeyboardButton("✅ I Joined All Channels", callback_data="verify_membership")],
                 [InlineKeyboardButton("🔐 Unlock Gift Code", callback_data="unlock_gift_code")],
                 [InlineKeyboardButton("🔙 Back", callback_data="back")]
             ]
