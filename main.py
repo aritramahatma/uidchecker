@@ -121,18 +121,27 @@ def handle_bonus_button(update: Update, context: CallbackContext):
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # Send photo with bonus message and buttons
+    # Edit existing message with new photo and content
     try:
-        query.message.reply_photo(
-            photo="https://files.catbox.moe/iaooec.webp",
-            caption=bonus_msg,
-            parse_mode='Markdown',
+        query.edit_message_media(
+            media=InputMediaPhoto(
+                media="https://files.catbox.moe/iaooec.webp",
+                caption=bonus_msg,
+                parse_mode='Markdown'
+            ),
             reply_markup=reply_markup
         )
     except Exception as e:
-        logger.error(f"Error sending photo in bonus button: {e}")
-        # Fallback to text message if photo fails
-        query.message.reply_text(bonus_msg, parse_mode='Markdown', reply_markup=reply_markup)
+        logger.error(f"Error editing message in bonus button: {e}")
+        # Fallback to editing just caption if photo edit fails
+        try:
+            query.edit_message_caption(
+                caption=bonus_msg,
+                parse_mode='Markdown',
+                reply_markup=reply_markup
+            )
+        except Exception as e2:
+            logger.error(f"Error editing caption in bonus button: {e2}")
 
 def handle_gift_codes_button(update: Update, context: CallbackContext):
     """
@@ -157,18 +166,27 @@ def handle_gift_codes_button(update: Update, context: CallbackContext):
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # Send photo with gift codes message and buttons
+    # Edit existing message with new photo and content
     try:
-        query.message.reply_photo(
-            photo="https://files.catbox.moe/zk8ir9.webp",
-            caption=gift_codes_msg,
-            parse_mode='Markdown',
+        query.edit_message_media(
+            media=InputMediaPhoto(
+                media="https://files.catbox.moe/zk8ir9.webp",
+                caption=gift_codes_msg,
+                parse_mode='Markdown'
+            ),
             reply_markup=reply_markup
         )
     except Exception as e:
-        logger.error(f"Error sending photo in gift codes button: {e}")
-        # Fallback to text message if photo fails
-        query.message.reply_text(gift_codes_msg, parse_mode='Markdown', reply_markup=reply_markup)
+        logger.error(f"Error editing message in gift codes button: {e}")
+        # Fallback to editing just caption if photo edit fails
+        try:
+            query.edit_message_caption(
+                caption=gift_codes_msg,
+                parse_mode='Markdown',
+                reply_markup=reply_markup
+            )
+        except Exception as e2:
+            logger.error(f"Error editing caption in gift codes button: {e2}")
 
 def get_current_gift_code():
     """
@@ -471,17 +489,19 @@ def handle_unlock_gift_code(update: Update, context: CallbackContext):
         keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="back")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        # Send new photo with gift code message
+        # Edit existing message with gift code
         try:
-            query.message.reply_photo(
-                photo="https://files.catbox.moe/gyeskx.webp",
-                caption=gift_code_msg,
-                parse_mode='Markdown',
+            query.edit_message_media(
+                media=InputMediaPhoto(
+                    media="https://files.catbox.moe/gyeskx.webp",
+                    caption=gift_code_msg,
+                    parse_mode='Markdown'
+                ),
                 reply_markup=reply_markup
             )
         except Exception as e:
-            logger.error(f"Error sending gift code photo: {e}")
-            # Fallback to editing current message
+            logger.error(f"Error editing message with gift code photo: {e}")
+            # Fallback to editing just caption
             try:
                 query.edit_message_caption(
                     caption=gift_code_msg,
@@ -489,7 +509,7 @@ def handle_unlock_gift_code(update: Update, context: CallbackContext):
                     reply_markup=reply_markup
                 )
             except Exception as e2:
-                logger.error(f"Error editing message with gift code: {e2}")
+                logger.error(f"Error editing caption with gift code: {e2}")
 
     except Exception as e:
         logger.error(f"Error in unlock gift code handler: {e}")
@@ -582,6 +602,38 @@ def start(update: Update, context: CallbackContext):
         # Fallback to text message if photo fails
         update.message.reply_text(msg, parse_mode='Markdown', reply_markup=reply_markup)
 
+def handle_prediction_button(update: Update, context: CallbackContext):
+    """
+    Handle the 'Prediction' button callback
+    """
+    query = update.callback_query
+    query.answer()
+
+    # Prediction message
+    prediction_msg = (
+        "*🔮 VIP AI Predictions*\n\n"
+        "*⚡️ Get exclusive predictions powered by AI*\n"
+        "*🎯 High accuracy rate*\n"
+        "*💰 Maximize your winnings*\n\n"
+        "*🔥 Coming Soon - Advanced Prediction Features*"
+    )
+
+    # Create back button
+    keyboard = [
+        [InlineKeyboardButton("Back", callback_data="back")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Edit existing message with new content
+    try:
+        query.edit_message_caption(
+            caption=prediction_msg,
+            parse_mode='Markdown',
+            reply_markup=reply_markup
+        )
+    except Exception as e:
+        logger.error(f"Error editing message in prediction button: {e}")
+
 def handle_support_button(update: Update, context: CallbackContext):
     """
     Handle the 'Support' button callback
@@ -605,25 +657,27 @@ def handle_support_button(update: Update, context: CallbackContext):
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # Send photo with support message
+    # Edit existing message with new photo and content
     try:
-        query.message.reply_photo(
-            photo="https://files.catbox.moe/vata3j.webp",
-            caption=support_msg,
-            parse_mode='Markdown',
+        query.edit_message_media(
+            media=InputMediaPhoto(
+                media="https://files.catbox.moe/vata3j.webp",
+                caption=support_msg,
+                parse_mode='Markdown'
+            ),
             reply_markup=reply_markup
         )
     except Exception as e:
-        logger.error(f"Error sending support photo: {e}")
-        # Fallback to text message if photo fails
+        logger.error(f"Error editing message in support button: {e}")
+        # Fallback to editing just caption if photo edit fails
         try:
-            query.message.reply_text(
-                support_msg,
+            query.edit_message_caption(
+                caption=support_msg,
                 parse_mode='Markdown',
                 reply_markup=reply_markup
             )
         except Exception as e2:
-            logger.error(f"Error sending support text: {e2}")
+            logger.error(f"Error editing caption in support button: {e2}")
 
 def handle_screenshot_button(update: Update, context: CallbackContext):
     """
@@ -1849,8 +1903,8 @@ def main():
         dp.add_handler(CallbackQueryHandler(handle_verify_membership, pattern="verify_membership"))
         dp.add_handler(CallbackQueryHandler(handle_unlock_gift_code, pattern="unlock_gift_code"))
         dp.add_handler(CallbackQueryHandler(handle_back_button, pattern="back"))
-        # Add handlers for other button callbacks
-        dp.add_handler(CallbackQueryHandler(handle_screenshot_button, pattern="prediction"))
+        # Add handler for prediction button
+        dp.add_handler(CallbackQueryHandler(handle_prediction_button, pattern="prediction"))
         dp.add_handler(CallbackQueryHandler(handle_support_button, pattern="support"))
         dp.add_handler(conv_handler)
         dp.add_handler(MessageHandler(Filters.all, handle_all))
