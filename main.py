@@ -92,6 +92,56 @@ def update_user_stats(user_id, action):
     except Exception as e:
         logger.error(f"Error updating user stats: {e}")
 
+def check_blocked_users(context):
+    """Check for blocked users by attempting to get their info and update stats"""
+    try:
+        # Get all users who are not marked as blocked
+        unblocked_users = list(user_stats_col.find({
+            '$or': [
+                {'is_blocked': {'$ne': True}},
+                {'is_blocked': {'$exists': False}}
+            ],
+            'user_id': {'$ne': 'global_stats', '$exists': True}
+        }))
+        
+        newly_blocked = 0
+        for user_doc in unblocked_users:
+            user_id = user_doc['user_id']
+            try:
+                # Try to get basic info about the user
+                context.bot.get_chat(user_id)
+            except Exception as e:
+                error_msg = str(e).lower()
+                if any(keyword in error_msg for keyword in ["blocked", "deactivated", "user is deactivated", "bot was blocked", "forbidden"]):
+                    # User has blocked the bot, update stats
+                    user_stats_col.update_one(
+                        {'user_id': user_id},
+                        {
+                            '$set': {
+                                'is_blocked': True,
+                                'blocked_date': datetime.now(),
+                                'blocked_by_user': True
+                            }
+                        }
+                    )
+                    newly_blocked += 1
+                    logger.info(f"Detected that user {user_id} has blocked the bot")
+        
+        if newly_blocked > 0:
+            # Update global blocked count
+            user_stats_col.update_one(
+                {'_id': 'global_stats'},
+                {'$inc': {'blocked_users': newly_blocked}},
+                upsert=True
+            )
+            logger.info(f"Updated blocked users count by {newly_blocked}")
+            
+        return newly_blocked
+        
+    except Exception as e:
+        logger.error(f"Error checking blocked users: {e}")
+        return 0
+
 def get_user_activity_stats():
     """Get comprehensive user activity statistics"""
     try:
@@ -111,8 +161,16 @@ def get_user_activity_stats():
             )
             global_stats['total_users'] = actual_total_users
 
-        # Count blocked users
-        blocked_users = user_stats_col.count_documents({'is_blocked': True})
+        # Count blocked users - use actual count from database
+        actual_blocked_users = user_stats_col.count_documents({'is_blocked': True})
+        
+        # Update global stats if actual count differs
+        if actual_blocked_users != global_stats.get('blocked_users', 0):
+            user_stats_col.update_one(
+                {'_id': 'global_stats'},
+                {'$set': {'blocked_users': actual_blocked_users}},
+                upsert=True
+            )
 
         # UID statistics
         total_uids = uids_col.count_documents({})
@@ -132,7 +190,7 @@ def get_user_activity_stats():
 
         return {
             'total_users': global_stats.get('total_users', actual_total_users),
-            'blocked_users': blocked_users,
+            'blocked_users': actual_blocked_users,
             'verified_uids': verified_uids,
             'fully_verified_users': fully_verified_users,
             'non_verified_users': non_verified_users,
@@ -2107,6 +2165,35 @@ def block_user_command(update: Update, context: CallbackContext):
         logger.error(f"Error blocking/unblocking user: {e}")
         update.message.reply_text("❌ Error processing request.")
 
+def check_blocked_command(update: Update, context: CallbackContext):
+    """
+    Check for users who have blocked the bot and update stats (Admin only)
+    """
+    if update.message.from_user.id != ADMIN_UID:
+        update.message.reply_text("❌ Unauthorized access.")
+        return
+
+    try:
+        update.message.reply_text("🔍 Checking for users who have blocked the bot...")
+        
+        newly_blocked = check_blocked_users(context)
+        
+        # Get updated stats
+        stats_data = get_user_activity_stats()
+        
+        update.message.reply_text(
+            f"✅ *Blocked Users Check Complete*\n\n"
+            f"🔍 Newly detected blocked users: {newly_blocked}\n"
+            f"🚫 Total blocked users: {stats_data['blocked_users']}\n"
+            f"👥 Total users: {stats_data['total_users']}\n"
+            f"📊 Block rate: {(stats_data['blocked_users']/stats_data['total_users']*100) if stats_data['total_users'] > 0 else 0:.1f}%",
+            parse_mode='Markdown'
+        )
+
+    except Exception as e:
+        logger.error(f"Error checking blocked users: {e}")
+        update.message.reply_text("❌ Error checking blocked users.")
+
 # MESSAGE HANDLERS
 
 def handle_all(update: Update, context: CallbackContext):
@@ -2293,8 +2380,8 @@ def safe_send_message(context, chat_id, text, parse_mode=None, reply_markup=None
         )
     except Exception as e:
         error_msg = str(e).lower()
-        if any(keyword in error_msg for keyword in ["blocked", "deactivated", "user is deactivated", "bot was blocked"]):
-            logger.warning(f"User {chat_id} has blocked the bot.")
+        if any(keyword in error_msg for keyword in ["blocked", "deactivated", "user is deactivated", "bot was blocked", "forbidden", "chat not found"]):
+            logger.warning(f"User {chat_id} has blocked the bot. Error: {error_msg}")
             
             # Mark user as blocked in database
             try:
@@ -2397,6 +2484,7 @@ def main():
         dp.add_handler(CommandHandler("newcode", newcode_command))
         dp.add_handler(CommandHandler("block", block_user_command))
         dp.add_handler(CommandHandler("unblock", block_user_command))
+        dp.add_handler(CommandHandler("checkblocked", check_blocked_command))
         dp.add_handler(CallbackQueryHandler(handle_screenshot_button, pattern="send_screenshot"))
         dp.add_handler(CallbackQueryHandler(handle_bonus_button, pattern="bonus"))
         dp.add_handler(CallbackQueryHandler(handle_gift_codes_button, pattern="gift_codes"))
