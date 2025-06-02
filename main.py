@@ -1612,7 +1612,7 @@ def handle_all(update: Update, context: CallbackContext):
     username = update.message.from_user.username or 'NoUsername'
 
     try:
-        if update.message.text:```python
+        if update.message.text:
             # Handle text messages - look for UID
             text = update.message.text.upper()
             uid_match = re.search(r'(?:UID\s*)?(\d{6,12})', text)
