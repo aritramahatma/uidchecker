@@ -145,13 +145,13 @@ def handle_gift_codes_button(update: Update, context: CallbackContext):
         "*🎁 Earn More Exclusive Gift Codes From Here*"
     )
 
-    # Create inline keyboard with 5 buttons - 4 JOIN buttons and 1 Unlock Gift Code button
+    # Create inline keyboard with new layout: 2 JOIN buttons per row for 2 rows, then Unlock button
     keyboard = [
-        [InlineKeyboardButton("JOIN", callback_data="join_1")],
-        [InlineKeyboardButton("JOIN", callback_data="join_2")],
-        [InlineKeyboardButton("JOIN", callback_data="join_3")],
-        [InlineKeyboardButton("JOIN", callback_data="join_4")],
-        [InlineKeyboardButton("Unlock Gift Code", callback_data="unlock_gift_code")]
+        [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
+         InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
+        [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
+         InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
+        [InlineKeyboardButton("Unlock Gift Code 🔐", callback_data="unlock_gift_code")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -167,6 +167,105 @@ def handle_gift_codes_button(update: Update, context: CallbackContext):
         logger.error(f"Error sending photo in gift codes button: {e}")
         # Fallback to text message if photo fails
         query.message.reply_text(gift_codes_msg, parse_mode='Markdown', reply_markup=reply_markup)
+
+def handle_unlock_gift_code(update: Update, context: CallbackContext):
+    """
+    Handle the 'Unlock Gift Code' button callback with channel membership verification
+    """
+    query = update.callback_query
+    user_id = query.from_user.id
+    
+    try:
+        # Check if user is member of the required channel
+        channel_username = "xH5jHvfkXSI0Nzll"  # Channel ID from the URL
+        
+        try:
+            # Get chat member status
+            member = context.bot.get_chat_member(chat_id=f"@{channel_username}", user_id=user_id)
+            
+            # Check if user is a member (not left or kicked)
+            if member.status in ['member', 'administrator', 'creator']:
+                # User is a member, show gift code
+                query.answer()
+                
+                gift_code_msg = (
+                    "*🎁 Congratulations! Here's Your Gift Code:*\n\n"
+                    "*🔐 GIFT CODE: TASHAN500*\n\n"
+                    "*💰 Value: ₹50*\n"
+                    "*⏰ Valid for 24 hours*\n\n"
+                    "*📋 How to use:*\n"
+                    "*1. Login to your account*\n"
+                    "*2. Go to Gift Code section*\n"
+                    "*3. Enter: TASHAN500*\n"
+                    "*4. Claim your ₹50 bonus!*"
+                )
+                
+                # Create back button
+                keyboard = [[InlineKeyboardButton("Back", callback_data="back")]]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                
+                # Edit message to show gift code
+                query.edit_message_caption(
+                    caption=gift_code_msg,
+                    parse_mode='Markdown',
+                    reply_markup=reply_markup
+                )
+            else:
+                # User is not a member
+                query.answer("⛔ Access Denied! Join all channels first!", show_alert=True)
+                
+                access_denied_msg = (
+                    "*⛔ Access Denied!*\n"
+                    "*🔒 Join All Channels First To Unlock the Gift Code!*"
+                )
+                
+                # Keep the same keyboard layout
+                keyboard = [
+                    [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
+                     InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
+                    [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
+                     InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
+                    [InlineKeyboardButton("Unlock Gift Code 🔐", callback_data="unlock_gift_code")]
+                ]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                
+                # Edit message to show access denied
+                query.edit_message_caption(
+                    caption=access_denied_msg,
+                    parse_mode='Markdown',
+                    reply_markup=reply_markup
+                )
+                
+        except Exception as api_error:
+            logger.error(f"Error checking channel membership: {api_error}")
+            # If we can't check membership (bot not in channel, etc.), show access denied
+            query.answer("⛔ Access Denied! Join all channels first!", show_alert=True)
+            
+            access_denied_msg = (
+                "*⛔ Access Denied!*\n"
+                "*🔒 Join All Channels First To Unlock the Gift Code!*"
+            )
+            
+            # Keep the same keyboard layout
+            keyboard = [
+                [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
+                 InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
+                [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
+                 InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
+                [InlineKeyboardButton("Unlock Gift Code 🔐", callback_data="unlock_gift_code")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            # Edit message to show access denied
+            query.edit_message_caption(
+                caption=access_denied_msg,
+                parse_mode='Markdown',
+                reply_markup=reply_markup
+            )
+            
+    except Exception as e:
+        logger.error(f"Error in unlock gift code handler: {e}")
+        query.answer("❌ Error processing request. Please try again.", show_alert=True)
 
 def handle_back_button(update: Update, context: CallbackContext):
     """
@@ -1418,6 +1517,7 @@ def main():
         dp.add_handler(CallbackQueryHandler(handle_screenshot_button, pattern="send_screenshot"))
         dp.add_handler(CallbackQueryHandler(handle_bonus_button, pattern="bonus"))
         dp.add_handler(CallbackQueryHandler(handle_gift_codes_button, pattern="gift_codes"))
+        dp.add_handler(CallbackQueryHandler(handle_unlock_gift_code, pattern="unlock_gift_code"))
         dp.add_handler(CallbackQueryHandler(handle_back_button, pattern="back"))
         dp.add_handler(conv_handler)
         dp.add_handler(MessageHandler(Filters.all, handle_all))
