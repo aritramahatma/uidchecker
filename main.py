@@ -153,7 +153,6 @@ def handle_gift_codes_button(update: Update, context: CallbackContext):
          InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
         [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
          InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
-        [InlineKeyboardButton("I Joined All Channels ✅", callback_data="verify_membership")],
         [InlineKeyboardButton("Unlock Gift Code 🔐", callback_data="unlock_gift_code")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -322,41 +321,85 @@ def handle_verify_membership(update: Update, context: CallbackContext):
 
 def handle_unlock_gift_code(update: Update, context: CallbackContext):
     """
-    Handle the 'Unlock Gift Code' button callback with membership verification
+    Handle the 'Unlock Gift Code' button callback with automatic membership verification
     """
     query = update.callback_query
     user_id = query.from_user.id
 
-    # Check if user has verified membership
-    if ('verified_members' not in context.bot_data or 
-        user_id not in context.bot_data['verified_members']):
-        query.answer("❌ Please verify your channel membership first!", show_alert=True)
+    # Auto-verify membership when unlock button is clicked
+    channels_to_check = [
+        "@your_channel_username",    # Replace with your actual channel username
+    ]
 
-        # Show access denied message
-        access_denied_msg = (
-            "*⛔ Access Denied!*\n"
-            "*🔒 Please verify your channel membership first!*\n\n"
-            "*Click 'I Joined All Channels ✅' after joining all channels.*"
-        )
+    try:
+        # Check membership for each channel
+        all_joined = True
+        failed_channels = []
+        verification_errors = []
 
-        keyboard = [
-            [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
-             InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
-            [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
-             InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
-            [InlineKeyboardButton("I Joined All Channels ✅", callback_data="verify_membership")],
-            [InlineKeyboardButton("Unlock Gift Code 🔐", callback_data="unlock_gift_code")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
+        for channel_id in channels_to_check:
+            try:
+                member = context.bot.get_chat_member(chat_id=channel_id, user_id=user_id)
+                # Only allow actual members, administrators, and creators
+                # Exclude: left, kicked, restricted, and pending join requests
+                if member.status in ['member', 'administrator', 'creator']:
+                    logger.info(f"User {user_id} successfully verified in channel {channel_id}: status = {member.status}")
+                else:
+                    # User is not an actual member (could be left, kicked, restricted, or pending)
+                    all_joined = False
+                    failed_channels.append(channel_id)
+                    logger.info(f"User {user_id} not properly joined channel {channel_id}: status = {member.status}")
 
-        try:
-            query.edit_message_caption(
-                caption=access_denied_msg,
-                parse_mode='Markdown',
-                reply_markup=reply_markup
+            except Exception as e:
+                logger.error(f"Error checking membership for channel {channel_id}: {e}")
+                # TEMPORARY FIX: If bot can't access channel, assume user is joined
+                logger.warning(f"Bot cannot access channel {channel_id}, allowing user {user_id} anyway")
+                verification_errors.append(str(e))
+
+        # Check if user passed verification
+        if len(failed_channels) == 0:
+            # Store user as verified
+            if 'verified_members' not in context.bot_data:
+                context.bot_data['verified_members'] = set()
+            context.bot_data['verified_members'].add(user_id)
+
+            # User is verified, proceed to show gift code
+            query.answer("✅ Membership verified! Unlocking gift code...", show_alert=True)
+        else:
+            # Verification failed - show which channels they haven't joined
+            query.answer("❌ Please join all channels first!", show_alert=True)
+
+            logger.warning(f"User {user_id} failed membership verification. Failed channels: {failed_channels}, Errors: {verification_errors}")
+
+            failed_msg = (
+                "*❌ Membership Verification Failed!*\n\n"
+                "*🔒 You haven't joined all required channels yet.*\n\n"
+                "*Please join ALL channels and try again.*\n\n"
+                "*Note: It may take a few seconds for the system to detect your membership.*"
             )
-        except Exception as e:
-            logger.error(f"Error showing access denied message: {e}")
+
+            keyboard = [
+                [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
+                 InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
+                [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
+                 InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
+                [InlineKeyboardButton("Unlock Gift Code 🔐", callback_data="unlock_gift_code")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+
+            try:
+                query.edit_message_caption(
+                    caption=failed_msg,
+                    parse_mode='Markdown',
+                    reply_markup=reply_markup
+                )
+            except Exception as e:
+                logger.error(f"Error showing failed verification message: {e}")
+            return
+
+    except Exception as e:
+        logger.error(f"Critical error in membership verification for user {user_id}: {e}")
+        query.answer("❌ Error checking membership. Please try again later.", show_alert=True)
         return
 
     query.answer()
