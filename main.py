@@ -156,13 +156,9 @@ def handle_gift_codes_button(update: Update, context: CallbackContext):
         "*🎁 Earn More Exclusive Gift Codes From Here*"
     )
 
-    # Create inline keyboard with different channel links (replace with your actual channel links)
+    # Create inline keyboard with only back button
     keyboard = [
-        [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
-         InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
-        [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
-         InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
-        [InlineKeyboardButton("Unlock Gift Code 🔐", callback_data="unlock_gift_code")]
+        [InlineKeyboardButton("🔙 Back", callback_data="back")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
