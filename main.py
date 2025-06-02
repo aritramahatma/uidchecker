@@ -1048,11 +1048,14 @@ def handle_wallet(update: Update, context: CallbackContext):
         balance = None
         matched_uid = None
 
-        # Look for balance (₹ or Rs followed by digits)
+        # Look for balance (₹ or Rs followed by digits, or standalone numbers after balance keywords)
         balance_patterns = [
             r'(?:₹|Rs\.?|INR)\s*(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)',
             r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*(?:₹|Rs\.?|INR)',
             r'Balance[:\s]*(?:₹|Rs\.?|INR)?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)',
+            r'Total\s+balance[:\s]*(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)',
+            r'(?:Balance|Total|Amount)[:\s]*(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)',
+            r'(\d{1,3}(?:,\d{3})*\.\d{2})',  # Any number with decimal places (like 6,077.40)
         ]
 
         for pattern in balance_patterns:
