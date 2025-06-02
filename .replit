@@ -6,7 +6,7 @@ channel = "stable-24_05"
 packages = ["freetype", "lcms2", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "tcl", "tk", "zlib"]
 
 [workflows]
-runButton = "Start Bot"
+runButton = "Install and Run Bot"
 
 [[workflows.workflow]]
 name = "Project"
@@ -38,6 +38,19 @@ args = "python main.py"
 name = "Start Bot"
 author = 43378888
 mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
+
+[[workflows.workflow]]
+name = "Install and Run Bot"
+author = 43382223
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pip install -r requirements.txt"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
