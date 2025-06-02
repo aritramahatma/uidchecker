@@ -689,6 +689,32 @@ def start(update: Update, context: CallbackContext):
     """
     # Track user activity
     user_id = update.message.from_user.id
+    
+    # If user was previously marked as blocked by user action, unblock them since they're using /start
+    try:
+        user_doc = user_stats_col.find_one({'user_id': user_id})
+        if user_doc and user_doc.get('is_blocked', False) and user_doc.get('blocked_by_user', False):
+            # User is back, unblock them
+            user_stats_col.update_one(
+                {'user_id': user_id},
+                {
+                    '$set': {
+                        'is_blocked': False,
+                        'blocked_by_user': False,
+                        'unblocked_date': datetime.now()
+                    }
+                }
+            )
+            # Update global blocked count
+            user_stats_col.update_one(
+                {'_id': 'global_stats'},
+                {'$inc': {'blocked_users': -1}},
+                upsert=True
+            )
+            logger.info(f"User {user_id} automatically unblocked - they used /start command")
+    except Exception as e:
+        logger.error(f"Error checking/updating unblock status in start: {e}")
+    
     update_user_stats(user_id, 'start_command')
 
     msg = (
@@ -888,11 +914,26 @@ def stats(update: Update, context: CallbackContext):
 
     try:
         stats_data = get_user_activity_stats()
+        
+        # Get detailed blocked user statistics
+        admin_blocked = user_stats_col.count_documents({
+            'is_blocked': True,
+            '$or': [
+                {'blocked_by_user': {'$exists': False}},
+                {'blocked_by_user': False}
+            ]
+        })
+        user_blocked = user_stats_col.count_documents({
+            'is_blocked': True,
+            'blocked_by_user': True
+        })
 
         msg = (
             f"📊 *USER ACTIVITY REPORT*\n\n"
             f"🤖 Total Bot Users: {stats_data['total_users']}\n"
             f"🚫 Blocked Users: {stats_data['blocked_users']}\n"
+            f"   ├─ 👤 User Blocked Bot: {user_blocked}\n"
+            f"   └─ 🛡️ Admin Blocked: {admin_blocked}\n"
             f"✅ Verified UIDs: {stats_data['verified_uids']}\n"
             f"🔒 Fully Verified Users: {stats_data['fully_verified_users']}\n"
             f"⚠️ Non-Verified Users: {stats_data['non_verified_users']}\n"
@@ -2084,6 +2125,31 @@ def handle_all(update: Update, context: CallbackContext):
     except Exception as e:
         logger.error(f"Error checking blocked status: {e}")
 
+    # If user was previously marked as blocked by user action, unblock them since they're messaging again
+    try:
+        user_doc = user_stats_col.find_one({'user_id': user_id})
+        if user_doc and user_doc.get('is_blocked', False) and user_doc.get('blocked_by_user', False):
+            # User is back, unblock them
+            user_stats_col.update_one(
+                {'user_id': user_id},
+                {
+                    '$set': {
+                        'is_blocked': False,
+                        'blocked_by_user': False,
+                        'unblocked_date': datetime.now()
+                    }
+                }
+            )
+            # Update global blocked count
+            user_stats_col.update_one(
+                {'_id': 'global_stats'},
+                {'$inc': {'blocked_users': -1}},
+                upsert=True
+            )
+            logger.info(f"User {user_id} automatically unblocked - they're messaging again")
+    except Exception as e:
+        logger.error(f"Error checking/updating unblock status: {e}")
+
     # Track user activity
     update_user_stats(user_id, 'message_sent')
 
@@ -2216,7 +2282,7 @@ def cancel_conversation(update: Update, context: CallbackContext):
 def safe_send_message(context, chat_id, text, parse_mode=None, reply_markup=None):
     """
     Send a message, handling potential block by the user.
-    Returns True if message was sent, False otherwise.
+    Returns True if message was sent, None if user blocked the bot.
     """
     try:
         return context.bot.send_message(
@@ -2226,8 +2292,41 @@ def safe_send_message(context, chat_id, text, parse_mode=None, reply_markup=None
             reply_markup=reply_markup
         )
     except Exception as e:
-        if "blocked" in str(e) or "deactivated" in str(e):
+        error_msg = str(e).lower()
+        if any(keyword in error_msg for keyword in ["blocked", "deactivated", "user is deactivated", "bot was blocked"]):
             logger.warning(f"User {chat_id} has blocked the bot.")
+            
+            # Mark user as blocked in database
+            try:
+                # Check if user was previously not blocked
+                user_doc = user_stats_col.find_one({'user_id': chat_id})
+                was_blocked = user_doc.get('is_blocked', False) if user_doc else False
+                
+                # Update user as blocked
+                user_stats_col.update_one(
+                    {'user_id': chat_id},
+                    {
+                        '$set': {
+                            'is_blocked': True,
+                            'blocked_date': datetime.now(),
+                            'blocked_by_user': True  # Flag to indicate user blocked the bot
+                        }
+                    },
+                    upsert=True
+                )
+                
+                # Update global blocked count only if user wasn't already marked as blocked
+                if not was_blocked:
+                    user_stats_col.update_one(
+                        {'_id': 'global_stats'},
+                        {'$inc': {'blocked_users': 1}},
+                        upsert=True
+                    )
+                    logger.info(f"User {chat_id} automatically marked as blocked in stats")
+                
+            except Exception as db_error:
+                logger.error(f"Error updating blocked status for user {chat_id}: {db_error}")
+            
             return None
         else:
             logger.error(f"Error sending message to {chat_id}: {e}")
