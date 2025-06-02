@@ -672,11 +672,18 @@ def handle_start_prediction_button(update: Update, context: CallbackContext):
 
     # Send new message with digits request instead of editing
     try:
-        query.message.reply_text(
+        sent_message = query.message.reply_text(
             digits_request_msg,
             parse_mode='Markdown',
             reply_markup=reply_markup
         )
+        
+        # Store the message ID to delete it later
+        user_id = query.from_user.id
+        if 'digits_message_id' not in context.bot_data:
+            context.bot_data['digits_message_id'] = {}
+        context.bot_data['digits_message_id'][user_id] = sent_message.message_id
+        
         # Answer the callback query to remove loading state
         query.answer()
     except Exception as e:
@@ -1947,6 +1954,17 @@ def handle_all(update: Update, context: CallbackContext):
                     # Update last prediction
                     context.bot_data['last_prediction'] = purchase_type
                     
+                    # Delete the previous "Send 3 digits" message if it exists
+                    if 'digits_message_id' in context.bot_data and user_id in context.bot_data['digits_message_id']:
+                        try:
+                            context.bot.delete_message(
+                                chat_id=user_id,
+                                message_id=context.bot_data['digits_message_id'][user_id]
+                            )
+                            del context.bot_data['digits_message_id'][user_id]
+                        except Exception as e:
+                            logger.error(f"Error deleting previous digits message: {e}")
+                    
                     # Send VIP prediction message
                     vip_prediction_msg = (
                         "*🔐 VIP Hack Prediction ⏳*\n\n"
@@ -2030,6 +2048,8 @@ def main():
         # Initialize bot data
         if 'pending_wallets' not in dp.bot_data:
             dp.bot_data['pending_wallets'] = {}
+        if 'digits_message_id' not in dp.bot_data:
+            dp.bot_data['digits_message_id'] = {}
 
         # Conversation handler for update command with proper state management
         conv_handler = ConversationHandler(
