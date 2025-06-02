@@ -396,11 +396,6 @@ def handle_unlock_gift_code(update: Update, context: CallbackContext):
     # User has joined all channels, proceed to show gift code
     query.answer("✅ Access granted! Unlocking gift code...", show_alert=True)
     logger.info(f"User {user_id} with channel membership accessed gift code")
-        
-    except Exception as e:
-        logger.error(f"Error checking user verification status for user {user_id}: {e}")
-        query.answer("❌ Error checking verification status. Please try again.", show_alert=True)
-        return
 
     query.answer()
 
