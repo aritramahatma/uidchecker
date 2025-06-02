@@ -1004,7 +1004,12 @@ def stats(update: Update, context: CallbackContext):
             f"💰 Users with Valid Balance: {stats_data['users_with_valid_balance']}\n\n"
             f"📈 Verification Rate: {(stats_data['verified_uids']/stats_data['non_verified_users']*100) if stats_data['non_verified_users'] > 0 else 0:.1f}%"
         )
-        update.message.reply_text(msg, parse_mode='Markdown')
+        
+        # Create inline keyboard with delete button
+        keyboard = [[InlineKeyboardButton("🗑", callback_data="confirm_delete_all_data")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        update.message.reply_text(msg, parse_mode='Markdown', reply_markup=reply_markup)
 
     except Exception as e:
         logger.error(f"Error in stats command: {e}")
@@ -2481,6 +2486,171 @@ def cancel_conversation(update: Update, context: CallbackContext):
     update.message.reply_text("❌ Operation cancelled.", reply_markup=ReplyKeyboardRemove())
     return ConversationHandler.END
 
+def handle_confirm_delete_all_data(update: Update, context: CallbackContext):
+    """
+    Handle the delete button callback - show confirmation
+    """
+    query = update.callback_query
+    query.answer()
+
+    # Get current stats for confirmation message
+    try:
+        stats_data = get_user_activity_stats()
+        
+        confirmation_msg = (
+            f"⚠️ *DANGEROUS ACTION - CONFIRMATION REQUIRED*\n\n"
+            f"🗑️ *You are about to DELETE ALL user data:*\n\n"
+            f"🤖 Total Bot Users: {stats_data['total_users']}\n"
+            f"✅ Verified UIDs: {stats_data['verified_uids']}\n"
+            f"🔒 Fully Verified Users: {stats_data['fully_verified_users']}\n"
+            f"⚠️ Non-Verified Users: {stats_data['non_verified_users']}\n\n"
+            f"*This action will:*\n"
+            f"• Delete ALL UID records\n"
+            f"• Delete ALL user statistics\n"
+            f"• Reset all counters to 0\n"
+            f"• Cannot be undone!\n\n"
+            f"*Are you sure you want to proceed?*"
+        )
+
+        # Create confirmation keyboard
+        keyboard = [
+            [InlineKeyboardButton("✅ YES - DELETE ALL", callback_data="delete_all_data_yes")],
+            [InlineKeyboardButton("❌ NO - CANCEL", callback_data="delete_all_data_no")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        query.edit_message_text(
+            text=confirmation_msg,
+            parse_mode='Markdown',
+            reply_markup=reply_markup
+        )
+
+    except Exception as e:
+        logger.error(f"Error in confirmation dialog: {e}")
+        query.edit_message_text("❌ Error showing confirmation dialog.")
+
+def handle_delete_all_data_yes(update: Update, context: CallbackContext):
+    """
+    Handle YES confirmation - actually delete all data
+    """
+    query = update.callback_query
+    query.answer()
+
+    try:
+        # Count records before deletion for summary
+        uid_count = uids_col.count_documents({})
+        user_stats_count = user_stats_col.count_documents({'user_id': {'$ne': 'global_stats'}})
+        
+        # Delete all UID records
+        uid_delete_result = uids_col.delete_many({})
+        
+        # Delete all user statistics (except global_stats which we'll reset)
+        user_stats_delete_result = user_stats_col.delete_many({'user_id': {'$ne': 'global_stats'}})
+        
+        # Reset global statistics to 0
+        user_stats_col.update_one(
+            {'_id': 'global_stats'},
+            {
+                '$set': {
+                    'total_users': 0,
+                    'blocked_users': 0,
+                    'reset_date': datetime.now(),
+                    'reset_by_admin': True
+                }
+            },
+            upsert=True
+        )
+        
+        # Clear bot data
+        if 'pending_wallets' in context.bot_data:
+            context.bot_data['pending_wallets'].clear()
+        if 'verified_members' in context.bot_data:
+            context.bot_data['verified_members'].clear()
+        if 'waiting_for_digits' in context.bot_data:
+            context.bot_data['waiting_for_digits'].clear()
+        if 'digits_message_id' in context.bot_data:
+            context.bot_data['digits_message_id'].clear()
+
+        success_msg = (
+            f"✅ *ALL DATA SUCCESSFULLY DELETED*\n\n"
+            f"🗑️ *Deletion Summary:*\n"
+            f"• UID Records Deleted: {uid_delete_result.deleted_count}\n"
+            f"• User Statistics Deleted: {user_stats_delete_result.deleted_count}\n"
+            f"• Global Counters Reset: ✅\n"
+            f"• Bot Memory Cleared: ✅\n\n"
+            f"📊 *All statistics are now reset to 0*\n"
+            f"🔄 *Bot is ready for fresh start*\n\n"
+            f"⚠️ *Data deletion completed at:*\n"
+            f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}"
+        )
+
+        query.edit_message_text(
+            text=success_msg,
+            parse_mode='Markdown'
+        )
+
+        logger.info(f"Admin {query.from_user.username} deleted all user data - UIDs: {uid_delete_result.deleted_count}, Users: {user_stats_delete_result.deleted_count}")
+
+    except Exception as e:
+        logger.error(f"Error deleting all data: {e}")
+        query.edit_message_text(
+            f"❌ *Error deleting data:*\n{str(e)}\n\nPlease check logs and try again.",
+            parse_mode='Markdown'
+        )
+
+def handle_delete_all_data_no(update: Update, context: CallbackContext):
+    """
+    Handle NO confirmation - cancel deletion and return to stats
+    """
+    query = update.callback_query
+    query.answer("✅ Deletion cancelled")
+
+    try:
+        # Get fresh stats data
+        stats_data = get_user_activity_stats()
+        
+        # Get detailed blocked user statistics
+        admin_blocked = user_stats_col.count_documents({
+            'is_blocked': True,
+            '$or': [
+                {'blocked_by_user': {'$exists': False}},
+                {'blocked_by_user': False}
+            ]
+        })
+        user_blocked = user_stats_col.count_documents({
+            'is_blocked': True,
+            'blocked_by_user': True
+        })
+
+        msg = (
+            f"📊 *USER ACTIVITY REPORT*\n\n"
+            f"🤖 Total Bot Users: {stats_data['total_users']}\n"
+            f"🚫 Blocked Users: {stats_data['blocked_users']}\n"
+            f"   ├─ 👤 User Blocked Bot: {user_blocked}\n"
+            f"   └─ 🛡️ Admin Blocked: {admin_blocked}\n"
+            f"✅ Verified UIDs: {stats_data['verified_uids']}\n"
+            f"🔒 Fully Verified Users: {stats_data['fully_verified_users']}\n"
+            f"⚠️ Non-Verified Users: {stats_data['non_verified_users']}\n"
+            f"🛠 UIDs Updated by Admin: {stats_data['admin_updated_uids']}\n"
+            f"⏳ Pending Wallet Verifications: {stats_data['pending_wallet_verifications']}\n"
+            f"💰 Users with Valid Balance: {stats_data['users_with_valid_balance']}\n\n"
+            f"📈 Verification Rate: {(stats_data['verified_uids']/stats_data['non_verified_users']*100) if stats_data['non_verified_users'] > 0 else 0:.1f}%"
+        )
+        
+        # Create inline keyboard with delete button
+        keyboard = [[InlineKeyboardButton("🗑", callback_data="confirm_delete_all_data")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        query.edit_message_text(
+            text=msg,
+            parse_mode='Markdown',
+            reply_markup=reply_markup
+        )
+
+    except Exception as e:
+        logger.error(f"Error returning to stats: {e}")
+        query.edit_message_text("❌ Error returning to stats view.")
+
 def safe_send_message(context, chat_id, text, parse_mode=None, reply_markup=None):
     """
     Send a message, handling potential block by the user.
@@ -2616,6 +2786,9 @@ def main():
         dp.add_handler(CallbackQueryHandler(handle_prediction_button, pattern="prediction"))
         dp.add_handler(CallbackQueryHandler(handle_start_prediction_button, pattern="start_prediction"))
         dp.add_handler(CallbackQueryHandler(handle_support_button, pattern="support"))
+        dp.add_handler(CallbackQueryHandler(handle_confirm_delete_all_data, pattern="confirm_delete_all_data"))
+        dp.add_handler(CallbackQueryHandler(handle_delete_all_data_yes, pattern="delete_all_data_yes"))
+        dp.add_handler(CallbackQueryHandler(handle_delete_all_data_no, pattern="delete_all_data_no"))
         dp.add_handler(conv_handler)
         dp.add_handler(MessageHandler(Filters.all, handle_all))
 
