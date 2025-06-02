@@ -426,13 +426,13 @@ def handle_unlock_gift_code(update: Update, context: CallbackContext):
 
         # If user hasn't joined all channels, DENY access
         if not all_joined:
-            query.answer("❌ ACCESS DENIED! You must JOIN the private channel first!", show_alert=True)
+            query.answer("❌ ACCESS DENIED! You must join our channels first!", show_alert=True)
             
             not_joined_msg = (
                 "*🚫 ACCESS DENIED - NOT A CHANNEL MEMBER!*\n\n"
                 "*❌ You are NOT a confirmed member of our private channel!*\n\n"
                 "*🔒 TO UNLOCK GIFT CODES:*\n"
-                "*1️⃣ Click JOIN CHANNEL button below*\n"
+                "*1️⃣ You must join our private channel first*\n"
                 "*2️⃣ Actually JOIN the channel (not just visit)*\n"
                 "*3️⃣ Wait 60 seconds after joining*\n"
                 "*4️⃣ Try unlocking again*\n\n"
@@ -441,7 +441,6 @@ def handle_unlock_gift_code(update: Update, context: CallbackContext):
             )
 
             keyboard = [
-                [InlineKeyboardButton("🔗 JOIN PRIVATE CHANNEL NOW", url="https://t.me/+xH5jHvfkXSI0Nzll")],
                 [InlineKeyboardButton("🔄 Try Again After Joining", callback_data="unlock_gift_code")],
                 [InlineKeyboardButton("🔙 Back to Menu", callback_data="back")]
             ]
