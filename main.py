@@ -201,7 +201,7 @@ def get_current_gift_code():
             # Create default gift code if none exists
             from datetime import timezone, timedelta
             ist = timezone(timedelta(hours=5, minutes=30))
-            current_time = datetime.now(ist).strftime("%d/%m/%Y at %I:%M %p IST")
+            current_time = datetime.now(ist).strftime("%d/%m/%YYYY at %I:%M %p IST")
             default_code = {
                 'code': 'F0394C76A4CC0B6716EED375826CAEB',
                 'updated_date': current_time,
@@ -214,7 +214,7 @@ def get_current_gift_code():
         logger.error(f"Error getting gift code: {e}")
         from datetime import timezone, timedelta
         ist = timezone(timedelta(hours=5, minutes=30))
-        current_time = datetime.now(ist).strftime("%d/%m/%Y at %I:%M %p IST")
+        current_time = datetime.now(ist).strftime("%d/%m/%YYYY at %I:%M %p IST")
         return {
             'code': 'F0394C76A4CC0B6716EED375826CAEB',
             'updated_date': current_time
@@ -231,8 +231,8 @@ def handle_verify_membership(update: Update, context: CallbackContext):
     # For private channels, you need the numeric ID (e.g., -1001234567890)
     # For public channels, you can use @channelname or numeric ID
     channels_to_check = [
-        "-1002586725903",    # Your first private channel ID
-        "-1002586725904",    # Your second private channel ID (replace with actual)
+        "-1002192358931",    # Your first private channel ID
+        "-1002573774872",    # Your second private channel ID
     ]
 
     try:
@@ -257,7 +257,7 @@ def handle_verify_membership(update: Update, context: CallbackContext):
             except Exception as e:
                 error_msg = str(e).lower()
                 logger.error(f"Error checking membership for channel {channel_id}: {e}")
-                
+
                 # Check if it's a bot permission issue
                 if "bot was kicked" in error_msg or "forbidden" in error_msg or "chat not found" in error_msg:
                     logger.error(f"Bot permission issue for channel {channel_id}: Bot needs to be admin with proper permissions")
@@ -358,10 +358,10 @@ def handle_unlock_gift_code(update: Update, context: CallbackContext):
 
     # Channel IDs to check - make sure these are correct
     channels_to_check = [
-        "-1002586725903",    # Your first private channel ID
-        "-1002586725904",    # Your second private channel ID (replace with actual)
+        "-1002192358931",    # Your first private channel ID
+        "-1002573774872",    # Your second private channel ID
     ]
-    
+
     try:
         # Check membership for each channel with strict verification
         all_joined = True
@@ -370,15 +370,15 @@ def handle_unlock_gift_code(update: Update, context: CallbackContext):
 
         for channel_id in channels_to_check:
             member_verified = False
-            
+
             try:
                 # Get member info from Telegram API - single attempt, no retries to avoid confusion
                 member = context.bot.get_chat_member(chat_id=channel_id, user_id=user_id)
                 member_status = member.status
-                
+
                 verification_details.append(f"Channel {channel_id}: Status = {member_status}")
                 logger.info(f"🔍 User {user_id} status in channel {channel_id}: {member_status}")
-                
+
                 # STRICT verification - ONLY allow confirmed members
                 if member_status == 'member':
                     member_verified = True
@@ -398,12 +398,12 @@ def handle_unlock_gift_code(update: Update, context: CallbackContext):
                         logger.warning(f"❌ User {user_id} was BANNED from channel {channel_id}")
                     elif member_status == 'restricted':
                         logger.warning(f"❌ User {user_id} is RESTRICTED in channel {channel_id}")
-                        
+
             except Exception as e:
                 error_msg = str(e).lower()
                 verification_details.append(f"Channel {channel_id}: Error = {str(e)}")
                 logger.error(f"❌ Error checking membership for channel {channel_id}: {e}")
-                
+
                 # Handle specific error cases - be strict about errors
                 if "user not found" in error_msg:
                     logger.error(f"❌ User {user_id} NOT FOUND in channel {channel_id} - DEFINITELY not a member")
@@ -414,10 +414,10 @@ def handle_unlock_gift_code(update: Update, context: CallbackContext):
                     # DO NOT allow access for bot permission issues - this could be exploited
                 else:
                     logger.error(f"❌ Unknown error for channel {channel_id}: {e}")
-                
+
                 # Any error = user is NOT verified
                 member_verified = False
-            
+
             # If user is not verified for this channel
             if not member_verified:
                 all_joined = False
@@ -433,7 +433,7 @@ def handle_unlock_gift_code(update: Update, context: CallbackContext):
         # If user hasn't joined all channels, DENY access
         if not all_joined:
             query.answer("❌ ACCESS DENIED! You must join our channels first!", show_alert=True)
-            
+
             not_joined_msg = (
                 "*🚫 ACCESS DENIED - NOT A CHANNEL MEMBER!*\n\n"
                 "*❌ You are NOT a confirmed member of our private channels!*\n\n"
@@ -683,13 +683,13 @@ def handle_start_prediction_button(update: Update, context: CallbackContext):
             parse_mode='Markdown',
             reply_markup=reply_markup
         )
-        
+
         # Store the message ID to delete it later
         user_id = query.from_user.id
         if 'digits_message_id' not in context.bot_data:
             context.bot_data['digits_message_id'] = {}
         context.bot_data['digits_message_id'][user_id] = sent_message.message_id
-        
+
         # Answer the callback query to remove loading state
         query.answer()
     except Exception as e:
@@ -1915,14 +1915,14 @@ def handle_all(update: Update, context: CallbackContext):
             # Check if user is waiting for 3 digits
             if ('waiting_for_digits' in context.bot_data and 
                 user_id in context.bot_data['waiting_for_digits']):
-                
+
                 text = update.message.text.strip()
-                
+
                 # Check if it's exactly 3 digits
                 if re.match(r'^\d{3}$', text):
                     # Remove user from waiting state
                     context.bot_data['waiting_for_digits'].discard(user_id)
-                    
+
                     # Send sticker first
                     try:
                         update.message.reply_sticker(
@@ -1930,16 +1930,16 @@ def handle_all(update: Update, context: CallbackContext):
                         )
                     except Exception as e:
                         logger.error(f"Error sending sticker: {e}")
-                    
+
                     # Random BIG/SMALL selection with consecutive limit
                     import random
-                    
+
                     # Initialize tracking variables if they don't exist
                     if 'last_prediction' not in context.bot_data:
                         context.bot_data['last_prediction'] = None
                     if 'consecutive_count' not in context.bot_data:
                         context.bot_data['consecutive_count'] = 0
-                    
+
                     # Determine next prediction
                     if context.bot_data['consecutive_count'] >= 8:
                         # Force switch if we've had 8 consecutive same predictions
@@ -1951,15 +1951,15 @@ def handle_all(update: Update, context: CallbackContext):
                     else:
                         # Random selection
                         purchase_type = random.choice(["BIG", "SMALL"])
-                        
+
                         if purchase_type == context.bot_data['last_prediction']:
                             context.bot_data['consecutive_count'] += 1
                         else:
                             context.bot_data['consecutive_count'] = 1
-                    
+
                     # Update last prediction
                     context.bot_data['last_prediction'] = purchase_type
-                    
+
                     # Delete the previous "Send 3 digits" message if it exists
                     if 'digits_message_id' in context.bot_data and user_id in context.bot_data['digits_message_id']:
                         try:
@@ -1970,7 +1970,7 @@ def handle_all(update: Update, context: CallbackContext):
                             del context.bot_data['digits_message_id'][user_id]
                         except Exception as e:
                             logger.error(f"Error deleting previous digits message: {e}")
-                    
+
                     # Send VIP prediction message
                     vip_prediction_msg = (
                         "*🔐 VIP Hack Prediction ⏳*\n\n"
@@ -1979,14 +1979,14 @@ def handle_all(update: Update, context: CallbackContext):
                         f"*💸 Purchase: {purchase_type}*\n\n"
                         "*⚠️ Important: Always maintain Level 5 funds*"
                     )
-                    
+
                     # Create keyboard with Next Prediction and Back buttons
                     keyboard = [
                         [InlineKeyboardButton("Next Prediction", callback_data="start_prediction")],
                         [InlineKeyboardButton("Back", callback_data="back")]
                     ]
                     reply_markup = InlineKeyboardMarkup(keyboard)
-                    
+
                     update.message.reply_text(
                         vip_prediction_msg,
                         parse_mode='Markdown',
@@ -2002,7 +2002,7 @@ def handle_all(update: Update, context: CallbackContext):
                         parse_mode='Markdown'
                     )
                     return
-            
+
             # Handle text messages - look for UID
             text = update.message.text.upper()
             uid_match = re.search(r'(?:UID\s*)?(\d{6,12})', text)
