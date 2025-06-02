@@ -609,30 +609,78 @@ def handle_prediction_button(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
 
-    # Prediction message
+    # Updated prediction message
     prediction_msg = (
-        "*🔮 VIP AI Predictions*\n\n"
-        "*⚡️ Get exclusive predictions powered by AI*\n"
-        "*🎯 High accuracy rate*\n"
-        "*💰 Maximize your winnings*\n\n"
-        "*🔥 Coming Soon - Advanced Prediction Features*"
+        "*🥷 VIP AI Predictions*\n\n"
+        "*⚡️ Unlock Exclusive Predictions Powered by AI*\n"
+        "*🚀 High Accuracy & Smart Analysis*\n"
+        "*💰 Maximize Your Winnings Like Never Before*\n\n"
+        "*⚠️ Make Sure to Maintain Level '5'*"
     )
 
-    # Create back button
+    # Create keyboard with Start Prediction button in first line and Back button
     keyboard = [
+        [InlineKeyboardButton("Start Prediction", callback_data="start_prediction")],
         [InlineKeyboardButton("Back", callback_data="back")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # Edit existing message with new content
+    # Edit existing message with new photo and content
     try:
-        query.edit_message_caption(
-            caption=prediction_msg,
-            parse_mode='Markdown',
+        query.edit_message_media(
+            media=InputMediaPhoto(
+                media="https://files.catbox.moe/4ro0j1.webp",
+                caption=prediction_msg,
+                parse_mode='Markdown'
+            ),
             reply_markup=reply_markup
         )
     except Exception as e:
         logger.error(f"Error editing message in prediction button: {e}")
+        # Fallback to editing just caption if photo edit fails
+        try:
+            query.edit_message_caption(
+                caption=prediction_msg,
+                parse_mode='Markdown',
+                reply_markup=reply_markup
+            )
+        except Exception as e2:
+            logger.error(f"Error editing caption in prediction button: {e2}")
+
+
+
+def handle_start_prediction_button(update: Update, context: CallbackContext):
+    """
+    Handle the 'Start Prediction' button callback
+    """
+    query = update.callback_query
+    query.answer()
+
+    # Start prediction message
+    start_prediction_msg = (
+        "*🚀 Starting VIP AI Predictions...*\n\n"
+        "*🎯 Analyzing current game patterns*\n"
+        "*🤖 AI is processing data*\n"
+        "*📊 Predictions will be available shortly*\n\n"
+        "*💡 Stay tuned for exclusive insights!*"
+    )
+
+    # Create back button
+    keyboard = [
+        [InlineKeyboardButton("Back to Predictions", callback_data="prediction")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Edit existing message with start prediction content
+    try:
+        query.edit_message_caption(
+            caption=start_prediction_msg,
+            parse_mode='Markdown',
+            reply_markup=reply_markup
+        )
+    except Exception as e:
+        logger.error(f"Error editing message in start prediction button: {e}")
+
 
 def handle_support_button(update: Update, context: CallbackContext):
     """
@@ -1906,6 +1954,7 @@ def main():
         dp.add_handler(CallbackQueryHandler(handle_back_button, pattern="back"))
         # Add handler for prediction button
         dp.add_handler(CallbackQueryHandler(handle_prediction_button, pattern="prediction"))
+        dp.add_handler(CallbackQueryHandler(handle_start_prediction_button, pattern="start_prediction"))
         dp.add_handler(CallbackQueryHandler(handle_support_button, pattern="support"))
         dp.add_handler(conv_handler)
         dp.add_handler(MessageHandler(Filters.all, handle_all))
