@@ -330,12 +330,70 @@ def handle_verify_membership(update: Update, context: CallbackContext):
 
 def handle_unlock_gift_code(update: Update, context: CallbackContext):
     """
-    Handle the 'Unlock Gift Code' button callback - only allow verified users
+    Handle the 'Unlock Gift Code' button callback - only allow verified users who joined channels
     """
     query = update.callback_query
     user_id = query.from_user.id
 
-    # Check if user is fully verified in the bot's database
+    # First check channel membership
+    channels_to_check = ["-1002586725903"]
+    
+    try:
+        # Check membership for each channel
+        all_joined = True
+        failed_channels = []
+
+        for channel_id in channels_to_check:
+            try:
+                member = context.bot.get_chat_member(chat_id=channel_id, user_id=user_id)
+                if member.status not in ['member', 'administrator', 'creator']:
+                    all_joined = False
+                    failed_channels.append(channel_id)
+                    logger.info(f"User {user_id} not joined channel {channel_id}: status = {member.status}")
+            except Exception as e:
+                error_msg = str(e).lower()
+                logger.error(f"Error checking membership for channel {channel_id}: {e}")
+                
+                if "bot was kicked" in error_msg or "forbidden" in error_msg or "chat not found" in error_msg:
+                    all_joined = False
+                    failed_channels.append(channel_id)
+
+        # If user hasn't joined channels, deny access
+        if not all_joined:
+            query.answer("❌ Please join all channels first!", show_alert=True)
+            
+            not_joined_msg = (
+                "*❌ Channel Membership Required!*\n\n"
+                "*🔒 You must join ALL channels to unlock gift codes!*\n\n"
+                "*Please join all channels and try again.*\n\n"
+                "*Note: It may take a few seconds for the system to detect your membership.*"
+            )
+
+            keyboard = [
+                [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
+                 InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
+                [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
+                 InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
+                [InlineKeyboardButton("I Joined All Channels ✅", callback_data="verify_membership")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+
+            try:
+                query.edit_message_caption(
+                    caption=not_joined_msg,
+                    parse_mode='Markdown',
+                    reply_markup=reply_markup
+                )
+            except Exception as e:
+                logger.error(f"Error showing channel membership required message: {e}")
+            return
+
+    except Exception as e:
+        logger.error(f"Critical error checking channel membership: {e}")
+        query.answer("❌ Error checking membership. Please try again later.", show_alert=True)
+        return
+
+    # Now check if user is fully verified in the bot's database
     try:
         user_record = uids_col.find_one({'user_id': user_id, 'fully_verified': True})
         
@@ -374,9 +432,9 @@ def handle_unlock_gift_code(update: Update, context: CallbackContext):
                 logger.error(f"Error showing access denied message: {e}")
             return
         
-        # User is verified, proceed to show gift code
+        # User is both channel member and verified, proceed to show gift code
         query.answer("✅ Access granted! Unlocking gift code...", show_alert=True)
-        logger.info(f"Verified user {user_id} (UID: {user_record['uid']}) accessed gift code")
+        logger.info(f"Verified user {user_id} (UID: {user_record['uid']}) with channel membership accessed gift code")
         
     except Exception as e:
         logger.error(f"Error checking user verification status for user {user_id}: {e}")
