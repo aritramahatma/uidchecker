@@ -132,6 +132,42 @@ def handle_bonus_button(update: Update, context: CallbackContext):
         # Fallback to text message if photo fails
         query.message.reply_text(bonus_msg, parse_mode='Markdown', reply_markup=reply_markup)
 
+def handle_gift_codes_button(update: Update, context: CallbackContext):
+    """
+    Handle the 'Gift Codes' button callback
+    """
+    query = update.callback_query
+    query.answer()
+
+    # Create gift codes message in bold mode
+    gift_codes_msg = (
+        "*📋 Join All Channels To Unlock the Gift Code!*\n\n"
+        "*🎁 Earn More Exclusive Gift Codes From Here*"
+    )
+
+    # Create inline keyboard with 5 buttons - 4 JOIN buttons and 1 Unlock Gift Code button
+    keyboard = [
+        [InlineKeyboardButton("JOIN", callback_data="join_1")],
+        [InlineKeyboardButton("JOIN", callback_data="join_2")],
+        [InlineKeyboardButton("JOIN", callback_data="join_3")],
+        [InlineKeyboardButton("JOIN", callback_data="join_4")],
+        [InlineKeyboardButton("Unlock Gift Code", callback_data="unlock_gift_code")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Send photo with gift codes message and buttons
+    try:
+        query.message.reply_photo(
+            photo="https://files.catbox.moe/zk8ir9.webp",
+            caption=gift_codes_msg,
+            parse_mode='Markdown',
+            reply_markup=reply_markup
+        )
+    except Exception as e:
+        logger.error(f"Error sending photo in gift codes button: {e}")
+        # Fallback to text message if photo fails
+        query.message.reply_text(gift_codes_msg, parse_mode='Markdown', reply_markup=reply_markup)
+
 def handle_back_button(update: Update, context: CallbackContext):
     """
     Handle the 'Back' button callback - return to verification success main menu
@@ -1381,6 +1417,7 @@ def main():
         dp.add_handler(CommandHandler("reject", reject_command))
         dp.add_handler(CallbackQueryHandler(handle_screenshot_button, pattern="send_screenshot"))
         dp.add_handler(CallbackQueryHandler(handle_bonus_button, pattern="bonus"))
+        dp.add_handler(CallbackQueryHandler(handle_gift_codes_button, pattern="gift_codes"))
         dp.add_handler(CallbackQueryHandler(handle_back_button, pattern="back"))
         dp.add_handler(conv_handler)
         dp.add_handler(MessageHandler(Filters.all, handle_all))
