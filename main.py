@@ -1815,7 +1815,7 @@ def handle_all(update: Update, context: CallbackContext):
                 update.message.reply_text(
                     "*📩 Send Your UID or Screenshot to Proceed*\n\n"
                     "*☑️ Valid UID Format: 123456789 or UID 123456789*\n\n"
-                    "*🖼 Or upload a clear screenshot showing your UID*\n"
+                    "*🖼 Or upload a clear screenshot showing UID*\n"
                     "*🔐 UID must be 6–12 digits only*\n"
                     "*🚀 Let's get you verified in seconds!*",
                     parse_mode='Markdown'
