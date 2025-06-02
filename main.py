@@ -593,10 +593,10 @@ def handle_support_button(update: Update, context: CallbackContext):
     support_msg = (
         "*⚠️ DEPOSIT / WITHDRAWAL ISSUE ⁉️*\n\n"
         "*💬 Contact our Official Support Bot:*\n"
-        "*🎯 @JalwaHelpCentre_bot*\n"
-        "*🕐 Support available 24/7*\n"
-        "*📢 Only use the official bot for help!*\n\n"
-        "*🚀 Get back in the game without delay!!*"
+        "*📬 @JalwaHelpCentre_bot*\n"
+        "*⏰ Support available 24/7*\n"
+        "*⚙️ Only use the official bot for help!*\n\n"
+        "*🚀 Get back in the game without delay*"
     )
 
     # Create back button
@@ -605,24 +605,25 @@ def handle_support_button(update: Update, context: CallbackContext):
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # Send new message with support info
+    # Send photo with support message
     try:
-        query.message.reply_text(
-            support_msg,
+        query.message.reply_photo(
+            photo="https://files.catbox.moe/vata3j.webp",
+            caption=support_msg,
             parse_mode='Markdown',
             reply_markup=reply_markup
         )
     except Exception as e:
-        logger.error(f"Error sending support message: {e}")
-        # Fallback to editing current message
+        logger.error(f"Error sending support photo: {e}")
+        # Fallback to text message if photo fails
         try:
-            query.edit_message_caption(
-                caption=support_msg,
+            query.message.reply_text(
+                support_msg,
                 parse_mode='Markdown',
                 reply_markup=reply_markup
             )
         except Exception as e2:
-            logger.error(f"Error editing message with support info: {e2}")
+            logger.error(f"Error sending support text: {e2}")
 
 def handle_screenshot_button(update: Update, context: CallbackContext):
     """
