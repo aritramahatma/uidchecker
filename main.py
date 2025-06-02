@@ -629,7 +629,7 @@ def handle_prediction_button(update: Update, context: CallbackContext):
     try:
         query.edit_message_media(
             media=InputMediaPhoto(
-                media="https://files.catbox.moe/4ro0j1.webp",
+                media="https://files.catbox.moe/ytmaec.jpg",
                 caption=prediction_msg,
                 parse_mode='Markdown'
             ),
