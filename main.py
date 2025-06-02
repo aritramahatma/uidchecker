@@ -335,38 +335,74 @@ def handle_unlock_gift_code(update: Update, context: CallbackContext):
     query = update.callback_query
     user_id = query.from_user.id
 
-    # First check channel membership
+    # First check channel membership with retry logic
     channels_to_check = ["-1002586725903"]
     
     try:
-        # Check membership for each channel
+        # Check membership for each channel with retry
         all_joined = True
         failed_channels = []
+        verification_errors = []
 
         for channel_id in channels_to_check:
-            try:
-                member = context.bot.get_chat_member(chat_id=channel_id, user_id=user_id)
-                if member.status not in ['member', 'administrator', 'creator']:
-                    all_joined = False
-                    failed_channels.append(channel_id)
-                    logger.info(f"User {user_id} not joined channel {channel_id}: status = {member.status}")
-            except Exception as e:
-                error_msg = str(e).lower()
-                logger.error(f"Error checking membership for channel {channel_id}: {e}")
-                
-                if "bot was kicked" in error_msg or "forbidden" in error_msg or "chat not found" in error_msg:
-                    all_joined = False
-                    failed_channels.append(channel_id)
+            member_verified = False
+            retry_count = 0
+            max_retries = 2
+            
+            while retry_count < max_retries and not member_verified:
+                try:
+                    member = context.bot.get_chat_member(chat_id=channel_id, user_id=user_id)
+                    
+                    # More lenient check - also allow 'restricted' status which sometimes happens with new members
+                    if member.status in ['member', 'administrator', 'creator']:
+                        member_verified = True
+                        logger.info(f"User {user_id} verified in channel {channel_id}: status = {member.status}")
+                    elif member.status == 'restricted':
+                        # Check if user is restricted but still a member
+                        if hasattr(member, 'is_member') and member.is_member:
+                            member_verified = True
+                            logger.info(f"User {user_id} verified as restricted member in channel {channel_id}")
+                        else:
+                            logger.info(f"User {user_id} restricted and not member in channel {channel_id}")
+                    else:
+                        logger.info(f"User {user_id} not properly joined channel {channel_id}: status = {member.status}")
+                        
+                except Exception as e:
+                    error_msg = str(e).lower()
+                    logger.error(f"Error checking membership for channel {channel_id} (attempt {retry_count + 1}): {e}")
+                    
+                    if "bot was kicked" in error_msg or "forbidden" in error_msg or "chat not found" in error_msg:
+                        verification_errors.append(f"Bot permission issue for channel {channel_id}")
+                        # Allow access if bot has permission issues
+                        member_verified = True
+                        logger.warning(f"Bot permission issue for channel {channel_id}, allowing user {user_id}")
+                    elif "user not found" in error_msg:
+                        logger.info(f"User {user_id} not found in channel {channel_id}")
+                    else:
+                        verification_errors.append(str(e))
+                        
+                retry_count += 1
+                if retry_count < max_retries and not member_verified:
+                    import time
+                    time.sleep(1)  # Wait 1 second before retry
+            
+            if not member_verified:
+                all_joined = False
+                failed_channels.append(channel_id)
 
         # If user hasn't joined channels, deny access
         if not all_joined:
-            query.answer("❌ Please join all channels first!", show_alert=True)
+            query.answer("❌ Please join all channels first! Wait 10-30 seconds after joining, then try again.", show_alert=True)
             
             not_joined_msg = (
                 "*❌ Channel Membership Required!*\n\n"
                 "*🔒 You must join ALL channels to unlock gift codes!*\n\n"
-                "*Please join all channels and try again.*\n\n"
-                "*Note: It may take a few seconds for the system to detect your membership.*"
+                "*Please follow these steps:*\n"
+                "*1. Click JOIN buttons below*\n"
+                "*2. Actually join the channels (don't just visit)*\n"
+                "*3. Wait 10-30 seconds*\n"
+                "*4. Click Try Again*\n\n"
+                "*⚠️ Note: Membership detection may take time!*"
             )
 
             keyboard = [
@@ -394,10 +430,8 @@ def handle_unlock_gift_code(update: Update, context: CallbackContext):
         return
 
     # User has joined all channels, proceed to show gift code
-    query.answer("✅ Access granted! Unlocking gift code...", show_alert=True)
-    logger.info(f"User {user_id} with channel membership accessed gift code")
-
-    query.answer()
+    query.answer("✅ Membership verified! Unlocking gift code...", show_alert=True)
+    logger.info(f"User {user_id} with verified channel membership accessed gift code")
 
     try:
         # Get current gift code from database
