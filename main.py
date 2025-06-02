@@ -55,7 +55,7 @@ def update_user_stats(user_id, action):
     try:
         # Get or create user stats document
         user_doc = user_stats_col.find_one({'user_id': user_id})
-        
+
         if not user_doc:
             # New user - create document
             user_stats_col.insert_one({
@@ -65,7 +65,7 @@ def update_user_stats(user_id, action):
                 'is_blocked': False,
                 'actions': [action]
             })
-            
+
             # Update global stats for new user
             global_stats = user_stats_col.find_one({'_id': 'global_stats'})
             if not global_stats:
@@ -98,7 +98,7 @@ def get_user_activity_stats():
         global_stats = user_stats_col.find_one({'_id': 'global_stats'})
         if not global_stats:
             global_stats = {'total_users': 0, 'blocked_users': 0}
-        
+
         # Count current users (fallback if global stats not accurate)
         actual_total_users = user_stats_col.count_documents({'user_id': {'$ne': 'global_stats'}})
         if actual_total_users > global_stats.get('total_users', 0):
@@ -109,10 +109,10 @@ def get_user_activity_stats():
                 upsert=True
             )
             global_stats['total_users'] = actual_total_users
-        
+
         # Count blocked users
         blocked_users = user_stats_col.count_documents({'is_blocked': True})
-        
+
         # UID statistics
         total_uids = uids_col.count_documents({})
         verified_uids = uids_col.count_documents({'verified': True})
@@ -128,7 +128,7 @@ def get_user_activity_stats():
             'fully_verified': True,
             'wallet_balance': {'$gte': 100}
         })
-        
+
         return {
             'total_users': global_stats.get('total_users', actual_total_users),
             'blocked_users': blocked_users,
@@ -689,7 +689,7 @@ def start(update: Update, context: CallbackContext):
     # Track user activity
     user_id = update.message.from_user.id
     update_user_stats(user_id, 'start_command')
-    
+
     msg = (
         "*Welcome To Tashan Win Prediction Bot !! 🧞‍♂*\n\n"
         "*× To Access Premium Prediction ⚡+ Gift Code 🎁 + High Deposit Bonus 💰*\n\n"
@@ -745,6 +745,7 @@ def handle_prediction_button(update: Update, context: CallbackContext):
 
     # Edit existing message with new photo and content
     try:
+```python
         query.edit_message_media(
             media=InputMediaPhoto(
                 media="https://files.catbox.moe/ytmaec.jpg",
@@ -893,7 +894,7 @@ def stats(update: Update, context: CallbackContext):
 
     try:
         stats_data = get_user_activity_stats()
-        
+
         msg = (
             f"📊 *USER ACTIVITY REPORT*\n\n"
             f"🤖 Total Bot Users: {stats_data['total_users']}\n"
@@ -943,11 +944,16 @@ def check_newly_verified_uids_silent(update: Update, context: CallbackContext):
                     f"*💰 Minimum Required Balance: ₹100*"
                 )
 
-                context.bot.send_message(
+                sent = safe_send_message(
+                    context=context,
                     chat_id=user_id,
                     text=message,
                     parse_mode='Markdown'
                 )
+
+                if sent is None:
+                    logger.warning(f"Could not notify user {user_id} - they have blocked the bot")
+                    continue
 
                 # Mark as notified and set up for wallet verification
                 uids_col.update_one(
@@ -1003,11 +1009,16 @@ def check_newly_verified_uids(update: Update, context: CallbackContext):
                     f"*💰 Minimum Required Balance: ₹100*"
                 )
 
-                context.bot.send_message(
+                sent = safe_send_message(
+                    context=context,
                     chat_id=user_id,
                     text=message,
                     parse_mode='Markdown'
                 )
+
+                if sent is None:
+                    logger.warning(f"Could not notify user {user_id} - they have blocked the bot")
+                    continue
 
                 # Mark as notified and set up for wallet verification
                 uids_col.update_one(
@@ -1570,6 +1581,7 @@ def nonverified(update: Update, context: CallbackContext):
 def all_uids(update: Update, context: CallbackContext):
     """
     Show all UIDs in database (Adminonly)
+    ```python
     """
     if update.message.from_user.id != ADMIN_UID:
         update.message.reply_text("❌ Unauthorized access.")
@@ -1751,11 +1763,16 @@ def done_command(update: Update, context: CallbackContext):
                     f"*💰 Minimum Required Balance: ₹100*"
                 )
 
-                context.bot.send_message(
+                sent = safe_send_message(
+                    context=context,
                     chat_id=user_id,
                     text=message,
                     parse_mode='Markdown'
                 )
+
+                if sent is None:
+                    logger.warning(f"Could not notify user {user_id} - they have blocked the bot")
+                    continue
 
                 # Mark as notified and set up for wallet verification
                 uids_col.update_one(
@@ -1801,12 +1818,18 @@ def done_command(update: Update, context: CallbackContext):
                 keyboard = [[InlineKeyboardButton("✅ Official Register Link", url="https://www.jalwagame4.com/#/register?invitationCode=16887113053")]]
                 reply_markup = InlineKeyboardMarkup(keyboard)
 
-                context.bot.send_message(
+                sent = safe_send_message(
+                    context=context,
                     chat_id=user_id,
                     text=rejection_message,
                     parse_mode='Markdown',
                     reply_markup=reply_markup
                 )
+
+                if sent is None:
+                    logger.warning(f"Could not send rejection to user {user_id} - they have blocked the bot")
+                    # Still count as rejected and delete the UID
+                    pass
 
                 # Auto-delete the rejected UID from database
                 delete_result = uids_col.delete_one({'_id': doc['_id']})
@@ -1893,12 +1916,18 @@ def reject_command(update: Update, context: CallbackContext):
                 keyboard = [[InlineKeyboardButton("✅ Official Register Link", url="https://www.jalwagame4.com/#/register?invitationCode=16887113053")]]
                 reply_markup = InlineKeyboardMarkup(keyboard)
 
-                context.bot.send_message(
+                sent = safe_send_message(
+                    context=context,
                     chat_id=user_id,
                     text=rejection_message,
                     parse_mode='Markdown',
                     reply_markup=reply_markup
                 )
+
+                if sent is None:
+                    logger.warning(f"Could not send rejection to user {user_id} - they have blocked the bot")
+                    # Still count as rejected and delete the UID
+                    pass
 
                 # Auto-delete the rejected UID from database
                 delete_result = uids_col.delete_one({'_id': doc['_id']})
@@ -1990,7 +2019,7 @@ def block_user_command(update: Update, context: CallbackContext):
 
     command = update.message.text.split()[0].lower()
     is_block = command == '/block'
-    
+
     if not context.args:
         action = "block" if is_block else "unblock"
         update.message.reply_text(
@@ -2003,7 +2032,7 @@ def block_user_command(update: Update, context: CallbackContext):
 
     try:
         target_user_id = int(context.args[0])
-        
+
         # Update user stats
         user_stats_col.update_one(
             {'user_id': target_user_id},
@@ -2015,7 +2044,7 @@ def block_user_command(update: Update, context: CallbackContext):
             },
             upsert=True
         )
-        
+
         # Update global blocked count
         if is_block:
             user_stats_col.update_one(
@@ -2029,15 +2058,15 @@ def block_user_command(update: Update, context: CallbackContext):
                 {'$inc': {'blocked_users': -1}},
                 upsert=True
             )
-        
+
         action = "blocked" if is_block else "unblocked"
         emoji = "🚫" if is_block else "✅"
-        
+
         update.message.reply_text(
             f"{emoji} User {target_user_id} has been {action} successfully!",
             parse_mode='Markdown'
         )
-        
+
         logger.info(f"Admin {update.message.from_user.username} {action} user {target_user_id}")
 
     except ValueError:
@@ -2054,7 +2083,7 @@ def handle_all(update: Update, context: CallbackContext):
     """
     user_id = update.message.from_user.id
     username = update.message.from_user.username or 'NoUsername'
-    
+
     # Check if user is blocked
     try:
         user_doc = user_stats_col.find_one({'user_id': user_id})
@@ -2063,7 +2092,7 @@ def handle_all(update: Update, context: CallbackContext):
             return
     except Exception as e:
         logger.error(f"Error checking blocked status: {e}")
-    
+
     # Track user activity
     update_user_stats(user_id, 'message_sent')
 
@@ -2192,6 +2221,26 @@ def cancel_conversation(update: Update, context: CallbackContext):
     logger.info(f"Conversation cancelled by user {update.message.from_user.id}")
     update.message.reply_text("❌ Operation cancelled.", reply_markup=ReplyKeyboardRemove())
     return ConversationHandler.END
+
+def safe_send_message(context, chat_id, text, parse_mode=None, reply_markup=None):
+    """
+    Send a message, handling potential block by the user.
+    Returns True if message was sent, False otherwise.
+    """
+    try:
+        return context.bot.send_message(
+            chat_id=chat_id,
+            text=text,
+            parse_mode=parse_mode,
+            reply_markup=reply_markup
+        )
+    except Exception as e:
+        if "blocked" in str(e) or "deactivated" in str(e):
+            logger.warning(f"User {chat_id} has blocked the bot.")
+            return None
+        else:
+            logger.error(f"Error sending message to {chat_id}: {e}")
+            return None
 
 # MAIN FUNCTION
 
