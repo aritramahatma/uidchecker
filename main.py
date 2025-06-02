@@ -374,7 +374,7 @@ def handle_unlock_gift_code(update: Update, context: CallbackContext):
                  InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
                 [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
                  InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
-                [InlineKeyboardButton("I Joined All Channels ✅", callback_data="verify_membership")]
+                [InlineKeyboardButton("Try Again 🔄", callback_data="unlock_gift_code")]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -393,48 +393,9 @@ def handle_unlock_gift_code(update: Update, context: CallbackContext):
         query.answer("❌ Error checking membership. Please try again later.", show_alert=True)
         return
 
-    # Now check if user is fully verified in the bot's database
-    try:
-        user_record = uids_col.find_one({'user_id': user_id, 'fully_verified': True})
-        
-        if not user_record:
-            # User is not verified in the system
-            query.answer("❌ Access denied! Complete verification first.", show_alert=True)
-            
-            access_denied_msg = (
-                "*⛔ Access Denied!*\n\n"
-                "*🔒 You need to complete the full verification process first!*\n\n"
-                "*Steps to get access:*\n"
-                "*1. Register with official link*\n"
-                "*2. Deposit ₹100 minimum*\n"
-                "*3. Send your UID for verification*\n"
-                "*4. Send wallet screenshot*\n"
-                "*5. Wait for admin approval*\n\n"
-                "*Only verified users can access gift codes!*"
-            )
-
-            keyboard = [
-                [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
-                 InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
-                [InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll"), 
-                 InlineKeyboardButton("JOIN", url="https://t.me/+xH5jHvfkXSI0Nzll")],
-                [InlineKeyboardButton("Start Verification", url=f"https://t.me/{context.bot.username}?start=verify")]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-
-            try:
-                query.edit_message_caption(
-                    caption=access_denied_msg,
-                    parse_mode='Markdown',
-                    reply_markup=reply_markup
-                )
-            except Exception as e:
-                logger.error(f"Error showing access denied message: {e}")
-            return
-        
-        # User is both channel member and verified, proceed to show gift code
-        query.answer("✅ Access granted! Unlocking gift code...", show_alert=True)
-        logger.info(f"Verified user {user_id} (UID: {user_record['uid']}) with channel membership accessed gift code")
+    # User has joined all channels, proceed to show gift code
+    query.answer("✅ Access granted! Unlocking gift code...", show_alert=True)
+    logger.info(f"User {user_id} with channel membership accessed gift code")
         
     except Exception as e:
         logger.error(f"Error checking user verification status for user {user_id}: {e}")
