@@ -2209,6 +2209,105 @@ def check_blocked_command(update: Update, context: CallbackContext):
         logger.error(f"Error checking blocked users: {e}")
         update.message.reply_text("❌ Error checking blocked users.")
 
+def cast_command(update: Update, context: CallbackContext):
+    """
+    Broadcast message to all users (Admin only)
+    Usage: /cast <message>
+    """
+    if update.message.from_user.id != ADMIN_UID:
+        update.message.reply_text("❌ Unauthorized access.")
+        return
+
+    if not context.args:
+        update.message.reply_text(
+            "📢 *Cast Message to All Users*\n\n"
+            "Usage: `/cast <your_message>`\n"
+            "Example: `/cast 🎉 New features coming soon! Stay tuned!`\n\n"
+            "⚠️ This will send the message to ALL bot users.",
+            parse_mode='Markdown'
+        )
+        return
+
+    try:
+        # Get the message to broadcast
+        broadcast_message = ' '.join(context.args)
+        
+        if not broadcast_message.strip():
+            update.message.reply_text("❌ Message cannot be empty.")
+            return
+
+        update.message.reply_text("📡 Starting broadcast... This may take a while.")
+
+        # Get all users who have interacted with the bot (not blocked by admin)
+        all_users = list(user_stats_col.find({
+            'user_id': {'$ne': 'global_stats', '$exists': True},
+            '$or': [
+                {'is_blocked': {'$ne': True}},
+                {'is_blocked': {'$exists': False}},
+                {
+                    'is_blocked': True,
+                    'blocked_by_user': True  # Include users who blocked the bot (they might unblock)
+                }
+            ]
+        }))
+
+        total_users = len(all_users)
+        sent_count = 0
+        failed_count = 0
+        newly_blocked = 0
+
+        for user_doc in all_users:
+            try:
+                user_id = user_doc['user_id']
+                
+                # Format the broadcast message
+                formatted_message = (
+                    f"📢 *Admin Announcement*\n\n"
+                    f"{broadcast_message}"
+                )
+
+                # Send message using safe_send_message
+                sent = safe_send_message(
+                    context=context,
+                    chat_id=user_id,
+                    text=formatted_message,
+                    parse_mode='Markdown'
+                )
+
+                if sent is None:
+                    # User has blocked the bot
+                    failed_count += 1
+                    newly_blocked += 1
+                else:
+                    sent_count += 1
+
+                # Add small delay to avoid rate limiting
+                import time
+                time.sleep(0.1)
+
+            except Exception as e:
+                logger.error(f"Error sending broadcast to user {user_doc.get('user_id', 'Unknown')}: {e}")
+                failed_count += 1
+
+        # Send summary to admin
+        summary_message = (
+            f"📊 *Broadcast Summary*\n\n"
+            f"📱 Total Users Found: {total_users}\n"
+            f"✅ Messages Sent: {sent_count}\n"
+            f"❌ Failed to Send: {failed_count}\n"
+            f"🚫 Newly Blocked Users: {newly_blocked}\n\n"
+            f"📈 Success Rate: {(sent_count/total_users*100) if total_users > 0 else 0:.1f}%\n\n"
+            f"💬 Broadcast Message:\n`{broadcast_message}`"
+        )
+
+        update.message.reply_text(summary_message, parse_mode='Markdown')
+
+        logger.info(f"Admin {update.message.from_user.username} broadcasted message to {sent_count} users")
+
+    except Exception as e:
+        logger.error(f"Error in cast command: {e}")
+        update.message.reply_text("❌ Error broadcasting message.")
+
 # MESSAGE HANDLERS
 
 def handle_all(update: Update, context: CallbackContext):
@@ -2510,6 +2609,7 @@ def main():
         dp.add_handler(CommandHandler("block", block_user_command))
         dp.add_handler(CommandHandler("unblock", block_user_command))
         dp.add_handler(CommandHandler("checkblocked", check_blocked_command))
+        dp.add_handler(CommandHandler("cast", cast_command))
         dp.add_handler(CallbackQueryHandler(handle_screenshot_button, pattern="send_screenshot"))
         dp.add_handler(CallbackQueryHandler(handle_bonus_button, pattern="bonus"))
         dp.add_handler(CallbackQueryHandler(handle_gift_codes_button, pattern="gift_codes"))
