@@ -204,18 +204,50 @@ def get_current_gift_code():
 
 def handle_verify_membership(update: Update, context: CallbackContext):
     """
-    Handle the 'I Joined All Channels' verification button
+    Handle the 'I Joined All Channels' verification button with real channel verification
     """
     query = update.callback_query
     user_id = query.from_user.id
+    
+    # Channel IDs to check (replace with your actual channel IDs)
+    channels_to_check = [
+        "-1001002586725903",  # Your private channel
+        # Add more channel IDs here if needed
+    ]
+    
+    try:
+        # Check membership for each channel
+        all_joined = True
+        for channel_id in channels_to_check:
+            try:
+                member = context.bot.get_chat_member(chat_id=channel_id, user_id=user_id)
+                if member.status in ['left', 'kicked']:
+                    all_joined = False
+                    break
+            except Exception as e:
+                logger.error(f"Error checking membership for channel {channel_id}: {e}")
+                # If we can't check, assume not joined
+                all_joined = False
+                break
+        
+        if all_joined:
+            # Store user as verified
+            if 'verified_members' not in context.bot_data:
+                context.bot_data['verified_members'] = set()
 
-    # Store user as verified (you can add additional verification logic here)
-    if 'verified_members' not in context.bot_data:
-        context.bot_data['verified_members'] = set()
-
-    context.bot_data['verified_members'].add(user_id)
-
-    query.answer("✅ Membership verified! You can now unlock gift codes.", show_alert=True)
+            context.bot_data['verified_members'].add(user_id)
+            query.answer("✅ Membership verified! You can now unlock gift codes.", show_alert=True)
+        else:
+            query.answer("❌ Please join all channels first!", show_alert=True)
+            return
+            
+    except Exception as e:
+        logger.error(f"Error in membership verification: {e}")
+        # Fallback - allow access but log the error
+        if 'verified_members' not in context.bot_data:
+            context.bot_data['verified_members'] = set()
+        context.bot_data['verified_members'].add(user_id)
+        query.answer("✅ Membership verified! You can now unlock gift codes.", show_alert=True)
 
     # Update the message to show verification success
     verification_msg = (
@@ -810,8 +842,7 @@ def handle_wallet(update: Update, context: CallbackContext):
             )
 
             # Notify admin of failed verification
-            ```python
-try:
+            try:
                 balance_text = f"₹{balance:.2f}" if balance else "Not detected"
                 context.bot.send_message(
                     chat_id=ADMIN_UID,
@@ -1628,9 +1659,12 @@ def main():
         dp.add_handler(CallbackQueryHandler(handle_screenshot_button, pattern="send_screenshot"))
         dp.add_handler(CallbackQueryHandler(handle_bonus_button, pattern="bonus"))
         dp.add_handler(CallbackQueryHandler(handle_gift_codes_button, pattern="gift_codes"))
-        dp.add_handler(CallbackQueryHandler(handle_verify_membership, pattern="verifyQueryHandler(handle_verify_membership, pattern="verify_membership"))
+        dp.add_handler(CallbackQueryHandler(handle_verify_membership, pattern="verify_membership"))
         dp.add_handler(CallbackQueryHandler(handle_unlock_gift_code, pattern="unlock_gift_code"))
         dp.add_handler(CallbackQueryHandler(handle_back_button, pattern="back"))
+        # Add handlers for other button callbacks
+        dp.add_handler(CallbackQueryHandler(handle_screenshot_button, pattern="prediction"))
+        dp.add_handler(CallbackQueryHandler(handle_screenshot_button, pattern="support"))
         dp.add_handler(conv_handler)
         dp.add_handler(MessageHandler(Filters.all, handle_all))
 
