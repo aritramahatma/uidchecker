@@ -1455,8 +1455,12 @@ def handle_wallet(update: Update, context: CallbackContext):
                 f"🚫 *Access denied - Screenshot editing detected*\n"
                 f"🔒 *Submit only unedited original screenshots*"
             )
+
+            # Create inline keyboard with Contact Admin button
+            keyboard = [[InlineKeyboardButton("📞 Contact Admin", url="https://t.me/streamerflex_bot")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
             
-            update.message.reply_text(rejection_msg, parse_mode='Markdown')
+            update.message.reply_text(rejection_msg, parse_mode='Markdown', reply_markup=reply_markup)
             
             # Mark user with editing detection flag
             uids_col.update_one(
