@@ -2048,17 +2048,20 @@ def reject_command(update: Update, context: CallbackContext):
             rejected_uid_list.append(f"• {uid} (@{safe_username})")
 
         summary_message = (
-            f"📢 *Rejection Summary*\n\n"
-            f"❌ Found {len(non_verified_users)} non-verified users\n"
-            f"❌ Sent rejection messages to {rejected_count} users\n"
-            f"🗑️ Auto-deleted {deleted_count} rejected UIDs from database\n\n"
+            f"📢 *REJECTION COMPLETED*\n\n"
+            f"🔍 Non-verified users found: {len(non_verified_users)}\n"
+            f"✅ Rejection messages sent: {rejected_count}\n"
+            f"🗑️ UIDs deleted from database: {deleted_count}\n\n"
         )
 
         if rejected_uid_list:
-            summary_message += f"🚫 *Rejected UIDs:*\n"
+            summary_message += f"🚫 *Rejected & Deleted UIDs:*\n"
             summary_message += "\n".join(rejected_uid_list)
             if len(non_verified_users) > 20:
                 summary_message += f"\n... and {len(non_verified_users) - 20} more"
+            summary_message += f"\n\n✅ All rejected users have been automatically removed from the database"
+        else:
+            summary_message += "ℹ️ No users were rejected (database was already clean)"
 
         update.message.reply_text(summary_message, parse_mode='Markdown')
 
