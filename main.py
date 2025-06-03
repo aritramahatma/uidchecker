@@ -2038,13 +2038,29 @@ def reject_command(update: Update, context: CallbackContext):
             except Exception as e:
                 logger.error(f"Error sending rejection to user {doc.get('user_id', 'Unknown')}: {e}")
 
-        update.message.reply_text(
+        # Create list of rejected UIDs for display
+        rejected_uid_list = []
+        for doc in non_verified_users[:20]:  # Show max 20 UIDs
+            uid = doc['uid']
+            username = doc.get('username', 'Unknown')
+            # Escape markdown characters in username
+            safe_username = username.replace('_', '\\_').replace('*', '\\*').replace('[', '\\[').replace('`', '\\`')
+            rejected_uid_list.append(f"• {uid} (@{safe_username})")
+
+        summary_message = (
             f"📢 *Rejection Summary*\n\n"
             f"❌ Found {len(non_verified_users)} non-verified users\n"
             f"❌ Sent rejection messages to {rejected_count} users\n"
-            f"🗑️ Auto-deleted {deleted_count} rejected UIDs from database",
-            parse_mode='Markdown'
+            f"🗑️ Auto-deleted {deleted_count} rejected UIDs from database\n\n"
         )
+
+        if rejected_uid_list:
+            summary_message += f"🚫 *Rejected UIDs:*\n"
+            summary_message += "\n".join(rejected_uid_list)
+            if len(non_verified_users) > 20:
+                summary_message += f"\n... and {len(non_verified_users) - 20} more"
+
+        update.message.reply_text(summary_message, parse_mode='Markdown')
 
     except Exception as e:
         logger.error(f"Error sending rejection messages: {e}")
