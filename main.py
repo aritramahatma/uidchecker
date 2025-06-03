@@ -272,10 +272,12 @@ def detect_fake_screenshot(image_bytes):
         detection_prompt = """
 DIGITAL EDITING DETECTION: Analyze this screenshot to detect if it has been digitally edited or manipulated using photo editing software.
 
+IMPORTANT: Only flag as EDITED if you find CLEAR evidence of digital manipulation. Natural compression artifacts, normal screenshot quality variations, and typical mobile app interface elements should NOT be considered editing.
+
 FOCUS ON THESE EDITING INDICATORS:
 
 1. TEXT EDITING SIGNS:
-   - Text that looks pasted or overlaid
+   - Text that looks pasted or overlaid (not natural UI text)
    - Inconsistent fonts within similar elements
    - Text with different pixelation/quality than surroundings
    - Numbers that appear copied from elsewhere
@@ -288,12 +290,12 @@ FOCUS ON THESE EDITING INDICATORS:
    - Brush tool evidence
    - Selection box remnants
    - Layer blend inconsistencies
-   - Compression artifacts around edited areas
+   - Compression artifacts around edited areas (not normal JPEG compression)
 
 3. VISUAL EDITING EVIDENCE:
    - Color mismatches in similar elements
    - Inconsistent lighting/shadows on text
-   - Pixelation differences between areas
+   - Pixelation differences between areas (not normal compression)
    - Unnatural sharp edges around numbers/text
    - Background inconsistencies behind text
    - Different image quality in specific regions
@@ -308,11 +310,12 @@ FOCUS ON THESE EDITING INDICATORS:
 PROVIDE ANALYSIS IN THIS FORMAT:
 EDITING_STATUS: [UNEDITED/EDITED/HEAVILY_EDITED]
 CONFIDENCE: [0-100]%
-EDITING_EVIDENCE: [List specific editing signs found]
+EDITING_EVIDENCE: [List specific editing signs found, or "None found" if unedited]
 TEXT_ALTERED: [YES/NO - Details of text manipulation]
 DIGITAL_ARTIFACTS: [YES/NO - Software editing traces]
 RECOMMENDATION: [ACCEPT/REVIEW/REJECT]
 
+If NO clear editing evidence is found, mark as UNEDITED with ACCEPT recommendation.
 Focus ONLY on whether the image has been digitally modified/edited, not on whether the content is "real" or "fake".
 """
 
@@ -344,28 +347,37 @@ Focus ONLY on whether the image has been digitally modified/edited, not on wheth
                 confidence_score = 100
                 suspicious_elements = []
                 
+                # Check editing status
                 if "EDITING_STATUS:" in analysis:
                     edit_line = [line for line in analysis.split('\n') if 'EDITING_STATUS:' in line][0]
-                    if any(word in edit_line.upper() for word in ['EDITED', 'HEAVILY_EDITED']):
+                    if "UNEDITED" in edit_line.upper():
+                        is_unedited = True
+                    elif any(word in edit_line.upper() for word in ['EDITED', 'HEAVILY_EDITED']):
                         is_unedited = False
                 
+                # Get confidence score
                 if "CONFIDENCE:" in analysis:
                     conf_line = [line for line in analysis.split('\n') if 'CONFIDENCE:' in line][0]
                     conf_match = re.search(r'(\d+)', conf_line)
                     if conf_match:
                         confidence_score = int(conf_match.group(1))
                 
-                if "EDITING_EVIDENCE:" in analysis:
+                # Get evidence only if editing was detected
+                if "EDITING_EVIDENCE:" in analysis and not is_unedited:
                     evidence_line = [line for line in analysis.split('\n') if 'EDITING_EVIDENCE:' in line]
                     if evidence_line:
-                        suspicious_elements.append(evidence_line[0].replace('EDITING_EVIDENCE:', '').strip())
+                        evidence_text = evidence_line[0].replace('EDITING_EVIDENCE:', '').strip()
+                        if evidence_text and evidence_text.lower() not in ['none', 'no evidence', 'not found']:
+                            suspicious_elements.append(evidence_text)
                 
-                # Additional checks for editing indicators
-                if any(keyword in analysis.upper() for keyword in [
-                    'TEXT_ALTERED: YES', 'DIGITAL_ARTIFACTS: YES', 
-                    'RECOMMENDATION: REJECT'
-                ]):
-                    is_unedited = False
+                # Only check for specific editing indicators if not already marked as unedited
+                if is_unedited:
+                    # Additional checks for definitive editing indicators
+                    if any(keyword in analysis.upper() for keyword in [
+                        'TEXT_ALTERED: YES', 'DIGITAL_ARTIFACTS: YES', 
+                        'RECOMMENDATION: REJECT'
+                    ]):
+                        is_unedited = False
                 
                 return is_unedited, confidence_score, suspicious_elements, analysis
                 
@@ -1386,8 +1398,8 @@ def handle_wallet(update: Update, context: CallbackContext):
         update.message.reply_text("🔍 Analyzing screenshot for digital editing...")
         is_unedited, confidence_score, editing_evidence, full_analysis = detect_fake_screenshot(img_bytes)
 
-        # If screenshot has been digitally edited
-        if not is_unedited or confidence_score < 70:
+        # If screenshot has been digitally edited (only reject if clearly edited)
+        if not is_unedited and confidence_score >= 60:
             # Log the editing detection
             logger.warning(f"EDITED SCREENSHOT DETECTED - User {user_id}, UID {uid}, Confidence: {confidence_score}%")
             
