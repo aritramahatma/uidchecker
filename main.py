@@ -612,8 +612,7 @@ def handle_unlock_gift_code(update: Update, context: CallbackContext):
                 "*🔒 TO UNLOCK GIFT CODES:*\n"
                 "*1️⃣ You must join ALL 4 private channels first*\n"
                 "*2️⃣ Actually JOIN the channels (not just visit)*\n"
-                "*3️⃣ Wait 60 seconds after joining*\n"
-                "*4️⃣ Try unlocking again*\n\n"
+                "*3️⃣ Try unlocking again*\n\n"
                 "*⚠️ IMPORTANT: You must be a CONFIRMED MEMBER of ALL 4 channels!*\n"
                 "*🚫 Visiting or previewing the channels is NOT enough!*"
             )
