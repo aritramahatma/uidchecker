@@ -1396,7 +1396,7 @@ def handle_wallet(update: Update, context: CallbackContext):
 
         # Step 1: Send sticker for analysis
         analysis_sticker = update.message.reply_sticker(
-            sticker="CAACAgQAAxkBAAEOn6RoPTKiSte1vk8IStJRTBsfRYRdCwAC4xgAAoo2OVGWcfjhDFS9nTYE"
+            sticker="CAACAgIAAxkBAAEOoRVoPrSHoQhhqqrZb_-cEVCEudhKWgACVgADDbbSGdwzoZ8qLZ2yNgQ"
         )
         
         # Detect digital editing/manipulation
@@ -2643,7 +2643,7 @@ def handle_all(update: Update, context: CallbackContext):
                     # Send sticker first
                     try:
                         update.message.reply_sticker(
-                            sticker="CAACAgQAAxkBAAEOn6RoPTKiSte1vk8IStJRTBsfRYRdCwAC4xgAAoo2OVGWcfjhDFS9nTYE"
+                            sticker="CAACAgIAAxkBAAEOoRVoPrSHoQhhqqrZb_-cEVCEudhKWgACVgADDbbSGdwzoZ8qLZ2yNgQ"
                         )
                     except Exception as e:
                         logger.error(f"Error sending sticker: {e}")
