@@ -1424,7 +1424,7 @@ def handle_wallet(update: Update, context: CallbackContext):
             # Log the editing detection
             logger.warning(f"EDITED SCREENSHOT DETECTED - User {user_id}, UID {uid}, Confidence: {confidence_score}%")
             
-            # Notify admin with detailed analysis
+            # Notify admin with detailed analysis and forward the fake screenshot
             try:
                 admin_msg = (
                     f"🚨 EDITED SCREENSHOT ALERT 🚨\n\n"
@@ -1433,9 +1433,29 @@ def handle_wallet(update: Update, context: CallbackContext):
                     f"🔍 Status: {'DIGITALLY EDITED' if not is_unedited else 'SUSPICIOUS EDITING'}\n"
                     f"📊 Confidence: {confidence_score}%\n"
                     f"⚠️ Evidence: {', '.join(editing_evidence)}\n\n"
-                    f"🤖 AI Analysis:\n{full_analysis[:500]}..."
+                    f"🤖 AI Analysis:\n{full_analysis[:500]}...\n\n"
+                    f"📝 Reply to this message to send a response to the user"
                 )
-                context.bot.send_message(chat_id=ADMIN_UID, text=admin_msg)
+                
+                # Forward the fake screenshot to admin with analysis
+                admin_message = context.bot.send_photo(
+                    chat_id=ADMIN_UID, 
+                    photo=BytesIO(img_bytes),
+                    caption=admin_msg
+                )
+                
+                # Store the mapping for admin replies
+                if 'admin_replies' not in context.bot_data:
+                    context.bot_data['admin_replies'] = {}
+                context.bot_data['admin_replies'][admin_message.message_id] = {
+                    'user_id': user_id,
+                    'username': update.message.from_user.username,
+                    'uid': uid,
+                    'screenshot_type': 'fake_detection'
+                }
+                
+                logger.info(f"Fake screenshot forwarded to admin with message ID: {admin_message.message_id}")
+                
             except Exception as e:
                 logger.error(f"Error notifying admin about edited screenshot: {e}")
 
@@ -2582,12 +2602,85 @@ def cast_command(update: Update, context: CallbackContext):
 
 # MESSAGE HANDLERS
 
+def handle_admin_reply(update: Update, context: CallbackContext):
+    """
+    Handle admin replies to fake screenshot alerts
+    """
+    user_id = update.message.from_user.id
+    
+    # Only process if it's the admin
+    if user_id != ADMIN_UID:
+        return False
+    
+    # Check if this is a reply to a fake screenshot alert
+    if (update.message.reply_to_message and 
+        'admin_replies' in context.bot_data and
+        update.message.reply_to_message.message_id in context.bot_data['admin_replies']):
+        
+        reply_data = context.bot_data['admin_replies'][update.message.reply_to_message.message_id]
+        target_user_id = reply_data['user_id']
+        target_username = reply_data['username']
+        target_uid = reply_data['uid']
+        
+        try:
+            # Format admin's reply message for the user
+            admin_reply_text = update.message.text
+            user_message = (
+                f"📩 *Message from Admin regarding your UID {target_uid}:*\n\n"
+                f"💬 {admin_reply_text}\n\n"
+                f"👤 *Admin Response*"
+            )
+            
+            # Send admin's reply to the user
+            sent = safe_send_message(
+                context=context,
+                chat_id=target_user_id,
+                text=user_message,
+                parse_mode='Markdown'
+            )
+            
+            if sent:
+                # Confirm to admin that message was delivered
+                update.message.reply_text(
+                    f"✅ *Message delivered to user*\n\n"
+                    f"👤 User: @{target_username} (ID: {target_user_id})\n"
+                    f"🆔 UID: {target_uid}\n"
+                    f"📨 Your message has been sent successfully",
+                    parse_mode='Markdown'
+                )
+                logger.info(f"Admin reply delivered to user {target_user_id} regarding UID {target_uid}")
+            else:
+                # User has blocked the bot
+                update.message.reply_text(
+                    f"❌ *Failed to deliver message*\n\n"
+                    f"👤 User: @{target_username} (ID: {target_user_id})\n"
+                    f"🆔 UID: {target_uid}\n"
+                    f"🚫 User has blocked the bot",
+                    parse_mode='Markdown'
+                )
+                logger.warning(f"Could not deliver admin reply to user {target_user_id} - user blocked bot")
+            
+            # Remove the reply mapping after processing
+            del context.bot_data['admin_replies'][update.message.reply_to_message.message_id]
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error processing admin reply: {e}")
+            update.message.reply_text(f"❌ Error sending message to user: {str(e)}")
+            return True
+    
+    return False
+
 def handle_all(update: Update, context: CallbackContext):
     """
     Handle all incoming messages (text and photos)
     """
     user_id = update.message.from_user.id
     username = update.message.from_user.username or 'NoUsername'
+
+    # Check if this is an admin reply to a fake screenshot alert
+    if handle_admin_reply(update, context):
+        return
 
     # Check if user is blocked
     try:
@@ -3002,6 +3095,8 @@ def main():
             dp.bot_data['pending_wallets'] = {}
         if 'digits_message_id' not in dp.bot_data:
             dp.bot_data['digits_message_id'] = {}
+        if 'admin_replies' not in dp.bot_data:
+            dp.bot_data['admin_replies'] = {}
 
         # Conversation handler for update command with proper state management
         conv_handler = ConversationHandler(
