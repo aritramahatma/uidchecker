@@ -259,6 +259,132 @@ def gemini_ocr(image_bytes):
         logger.error(f"Error in gemini_ocr: {e}")
         return ''
 
+def detect_fake_screenshot(image_bytes):
+    """
+    Use Gemini AI to detect if a screenshot is fake, manipulated, or edited
+    Returns: (is_authentic, confidence_score, suspicious_elements)
+    """
+    try:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+        img_base64 = base64.b64encode(image_bytes).decode('utf-8')
+
+        # Comprehensive prompt for detecting fake screenshots
+        detection_prompt = """
+CRITICAL SECURITY ANALYSIS: Analyze this wallet/app screenshot for authenticity and detect any signs of manipulation, editing, or forgery.
+
+EXAMINE FOR THESE SPECIFIC INDICATORS:
+
+1. TEXT MANIPULATION:
+   - Inconsistent fonts, sizes, or colors
+   - Misaligned text or numbers
+   - Different text quality/pixelation
+   - Copy-paste artifacts around numbers
+   - Unnatural spacing between digits
+
+2. VISUAL INCONSISTENCIES:
+   - Color variations in similar elements
+   - Inconsistent shadows or lighting
+   - Pixelation differences between elements
+   - Blurred or sharp edges around edited areas
+   - Background inconsistencies
+
+3. UI/APP AUTHENTICITY:
+   - Proper app interface layout
+   - Correct button positioning
+   - Authentic status bar elements
+   - Proper notification icons
+   - Realistic timestamp formats
+
+4. TECHNICAL ARTIFACTS:
+   - Copy-paste residue
+   - Selection box remnants
+   - Compression artifacts around edited areas
+   - Unnatural gradients or transitions
+   - Multiple screenshot compositions
+
+5. FINANCIAL DATA VALIDATION:
+   - Realistic balance formats
+   - Proper currency symbols
+   - Consistent decimal places
+   - Logical transaction history
+   - Appropriate UID format
+
+PROVIDE ANALYSIS IN THIS FORMAT:
+AUTHENTICITY: [AUTHENTIC/SUSPICIOUS/FAKE]
+CONFIDENCE: [0-100]%
+SUSPICIOUS_ELEMENTS: [List any detected issues]
+TEXT_MANIPULATION: [YES/NO - Details]
+VISUAL_INCONSISTENCY: [YES/NO - Details]
+UI_AUTHENTICITY: [GENUINE/QUESTIONABLE/FAKE]
+RECOMMENDATION: [ACCEPT/REVIEW/REJECT]
+
+Be extremely thorough and suspicious of any irregularities. Even minor inconsistencies should be flagged.
+"""
+
+        data = {
+            "contents": [{
+                "parts": [
+                    {"text": detection_prompt},
+                    {"inline_data": {
+                        "mime_type": "image/jpeg",
+                        "data": img_base64
+                    }}
+                ]
+            }],
+            "generationConfig": {
+                "temperature": 0.1,  # Low temperature for consistent analysis
+                "maxOutputTokens": 1000
+            }
+        }
+
+        response = requests.post(url, json=data, timeout=30)
+
+        if response.ok:
+            try:
+                result = response.json()
+                analysis = result['candidates'][0]['content']['parts'][0]['text']
+                
+                # Parse the analysis
+                is_authentic = True
+                confidence_score = 100
+                suspicious_elements = []
+                
+                if "AUTHENTICITY:" in analysis:
+                    auth_line = [line for line in analysis.split('\n') if 'AUTHENTICITY:' in line][0]
+                    if any(word in auth_line.upper() for word in ['SUSPICIOUS', 'FAKE']):
+                        is_authentic = False
+                
+                if "CONFIDENCE:" in analysis:
+                    conf_line = [line for line in analysis.split('\n') if 'CONFIDENCE:' in line][0]
+                    conf_match = re.search(r'(\d+)', conf_line)
+                    if conf_match:
+                        confidence_score = int(conf_match.group(1))
+                
+                if "SUSPICIOUS_ELEMENTS:" in analysis:
+                    elements_line = [line for line in analysis.split('\n') if 'SUSPICIOUS_ELEMENTS:' in line]
+                    if elements_line:
+                        suspicious_elements.append(elements_line[0].replace('SUSPICIOUS_ELEMENTS:', '').strip())
+                
+                # Additional checks
+                if any(keyword in analysis.upper() for keyword in [
+                    'TEXT_MANIPULATION: YES', 'VISUAL_INCONSISTENCY: YES', 
+                    'UI_AUTHENTICITY: FAKE', 'RECOMMENDATION: REJECT'
+                ]):
+                    is_authentic = False
+                
+                return is_authentic, confidence_score, suspicious_elements, analysis
+                
+            except (KeyError, IndexError) as e:
+                logger.error(f"Error parsing fake detection response: {e}")
+                return False, 0, ["Error parsing AI response"], ""
+        else:
+            logger.error(f"Gemini fake detection API error: {response.status_code} - {response.text}")
+            return False, 0, ["API Error"], ""
+
+    except Exception as e:
+        logger.error(f"Error in detect_fake_screenshot: {e}")
+        return False, 0, [f"Detection error: {str(e)}"], ""
+
 def handle_bonus_button(update: Update, context: CallbackContext):
     """
     Handle the 'Bonus' button callback
@@ -1243,7 +1369,7 @@ def check_uid(update, context, uid, user_id, username):
 
 def handle_wallet(update: Update, context: CallbackContext):
     """
-    Process wallet screenshot for balance verification
+    Process wallet screenshot for balance verification with fake detection
     """
     user_id = update.message.from_user.id
 
@@ -1261,8 +1387,66 @@ def handle_wallet(update: Update, context: CallbackContext):
         img_file = photo.get_file()
         img_bytes = img_file.download_as_bytearray()
 
-        # Process image with Gemini OCR
-        update.message.reply_text("🔄 Processing wallet screenshot...")
+        # Step 1: Detect fake/manipulated screenshot
+        update.message.reply_text("🔍 Analyzing screenshot authenticity...")
+        is_authentic, confidence_score, suspicious_elements, full_analysis = detect_fake_screenshot(img_bytes)
+
+        # If screenshot is deemed fake or suspicious
+        if not is_authentic or confidence_score < 70:
+            # Log the fake detection
+            logger.warning(f"FAKE SCREENSHOT DETECTED - User {user_id}, UID {uid}, Confidence: {confidence_score}%")
+            
+            # Notify admin with detailed analysis
+            try:
+                admin_msg = (
+                    f"🚨 FAKE SCREENSHOT ALERT 🚨\n\n"
+                    f"👤 User: @{update.message.from_user.username} (ID: {user_id})\n"
+                    f"🆔 UID: {uid}\n"
+                    f"🔍 Authenticity: {'FAKE' if not is_authentic else 'SUSPICIOUS'}\n"
+                    f"📊 Confidence: {confidence_score}%\n"
+                    f"⚠️ Issues: {', '.join(suspicious_elements)}\n\n"
+                    f"🤖 AI Analysis:\n{full_analysis[:500]}..."
+                )
+                context.bot.send_message(chat_id=ADMIN_UID, text=admin_msg)
+            except Exception as e:
+                logger.error(f"Error notifying admin about fake screenshot: {e}")
+
+            # Reject user with specific fake detection message
+            rejection_msg = (
+                f"🚨 *SECURITY ALERT - FAKE SCREENSHOT DETECTED* 🚨\n\n"
+                f"❌ *Your wallet screenshot has been identified as MANIPULATED/EDITED*\n\n"
+                f"🔍 *Our AI detected the following issues:*\n"
+                f"• Screenshot authenticity: {confidence_score}% confidence\n"
+                f"• Suspicious elements found\n"
+                f"• Digital manipulation detected\n\n"
+                f"⚠️ *IMPORTANT:*\n"
+                f"• Only submit ORIGINAL, unedited screenshots\n"
+                f"• Do not use photo editing apps\n"
+                f"• Take fresh screenshots directly from your wallet\n\n"
+                f"🚫 *Access denied due to security violation*\n"
+                f"🔒 *Account flagged for review*"
+            )
+            
+            update.message.reply_text(rejection_msg, parse_mode='Markdown')
+            
+            # Mark user with fake submission flag
+            uids_col.update_one(
+                {'uid': uid}, 
+                {'$set': {
+                    'fake_screenshot_detected': True,
+                    'fake_detection_date': update.message.date,
+                    'ai_confidence_score': confidence_score,
+                    'suspicious_elements': suspicious_elements,
+                    'security_flag': True
+                }}
+            )
+            
+            # Remove from pending wallets
+            del context.bot_data['pending_wallets'][user_id]
+            return
+
+        # Step 2: If authentic, proceed with OCR processing
+        update.message.reply_text("✅ Screenshot verified as authentic. Processing data...")
         extracted_text = gemini_ocr(img_bytes)
 
         if not extracted_text:
@@ -1308,13 +1492,16 @@ def handle_wallet(update: Update, context: CallbackContext):
 
         # Verify wallet
         if matched_uid == uid and balance and balance >= 100.0:
-            # Successful verification
+            # Successful verification with authenticity confirmation
             uids_col.update_one(
                 {'uid': uid}, 
                 {'$set': {
                     'fully_verified': True,
                     'wallet_balance': balance,
-                    'verification_date': update.message.date
+                    'verification_date': update.message.date,
+                    'screenshot_authentic': True,
+                    'ai_authenticity_score': confidence_score,
+                    'security_verified': True
                 }}
             )
             # Create inline keyboard with 4 buttons
@@ -1364,7 +1551,9 @@ def handle_wallet(update: Update, context: CallbackContext):
                     text=f"✅ Successful verification:\n"
                          f"UID: {uid}\n"
                          f"User: @{update.message.from_user.username}\n"
-                         f"Balance: ₹{balance:.2f}"
+                         f"Balance: ₹{balance:.2f}\n"
+                         f"🔒 Screenshot: AUTHENTIC ({confidence_score}% confidence)\n"
+                         f"🛡️ Security: VERIFIED"
                 )
             except Exception as e:
                 logger.error(f"Error notifying admin: {e}")
@@ -1421,6 +1610,7 @@ def handle_wallet(update: Update, context: CallbackContext):
                          f"User: @{update.message.from_user.username}\n"
                          f"Extracted UID: {matched_uid}\n"
                          f"Balance: {balance_text}\n"
+                         f"🔒 Screenshot: AUTHENTIC ({confidence_score}% confidence)\n"
                          f"OCR Text: {extracted_text[:200]}..."
                 )
             except Exception as e:
