@@ -1380,11 +1380,37 @@ def handle_wallet(update: Update, context: CallbackContext):
             elif balance < 100.0:
                 failure_reasons.append(f"Insufficient balance (₹{balance:.2f} < ₹100.00)")
 
-            update.message.reply_text(
-                f"❌ Wallet verification failed.\n"
-                f"Reason: {', '.join(failure_reasons)}\n"
-                f"Admin has been notified."
-            )
+            # Format the failure message based on the reason
+            if not balance:
+                failure_msg = (
+                    f"*📛 Access Denied*\n"
+                    f"*🚫 Reason: Could not detect balance from screenshot*\n"
+                    f"*📄 Please send a clearer wallet screenshot.*\n"
+                    f"*🔔 Admin has been notified.*"
+                )
+            elif balance < 100.0:
+                failure_msg = (
+                    f"*📛 Access Denied*\n"
+                    f"*🚫 Reason: Insufficient Balance (₹{balance:.2f} < ₹100.00)*\n"
+                    f"*📄 Please recharge your account to continue.*\n"
+                    f"*🔔 Admin has been notified.*"
+                )
+            elif matched_uid != uid:
+                failure_msg = (
+                    f"*📛 Access Denied*\n"
+                    f"*🚫 Reason: UID mismatch (found: {matched_uid}, expected: {uid})*\n"
+                    f"*📄 Please send screenshot with correct UID.*\n"
+                    f"*🔔 Admin has been notified.*"
+                )
+            else:
+                failure_msg = (
+                    f"*📛 Access Denied*\n"
+                    f"*🚫 Reason: {', '.join(failure_reasons)}*\n"
+                    f"*📄 Please check your details and try again.*\n"
+                    f"*🔔 Admin has been notified.*"
+                )
+
+            update.message.reply_text(failure_msg, parse_mode='Markdown')
 
             # Notify admin of failed verification
             try:
