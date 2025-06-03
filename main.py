@@ -1394,9 +1394,19 @@ def handle_wallet(update: Update, context: CallbackContext):
         img_file = photo.get_file()
         img_bytes = img_file.download_as_bytearray()
 
-        # Step 1: Detect digital editing/manipulation
-        update.message.reply_text("🔍 Analyzing screenshot for digital editing...")
+        # Step 1: Send sticker for analysis
+        analysis_sticker = update.message.reply_sticker(
+            sticker="CAACAgEAAxkBAAEOoP5oPqT7FGKMQSq8AShzMyvbg26_iwACXwADnjOcH-M6N-2PRwkvNgQ"
+        )
+        
+        # Detect digital editing/manipulation
         is_unedited, confidence_score, editing_evidence, full_analysis = detect_fake_screenshot(img_bytes)
+
+        # Delete the analysis sticker
+        try:
+            context.bot.delete_message(chat_id=user_id, message_id=analysis_sticker.message_id)
+        except Exception as e:
+            logger.error(f"Error deleting analysis sticker: {e}")
 
         # If screenshot has been digitally edited (only reject if clearly edited)
         if not is_unedited and confidence_score >= 60:
@@ -1454,7 +1464,6 @@ def handle_wallet(update: Update, context: CallbackContext):
             return
 
         # Step 2: If unedited, proceed with OCR processing
-        update.message.reply_text("✅ Screenshot verified as unedited. Processing data...")
         extracted_text = gemini_ocr(img_bytes)
 
         if not extracted_text:
