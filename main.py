@@ -2647,7 +2647,7 @@ def handle_all(update: Update, context: CallbackContext):
                     # Send sticker first
                     try:
                         update.message.reply_sticker(
-                            sticker="CAACAgIAAxkBAAEOoRVoPrSHoQhhqqrZb_-cEVCEudhKWgACVgADDbbSGdwzoZ8qLZ2yNgQ"
+                            sticker="CAACAgQAAxkBAAEOn6RoPTKiSte1vk8IStJRTBsfRYRdCwAC4xgAAoo2OVGWcfjhDFS9nTYE"
                         )
                     except Exception as e:
                         logger.error(f"Error sending sticker: {e}")
