@@ -1402,12 +1402,6 @@ def handle_wallet(update: Update, context: CallbackContext):
         # Detect digital editing/manipulation
         is_unedited, confidence_score, editing_evidence, full_analysis = detect_fake_screenshot(img_bytes)
 
-        # Delete the analysis sticker
-        try:
-            context.bot.delete_message(chat_id=user_id, message_id=analysis_sticker.message_id)
-        except Exception as e:
-            logger.error(f"Error deleting analysis sticker: {e}")
-
         # If screenshot has been digitally edited (only reject if clearly edited)
         if not is_unedited and confidence_score >= 60:
             # Log the editing detection
