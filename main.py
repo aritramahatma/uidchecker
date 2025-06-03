@@ -1998,6 +1998,15 @@ def reject_command(update: Update, context: CallbackContext):
             update.message.reply_text("ℹ️ No non-verified users found.")
             return
 
+        # Create list of rejected UIDs for display BEFORE deletion
+        rejected_uid_list = []
+        for doc in non_verified_users[:20]:  # Show max 20 UIDs
+            uid = doc['uid']
+            username = doc.get('username', 'Unknown')
+            # Escape markdown characters in username
+            safe_username = username.replace('_', '\\_').replace('*', '\\*').replace('[', '\\[').replace('`', '\\`')
+            rejected_uid_list.append(f"• {uid} (@{safe_username})")
+
         rejected_count = 0
         deleted_count = 0
         for doc in non_verified_users:
@@ -2037,15 +2046,6 @@ def reject_command(update: Update, context: CallbackContext):
 
             except Exception as e:
                 logger.error(f"Error sending rejection to user {doc.get('user_id', 'Unknown')}: {e}")
-
-        # Create list of rejected UIDs for display
-        rejected_uid_list = []
-        for doc in non_verified_users[:20]:  # Show max 20 UIDs
-            uid = doc['uid']
-            username = doc.get('username', 'Unknown')
-            # Escape markdown characters in username
-            safe_username = username.replace('_', '\\_').replace('*', '\\*').replace('[', '\\[').replace('`', '\\`')
-            rejected_uid_list.append(f"• {uid} (@{safe_username})")
 
         summary_message = (
             f"📢 *REJECTION COMPLETED*\n\n"
