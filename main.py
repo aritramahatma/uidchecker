@@ -127,13 +127,18 @@ def check_blocked_users(context):
                     logger.info(f"Detected that user {user_id} has blocked the bot")
         
         if newly_blocked > 0:
-            # Update global blocked count
+            # Update global blocked count and decrease total users
             user_stats_col.update_one(
                 {'_id': 'global_stats'},
-                {'$inc': {'blocked_users': newly_blocked}},
+                {
+                    '$inc': {
+                        'blocked_users': newly_blocked,
+                        'total_users': -newly_blocked  # Subtract newly blocked users from total
+                    }
+                },
                 upsert=True
             )
-            logger.info(f"Updated blocked users count by {newly_blocked}")
+            logger.info(f"Updated blocked users count by {newly_blocked} and decreased total users by {newly_blocked}")
             
         return newly_blocked
         
