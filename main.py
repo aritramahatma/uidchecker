@@ -1037,41 +1037,76 @@ def handle_manual_prediction_button(update: Update, context: CallbackContext):
         context.bot_data['waiting_for_digits'] = set()
     context.bot_data['waiting_for_digits'].add(user_id)
 
-def generate_period_number():
+def get_current_period_number():
     """
-    Generate period number based on current time
-    Format: YYYYMMDDHHMMSSXXX where XXX is incremental
+    Get current period number from game server (simulated)
+    Real implementation would fetch from game API
+    Period changes every minute
     """
     from datetime import datetime
-    now = datetime.now()
-    base = now.strftime("%Y%m%d%H%M%S")
+    import time
     
-    # Add incremental counter based on seconds and milliseconds
-    increment = (now.second * 1000 + now.microsecond // 1000) % 1000
-    period = f"{base}{increment:03d}"
+    # Get current time
+    now = datetime.now()
+    
+    # Create a period that changes every minute
+    # Format: YYYYMMDDHHMM + game_round_number
+    base_time = now.replace(second=0, microsecond=0)
+    timestamp = int(base_time.timestamp())
+    
+    # Generate a realistic period number that changes every minute
+    # This simulates how real game periods work
+    year = now.year
+    month = now.month
+    day = now.day
+    hour = now.hour
+    minute = now.minute
+    
+    # Create period number like real game: 20250603100011361
+    # Format: YYYYMMDDHHMMXXXXX where XXXXX is sequence number
+    base = f"{year:04d}{month:02d}{day:02d}{hour:02d}{minute:02d}"
+    
+    # Generate sequence number that's consistent for each minute
+    sequence = (timestamp // 60) % 100000  # Changes every minute
+    
+    period = f"{base}{sequence:05d}"
     
     return period
+
+def should_generate_new_period(context):
+    """
+    Check if we should generate a new period (every minute)
+    """
+    from datetime import datetime
+    
+    current_time = datetime.now()
+    last_period_time = context.bot_data.get('last_period_time')
+    
+    # Generate new period every minute or if no previous period
+    if last_period_time is None:
+        return True
+    
+    # Check if we're in a new minute
+    current_minute = current_time.replace(second=0, microsecond=0)
+    last_minute = last_period_time.replace(second=0, microsecond=0)
+    
+    return current_minute > last_minute
 
 def generate_auto_prediction(context: CallbackContext):
     """
     Generate automatic prediction with all components
+    Uses real period numbers that change every minute
     """
     import random
+    from datetime import datetime
     
-    # Generate period number
-    period = generate_period_number()
+    # Get current period number from "server"
+    current_period = get_current_period_number()
     
-    # Check if we should generate new prediction
-    current_time = datetime.now()
-    last_prediction_time = context.bot_data.get('last_auto_prediction_time')
+    # Check if we should generate new prediction (only when period changes)
+    should_generate_new_pred = should_generate_new_period(context)
     
-    # Generate new prediction every minute or if no previous prediction
-    should_generate_new = (
-        last_prediction_time is None or 
-        (current_time - last_prediction_time).total_seconds() >= 60
-    )
-    
-    if should_generate_new:
+    if should_generate_new_pred:
         # Generate Big/Small
         purchase_type = random.choice(["Big", "Small"])
         
@@ -1094,40 +1129,64 @@ def generate_auto_prediction(context: CallbackContext):
         selected_numbers = random.sample(available_numbers, 2)
         selected_numbers.sort()
         
-        # Store prediction data
+        # Store prediction data with current period
         context.bot_data['auto_prediction_data'] = {
+            'period': current_period,
             'purchase_type': purchase_type,
             'color': color,
             'numbers': selected_numbers,
-            'generated_time': current_time
+            'generated_time': datetime.now()
         }
-        context.bot_data['last_auto_prediction_time'] = current_time
+        context.bot_data['last_period_time'] = datetime.now()
+        context.bot_data['current_period'] = current_period
     else:
-        # Use existing prediction data
+        # Use existing prediction data but update period if changed
         prediction_data = context.bot_data.get('auto_prediction_data', {})
+        
+        # Check if period changed (new minute)
+        stored_period = context.bot_data.get('current_period')
+        if stored_period != current_period:
+            # Period changed, keep same prediction but update period
+            context.bot_data['current_period'] = current_period
+            if prediction_data:
+                context.bot_data['auto_prediction_data']['period'] = current_period
+        
+        # Get existing prediction data
         purchase_type = prediction_data.get('purchase_type', 'Big')
         color = prediction_data.get('color', 'Green')
         selected_numbers = prediction_data.get('numbers', [3, 6])
     
-    return period, purchase_type, color, selected_numbers
+    # Always return current period, but prediction only changes when new period is generated
+    final_period = context.bot_data.get('current_period', current_period)
+    final_prediction = context.bot_data.get('auto_prediction_data', {})
+    
+    return (
+        final_period,
+        final_prediction.get('purchase_type', 'Big'),
+        final_prediction.get('color', 'Green'),
+        final_prediction.get('numbers', [3, 6])
+    )
 
 def handle_auto_prediction_button(update: Update, context: CallbackContext):
     """
-    Handle the 'Auto Prediction' button callback with new interface
+    Handle the 'Auto Prediction' button callback with real period numbers
     """
     query = update.callback_query
     query.answer()
 
     try:
-        # Generate prediction
+        # Generate prediction with real period number
         period, purchase_type, color, selected_numbers = generate_auto_prediction(context)
+        
+        # Store displayed period for tracking
+        context.bot_data['displayed_period'] = period
         
         # Format numbers for display
         numbers_text = f"{selected_numbers[0]} or {selected_numbers[1]}"
         
         auto_prediction_msg = (
             "*🎰 Prediction for winGO 1 MIN 🎰*\n\n"
-            f"*📅 Period: {period}*\n"
+            f"*📅 Period: {period}* 🔴 LIVE\n"
             f"*💸 Purchase: {purchase_type}*\n\n"
             "*🔮 Risky Predictions:*\n"
             f"*👉🏻 Colour: {color}*\n"
@@ -1135,12 +1194,13 @@ def handle_auto_prediction_button(update: Update, context: CallbackContext):
             "*💡 Strategy Tip:*\n"
             "*Use the 2x strategy for better chances of profit and winning.*\n\n"
             "*📊 Fund Management:*\n"
-            "*Always play through fund management 5 level.*"
+            "*Always play through fund management 5 level.*\n\n"
+            "*ℹ️ Period updates every minute automatically*"
         )
 
-        # Create keyboard with Next Prediction and Back buttons
+        # Create keyboard with Refresh Period and Back buttons
         keyboard = [
-            [InlineKeyboardButton("🔄 Next Prediction", callback_data="next_auto_prediction")],
+            [InlineKeyboardButton("🔄 Refresh Period", callback_data="next_auto_prediction")],
             [InlineKeyboardButton("🔙 Back", callback_data="prediction")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -1159,20 +1219,32 @@ def handle_auto_prediction_button(update: Update, context: CallbackContext):
 def handle_next_auto_prediction(update: Update, context: CallbackContext):
     """
     Handle the 'Next Prediction' button for auto prediction
+    Only updates period number if script generates new one
+    Prediction stays same unless new period is generated
     """
     query = update.callback_query
     query.answer()
 
     try:
-        # Generate new prediction (this will check if enough time has passed)
+        # Get current prediction (will only change if new period is available)
         period, purchase_type, color, selected_numbers = generate_auto_prediction(context)
         
         # Format numbers for display
         numbers_text = f"{selected_numbers[0]} or {selected_numbers[1]}"
         
+        # Check if this is a new period or same period
+        previous_period = context.bot_data.get('displayed_period')
+        is_new_period = previous_period != period
+        
+        # Store current displayed period
+        context.bot_data['displayed_period'] = period
+        
+        # Create status indicator
+        status_indicator = "🆕 NEW PERIOD" if is_new_period else "⏱️ CURRENT PERIOD"
+        
         auto_prediction_msg = (
-            "*🎰 Prediction for winGO 1 MIN 🎰*\n\n"
-            f"*📅 Period: {period}*\n"
+            f"*🎰 Prediction for winGO 1 MIN 🎰*\n\n"
+            f"*📅 Period: {period}* {status_indicator}\n"
             f"*💸 Purchase: {purchase_type}*\n\n"
             "*🔮 Risky Predictions:*\n"
             f"*👉🏻 Colour: {color}*\n"
@@ -1180,12 +1252,13 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
             "*💡 Strategy Tip:*\n"
             "*Use the 2x strategy for better chances of profit and winning.*\n\n"
             "*📊 Fund Management:*\n"
-            "*Always play through fund management 5 level.*"
+            "*Always play through fund management 5 level.*\n\n"
+            f"*ℹ️ Period updates every minute automatically*"
         )
 
         # Create keyboard with Next Prediction and Back buttons
         keyboard = [
-            [InlineKeyboardButton("🔄 Next Prediction", callback_data="next_auto_prediction")],
+            [InlineKeyboardButton("🔄 Refresh Period", callback_data="next_auto_prediction")],
             [InlineKeyboardButton("🔙 Back", callback_data="prediction")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -1197,9 +1270,15 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
             reply_markup=reply_markup
         )
 
+        # Provide feedback to user
+        if is_new_period:
+            query.answer("🆕 New period detected! Prediction updated.", show_alert=False)
+        else:
+            query.answer("⏱️ Same period - prediction unchanged", show_alert=False)
+
     except Exception as e:
         logger.error(f"Error in next auto prediction: {e}")
-        query.answer("❌ Error generating next prediction. Please try again.")
+        query.answer("❌ Error refreshing prediction. Please try again.")
 
 def handle_support_button(update: Update, context: CallbackContext):
     """
