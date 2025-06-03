@@ -1396,7 +1396,7 @@ def handle_wallet(update: Update, context: CallbackContext):
 
         # Step 1: Send sticker for analysis
         analysis_sticker = update.message.reply_sticker(
-            sticker="CAACAgEAAxkBAAEOoP5oPqT7FGKMQSq8AShzMyvbg26_iwACXwADnjOcH-M6N-2PRwkvNgQ"
+            sticker="CAACAgQAAxkBAAEOn6RoPTKiSte1vk8IStJRTBsfRYRdCwAC4xgAAoo2OVGWcfjhDFS9nTYE"
         )
         
         # Detect digital editing/manipulation
