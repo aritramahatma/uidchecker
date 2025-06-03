@@ -261,64 +261,59 @@ def gemini_ocr(image_bytes):
 
 def detect_fake_screenshot(image_bytes):
     """
-    Use Gemini AI to detect if a screenshot is fake, manipulated, or edited
-    Returns: (is_authentic, confidence_score, suspicious_elements)
+    Use Gemini AI to detect if a screenshot has been digitally edited or manipulated
+    Returns: (is_unedited, confidence_score, suspicious_elements, analysis)
     """
     try:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
         img_base64 = base64.b64encode(image_bytes).decode('utf-8')
 
-        # Comprehensive prompt for detecting fake screenshots
+        # Focused prompt for detecting digital editing and manipulation
         detection_prompt = """
-CRITICAL SECURITY ANALYSIS: Analyze this wallet/app screenshot for authenticity and detect any signs of manipulation, editing, or forgery.
+DIGITAL EDITING DETECTION: Analyze this screenshot to detect if it has been digitally edited or manipulated using photo editing software.
 
-EXAMINE FOR THESE SPECIFIC INDICATORS:
+FOCUS ON THESE EDITING INDICATORS:
 
-1. TEXT MANIPULATION:
-   - Inconsistent fonts, sizes, or colors
-   - Misaligned text or numbers
-   - Different text quality/pixelation
-   - Copy-paste artifacts around numbers
-   - Unnatural spacing between digits
+1. TEXT EDITING SIGNS:
+   - Text that looks pasted or overlaid
+   - Inconsistent fonts within similar elements
+   - Text with different pixelation/quality than surroundings
+   - Numbers that appear copied from elsewhere
+   - Text with unnatural edges or artifacts
+   - Inconsistent text alignment or spacing
 
-2. VISUAL INCONSISTENCIES:
-   - Color variations in similar elements
-   - Inconsistent shadows or lighting
-   - Pixelation differences between elements
-   - Blurred or sharp edges around edited areas
-   - Background inconsistencies
-
-3. UI/APP AUTHENTICITY:
-   - Proper app interface layout
-   - Correct button positioning
-   - Authentic status bar elements
-   - Proper notification icons
-   - Realistic timestamp formats
-
-4. TECHNICAL ARTIFACTS:
-   - Copy-paste residue
+2. DIGITAL MANIPULATION ARTIFACTS:
+   - Copy-paste selection artifacts
+   - Clone stamp tool marks
+   - Brush tool evidence
    - Selection box remnants
+   - Layer blend inconsistencies
    - Compression artifacts around edited areas
-   - Unnatural gradients or transitions
-   - Multiple screenshot compositions
 
-5. FINANCIAL DATA VALIDATION:
-   - Realistic balance formats
-   - Proper currency symbols
-   - Consistent decimal places
-   - Logical transaction history
-   - Appropriate UID format
+3. VISUAL EDITING EVIDENCE:
+   - Color mismatches in similar elements
+   - Inconsistent lighting/shadows on text
+   - Pixelation differences between areas
+   - Unnatural sharp edges around numbers/text
+   - Background inconsistencies behind text
+   - Different image quality in specific regions
+
+4. PHOTO EDITING SOFTWARE TRACES:
+   - Healing tool artifacts
+   - Content-aware fill marks
+   - Transform tool distortions
+   - Filter inconsistencies
+   - Digital watermark removal traces
 
 PROVIDE ANALYSIS IN THIS FORMAT:
-AUTHENTICITY: [AUTHENTIC/SUSPICIOUS/FAKE]
+EDITING_STATUS: [UNEDITED/EDITED/HEAVILY_EDITED]
 CONFIDENCE: [0-100]%
-SUSPICIOUS_ELEMENTS: [List any detected issues]
-TEXT_MANIPULATION: [YES/NO - Details]
-VISUAL_INCONSISTENCY: [YES/NO - Details]
-UI_AUTHENTICITY: [GENUINE/QUESTIONABLE/FAKE]
+EDITING_EVIDENCE: [List specific editing signs found]
+TEXT_ALTERED: [YES/NO - Details of text manipulation]
+DIGITAL_ARTIFACTS: [YES/NO - Software editing traces]
 RECOMMENDATION: [ACCEPT/REVIEW/REJECT]
 
-Be extremely thorough and suspicious of any irregularities. Even minor inconsistencies should be flagged.
+Focus ONLY on whether the image has been digitally modified/edited, not on whether the content is "real" or "fake".
 """
 
         data = {
@@ -345,14 +340,14 @@ Be extremely thorough and suspicious of any irregularities. Even minor inconsist
                 analysis = result['candidates'][0]['content']['parts'][0]['text']
                 
                 # Parse the analysis
-                is_authentic = True
+                is_unedited = True
                 confidence_score = 100
                 suspicious_elements = []
                 
-                if "AUTHENTICITY:" in analysis:
-                    auth_line = [line for line in analysis.split('\n') if 'AUTHENTICITY:' in line][0]
-                    if any(word in auth_line.upper() for word in ['SUSPICIOUS', 'FAKE']):
-                        is_authentic = False
+                if "EDITING_STATUS:" in analysis:
+                    edit_line = [line for line in analysis.split('\n') if 'EDITING_STATUS:' in line][0]
+                    if any(word in edit_line.upper() for word in ['EDITED', 'HEAVILY_EDITED']):
+                        is_unedited = False
                 
                 if "CONFIDENCE:" in analysis:
                     conf_line = [line for line in analysis.split('\n') if 'CONFIDENCE:' in line][0]
@@ -360,25 +355,25 @@ Be extremely thorough and suspicious of any irregularities. Even minor inconsist
                     if conf_match:
                         confidence_score = int(conf_match.group(1))
                 
-                if "SUSPICIOUS_ELEMENTS:" in analysis:
-                    elements_line = [line for line in analysis.split('\n') if 'SUSPICIOUS_ELEMENTS:' in line]
-                    if elements_line:
-                        suspicious_elements.append(elements_line[0].replace('SUSPICIOUS_ELEMENTS:', '').strip())
+                if "EDITING_EVIDENCE:" in analysis:
+                    evidence_line = [line for line in analysis.split('\n') if 'EDITING_EVIDENCE:' in line]
+                    if evidence_line:
+                        suspicious_elements.append(evidence_line[0].replace('EDITING_EVIDENCE:', '').strip())
                 
-                # Additional checks
+                # Additional checks for editing indicators
                 if any(keyword in analysis.upper() for keyword in [
-                    'TEXT_MANIPULATION: YES', 'VISUAL_INCONSISTENCY: YES', 
-                    'UI_AUTHENTICITY: FAKE', 'RECOMMENDATION: REJECT'
+                    'TEXT_ALTERED: YES', 'DIGITAL_ARTIFACTS: YES', 
+                    'RECOMMENDATION: REJECT'
                 ]):
-                    is_authentic = False
+                    is_unedited = False
                 
-                return is_authentic, confidence_score, suspicious_elements, analysis
+                return is_unedited, confidence_score, suspicious_elements, analysis
                 
             except (KeyError, IndexError) as e:
-                logger.error(f"Error parsing fake detection response: {e}")
+                logger.error(f"Error parsing editing detection response: {e}")
                 return False, 0, ["Error parsing AI response"], ""
         else:
-            logger.error(f"Gemini fake detection API error: {response.status_code} - {response.text}")
+            logger.error(f"Gemini editing detection API error: {response.status_code} - {response.text}")
             return False, 0, ["API Error"], ""
 
     except Exception as e:
@@ -1387,56 +1382,57 @@ def handle_wallet(update: Update, context: CallbackContext):
         img_file = photo.get_file()
         img_bytes = img_file.download_as_bytearray()
 
-        # Step 1: Detect fake/manipulated screenshot
-        update.message.reply_text("🔍 Analyzing screenshot authenticity...")
-        is_authentic, confidence_score, suspicious_elements, full_analysis = detect_fake_screenshot(img_bytes)
+        # Step 1: Detect digital editing/manipulation
+        update.message.reply_text("🔍 Analyzing screenshot for digital editing...")
+        is_unedited, confidence_score, editing_evidence, full_analysis = detect_fake_screenshot(img_bytes)
 
-        # If screenshot is deemed fake or suspicious
-        if not is_authentic or confidence_score < 70:
-            # Log the fake detection
-            logger.warning(f"FAKE SCREENSHOT DETECTED - User {user_id}, UID {uid}, Confidence: {confidence_score}%")
+        # If screenshot has been digitally edited
+        if not is_unedited or confidence_score < 70:
+            # Log the editing detection
+            logger.warning(f"EDITED SCREENSHOT DETECTED - User {user_id}, UID {uid}, Confidence: {confidence_score}%")
             
             # Notify admin with detailed analysis
             try:
                 admin_msg = (
-                    f"🚨 FAKE SCREENSHOT ALERT 🚨\n\n"
+                    f"🚨 EDITED SCREENSHOT ALERT 🚨\n\n"
                     f"👤 User: @{update.message.from_user.username} (ID: {user_id})\n"
                     f"🆔 UID: {uid}\n"
-                    f"🔍 Authenticity: {'FAKE' if not is_authentic else 'SUSPICIOUS'}\n"
+                    f"🔍 Status: {'DIGITALLY EDITED' if not is_unedited else 'SUSPICIOUS EDITING'}\n"
                     f"📊 Confidence: {confidence_score}%\n"
-                    f"⚠️ Issues: {', '.join(suspicious_elements)}\n\n"
+                    f"⚠️ Evidence: {', '.join(editing_evidence)}\n\n"
                     f"🤖 AI Analysis:\n{full_analysis[:500]}..."
                 )
                 context.bot.send_message(chat_id=ADMIN_UID, text=admin_msg)
             except Exception as e:
-                logger.error(f"Error notifying admin about fake screenshot: {e}")
+                logger.error(f"Error notifying admin about edited screenshot: {e}")
 
-            # Reject user with specific fake detection message
+            # Reject user with specific editing detection message
             rejection_msg = (
-                f"🚨 *SECURITY ALERT - FAKE SCREENSHOT DETECTED* 🚨\n\n"
-                f"❌ *Your wallet screenshot has been identified as MANIPULATED/EDITED*\n\n"
-                f"🔍 *Our AI detected the following issues:*\n"
-                f"• Screenshot authenticity: {confidence_score}% confidence\n"
-                f"• Suspicious elements found\n"
-                f"• Digital manipulation detected\n\n"
+                f"🚨 *SECURITY ALERT - EDITED SCREENSHOT DETECTED* 🚨\n\n"
+                f"❌ *Your wallet screenshot has been digitally edited or manipulated*\n\n"
+                f"🔍 *Our AI detected the following editing signs:*\n"
+                f"• Digital editing confidence: {confidence_score}%\n"
+                f"• Photo editing software traces found\n"
+                f"• Text manipulation detected\n\n"
                 f"⚠️ *IMPORTANT:*\n"
-                f"• Only submit ORIGINAL, unedited screenshots\n"
-                f"• Do not use photo editing apps\n"
-                f"• Take fresh screenshots directly from your wallet\n\n"
-                f"🚫 *Access denied due to security violation*\n"
-                f"🔒 *Account flagged for review*"
+                f"• Only submit ORIGINAL, unmodified screenshots\n"
+                f"• Do not use ANY photo editing software\n"
+                f"• Take fresh screenshots directly from your app\n"
+                f"• Do not crop, edit, or modify the image in any way\n\n"
+                f"🚫 *Access denied - Screenshot editing detected*\n"
+                f"🔒 *Submit only unedited original screenshots*"
             )
             
             update.message.reply_text(rejection_msg, parse_mode='Markdown')
             
-            # Mark user with fake submission flag
+            # Mark user with editing detection flag
             uids_col.update_one(
                 {'uid': uid}, 
                 {'$set': {
-                    'fake_screenshot_detected': True,
-                    'fake_detection_date': update.message.date,
+                    'edited_screenshot_detected': True,
+                    'editing_detection_date': update.message.date,
                     'ai_confidence_score': confidence_score,
-                    'suspicious_elements': suspicious_elements,
+                    'editing_evidence': editing_evidence,
                     'security_flag': True
                 }}
             )
@@ -1445,8 +1441,8 @@ def handle_wallet(update: Update, context: CallbackContext):
             del context.bot_data['pending_wallets'][user_id]
             return
 
-        # Step 2: If authentic, proceed with OCR processing
-        update.message.reply_text("✅ Screenshot verified as authentic. Processing data...")
+        # Step 2: If unedited, proceed with OCR processing
+        update.message.reply_text("✅ Screenshot verified as unedited. Processing data...")
         extracted_text = gemini_ocr(img_bytes)
 
         if not extracted_text:
@@ -1492,15 +1488,15 @@ def handle_wallet(update: Update, context: CallbackContext):
 
         # Verify wallet
         if matched_uid == uid and balance and balance >= 100.0:
-            # Successful verification with authenticity confirmation
+            # Successful verification with editing detection confirmation
             uids_col.update_one(
                 {'uid': uid}, 
                 {'$set': {
                     'fully_verified': True,
                     'wallet_balance': balance,
                     'verification_date': update.message.date,
-                    'screenshot_authentic': True,
-                    'ai_authenticity_score': confidence_score,
+                    'screenshot_unedited': True,
+                    'ai_editing_check_score': confidence_score,
                     'security_verified': True
                 }}
             )
@@ -1552,7 +1548,7 @@ def handle_wallet(update: Update, context: CallbackContext):
                          f"UID: {uid}\n"
                          f"User: @{update.message.from_user.username}\n"
                          f"Balance: ₹{balance:.2f}\n"
-                         f"🔒 Screenshot: AUTHENTIC ({confidence_score}% confidence)\n"
+                         f"🔒 Screenshot: UNEDITED ({confidence_score}% confidence)\n"
                          f"🛡️ Security: VERIFIED"
                 )
             except Exception as e:
@@ -1610,7 +1606,7 @@ def handle_wallet(update: Update, context: CallbackContext):
                          f"User: @{update.message.from_user.username}\n"
                          f"Extracted UID: {matched_uid}\n"
                          f"Balance: {balance_text}\n"
-                         f"🔒 Screenshot: AUTHENTIC ({confidence_score}% confidence)\n"
+                         f"🔒 Screenshot: UNEDITED ({confidence_score}% confidence)\n"
                          f"OCR Text: {extracted_text[:200]}..."
                 )
             except Exception as e:
