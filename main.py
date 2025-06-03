@@ -1053,8 +1053,8 @@ def get_current_period_number():
     # Step 3: Fixed game code for 1-min game
     game_code = "10001"
 
-    # Step 4: Calculate counter (minutes since 00:00)
-    counter = now.hour * 60 + now.minute
+    # Step 4: Calculate counter (minutes since 00:00) + 1 to match real period
+    counter = now.hour * 60 + now.minute + 1
     counter_str = f"{counter:04d}"  # zero-padded to 4 digits
 
     # Final period number
