@@ -962,9 +962,10 @@ def handle_prediction_button(update: Update, context: CallbackContext):
         "*⚠️ Make Sure to Maintain Level '5'*"
     )
 
-    # Create keyboard with Start Prediction button in first line and Back button
+    # Create keyboard with Manual and Auto Prediction buttons, then Back button
     keyboard = [
-        [InlineKeyboardButton("Start Prediction", callback_data="start_prediction")],
+        [InlineKeyboardButton("Manual Prediction", callback_data="manual_prediction"),
+         InlineKeyboardButton("Auto Prediction", callback_data="auto_prediction")],
         [InlineKeyboardButton("Back", callback_data="back")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -991,9 +992,9 @@ def handle_prediction_button(update: Update, context: CallbackContext):
         except Exception as e2:
             logger.error(f"Error editing caption in prediction button: {e2}")
 
-def handle_start_prediction_button(update: Update, context: CallbackContext):
+def handle_manual_prediction_button(update: Update, context: CallbackContext):
     """
-    Handle the 'Start Prediction' button callback
+    Handle the 'Manual Prediction' button callback (same as old start prediction)
     """
     query = update.callback_query
     query.answer()
@@ -1028,13 +1029,44 @@ def handle_start_prediction_button(update: Update, context: CallbackContext):
         # Answer the callback query to remove loading state
         query.answer()
     except Exception as e:
-        logger.error(f"Error sending new message in start prediction button: {e}")
+        logger.error(f"Error sending new message in manual prediction button: {e}")
 
     # Set user state to waiting for 3 digits
     user_id = query.from_user.id
     if 'waiting_for_digits' not in context.bot_data:
         context.bot_data['waiting_for_digits'] = set()
     context.bot_data['waiting_for_digits'].add(user_id)
+
+def handle_auto_prediction_button(update: Update, context: CallbackContext):
+    """
+    Handle the 'Auto Prediction' button callback (placeholder for future implementation)
+    """
+    query = update.callback_query
+    query.answer()
+
+    # Placeholder message for auto prediction
+    auto_prediction_msg = (
+        "*🤖 Auto Prediction*\n\n"
+        "*⚡️ Coming Soon!*\n"
+        "*🚀 Automatic predictions will be available soon*\n\n"
+        "*🔄 Please use Manual Prediction for now*"
+    )
+
+    # Create keyboard with Back button only
+    keyboard = [
+        [InlineKeyboardButton("Back", callback_data="prediction")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Send new message with auto prediction info
+    try:
+        query.message.reply_text(
+            auto_prediction_msg,
+            parse_mode='Markdown',
+            reply_markup=reply_markup
+        )
+    except Exception as e:
+        logger.error(f"Error sending auto prediction message: {e}")
 
 def handle_support_button(update: Update, context: CallbackContext):
     """
@@ -2703,7 +2735,7 @@ def handle_all(update: Update, context: CallbackContext):
 
                     # Create keyboard with Next Prediction and Back buttons
                     keyboard = [
-                        [InlineKeyboardButton("Next Prediction", callback_data="start_prediction")],
+                        [InlineKeyboardButton("Next Prediction", callback_data="manual_prediction")],
                         [InlineKeyboardButton("Back", callback_data="back")]
                     ]
                     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -3055,7 +3087,8 @@ def main():
         dp.add_handler(CallbackQueryHandler(handle_back_button, pattern="back"))
         # Add handler for prediction button
         dp.add_handler(CallbackQueryHandler(handle_prediction_button, pattern="prediction"))
-        dp.add_handler(CallbackQueryHandler(handle_start_prediction_button, pattern="start_prediction"))
+        dp.add_handler(CallbackQueryHandler(handle_manual_prediction_button, pattern="manual_prediction"))
+        dp.add_handler(CallbackQueryHandler(handle_auto_prediction_button, pattern="auto_prediction"))
         dp.add_handler(CallbackQueryHandler(handle_support_button, pattern="support"))
         dp.add_handler(CallbackQueryHandler(handle_confirm_delete_all_data, pattern="confirm_delete_all_data"))
         dp.add_handler(CallbackQueryHandler(handle_delete_all_data_yes, pattern="delete_all_data_yes"))
