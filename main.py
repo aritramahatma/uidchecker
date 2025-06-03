@@ -1047,14 +1047,14 @@ def handle_support_button(update: Update, context: CallbackContext):
     support_msg = (
         "*⚠️ DEPOSIT / WITHDRAWAL ISSUE ⁉️*\n\n"
         "*💬 Contact our Official Support Bot:*\n"
-        "*📬 @JalwaHelpCentre_bot*\n"
         "*⏰ Support available 24/7*\n"
         "*⚙️ Only use the official bot for help!*\n\n"
         "*🚀 Get back in the game without delay*"
     )
 
-    # Create back button
+    # Create buttons with Contact and Back
     keyboard = [
+        [InlineKeyboardButton("Contact", url="https://t.me/streamerflex_bot")],
         [InlineKeyboardButton("Back", callback_data="back")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
