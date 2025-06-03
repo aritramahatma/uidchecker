@@ -652,13 +652,13 @@ def handle_unlock_gift_code(update: Update, context: CallbackContext):
         gift_code_data = get_current_gift_code()
 
         gift_code_msg = (
-            "*🎁 GIFT CODE UNLOCKED – Get Up to ₹500! ✅*\n\n"
-            f"`{gift_code_data['code']}`\n"
+            "*🎁 GIFT CODE UNLOCKED – Get Up to ₹500!*\n\n"
+            f"`{gift_code_data['code']}`\n\n"
             f"*🕒 Updated: {gift_code_data['updated_date']}*\n"
             "*🔄 Next Update: 24 hours Later*\n\n"
             "*⚠️ Condition:*\n"
             "*➠ Must register using the official link to claim!*\n\n"
-            "*🎊 ENJOY & WIN BIG! 🥷*"
+            "*🥷 ENJOY & WIN BIG! 🦋*"
         )
 
         # Create back button
