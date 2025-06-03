@@ -2726,7 +2726,7 @@ def handle_all(update: Update, context: CallbackContext):
 
                     # Send VIP prediction message
                     vip_prediction_msg = (
-                        "*🔐 VIP Hack Prediction ⏳*\n\n"
+                        "*🔐 VIP Hack Manual Prediction ⏳*\n\n"
                         "*🎮 Game: Wingo 1 Minute*\n"
                         f"*🆔 Period Number : {text}*\n"
                         f"*💸 Purchase: {purchase_type}*\n\n"
