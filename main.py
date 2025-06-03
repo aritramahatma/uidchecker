@@ -1037,36 +1037,169 @@ def handle_manual_prediction_button(update: Update, context: CallbackContext):
         context.bot_data['waiting_for_digits'] = set()
     context.bot_data['waiting_for_digits'].add(user_id)
 
+def generate_period_number():
+    """
+    Generate period number based on current time
+    Format: YYYYMMDDHHMMSSXXX where XXX is incremental
+    """
+    from datetime import datetime
+    now = datetime.now()
+    base = now.strftime("%Y%m%d%H%M%S")
+    
+    # Add incremental counter based on seconds and milliseconds
+    increment = (now.second * 1000 + now.microsecond // 1000) % 1000
+    period = f"{base}{increment:03d}"
+    
+    return period
+
+def generate_auto_prediction(context: CallbackContext):
+    """
+    Generate automatic prediction with all components
+    """
+    import random
+    
+    # Generate period number
+    period = generate_period_number()
+    
+    # Check if we should generate new prediction
+    current_time = datetime.now()
+    last_prediction_time = context.bot_data.get('last_auto_prediction_time')
+    
+    # Generate new prediction every minute or if no previous prediction
+    should_generate_new = (
+        last_prediction_time is None or 
+        (current_time - last_prediction_time).total_seconds() >= 60
+    )
+    
+    if should_generate_new:
+        # Generate Big/Small
+        purchase_type = random.choice(["Big", "Small"])
+        
+        # Generate Color (Green/Red 95%, Violet 5%)
+        color_roll = random.randint(1, 100)
+        if color_roll <= 5:
+            color = "Violet"
+        else:
+            color = random.choice(["Green", "Red"])
+        
+        # Generate Numbers based on Big/Small
+        if purchase_type == "Big":
+            # Big: numbers 5,6,7,8,9
+            available_numbers = [5, 6, 7, 8, 9]
+        else:
+            # Small: numbers 0,1,2,3,4
+            available_numbers = [0, 1, 2, 3, 4]
+        
+        # Select 2 random numbers from available set
+        selected_numbers = random.sample(available_numbers, 2)
+        selected_numbers.sort()
+        
+        # Store prediction data
+        context.bot_data['auto_prediction_data'] = {
+            'purchase_type': purchase_type,
+            'color': color,
+            'numbers': selected_numbers,
+            'generated_time': current_time
+        }
+        context.bot_data['last_auto_prediction_time'] = current_time
+    else:
+        # Use existing prediction data
+        prediction_data = context.bot_data.get('auto_prediction_data', {})
+        purchase_type = prediction_data.get('purchase_type', 'Big')
+        color = prediction_data.get('color', 'Green')
+        selected_numbers = prediction_data.get('numbers', [3, 6])
+    
+    return period, purchase_type, color, selected_numbers
+
 def handle_auto_prediction_button(update: Update, context: CallbackContext):
     """
-    Handle the 'Auto Prediction' button callback (placeholder for future implementation)
+    Handle the 'Auto Prediction' button callback with new interface
     """
     query = update.callback_query
     query.answer()
 
-    # Placeholder message for auto prediction
-    auto_prediction_msg = (
-        "*🤖 Auto Prediction*\n\n"
-        "*⚡️ Coming Soon!*\n"
-        "*🚀 Automatic predictions will be available soon*\n\n"
-        "*🔄 Please use Manual Prediction for now*"
-    )
-
-    # Create keyboard with Back button only
-    keyboard = [
-        [InlineKeyboardButton("Back", callback_data="prediction")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    # Send new message with auto prediction info
     try:
+        # Generate prediction
+        period, purchase_type, color, selected_numbers = generate_auto_prediction(context)
+        
+        # Format numbers for display
+        numbers_text = f"{selected_numbers[0]} or {selected_numbers[1]}"
+        
+        auto_prediction_msg = (
+            "*🎰 Prediction for winGO 1 MIN 🎰*\n\n"
+            f"*📅 Period: {period}*\n"
+            f"*💸 Purchase: {purchase_type}*\n\n"
+            "*🔮 Risky Predictions:*\n"
+            f"*👉🏻 Colour: {color}*\n"
+            f"*👉🏻 Numbers: {numbers_text}*\n\n"
+            "*💡 Strategy Tip:*\n"
+            "*Use the 2x strategy for better chances of profit and winning.*\n\n"
+            "*📊 Fund Management:*\n"
+            "*Always play through fund management 5 level.*"
+        )
+
+        # Create keyboard with Next Prediction and Back buttons
+        keyboard = [
+            [InlineKeyboardButton("🔄 Next Prediction", callback_data="next_auto_prediction")],
+            [InlineKeyboardButton("🔙 Back", callback_data="prediction")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        # Send new message with auto prediction
         query.message.reply_text(
             auto_prediction_msg,
             parse_mode='Markdown',
             reply_markup=reply_markup
         )
+
     except Exception as e:
-        logger.error(f"Error sending auto prediction message: {e}")
+        logger.error(f"Error in auto prediction: {e}")
+        query.answer("❌ Error generating prediction. Please try again.")
+
+def handle_next_auto_prediction(update: Update, context: CallbackContext):
+    """
+    Handle the 'Next Prediction' button for auto prediction
+    """
+    query = update.callback_query
+    query.answer()
+
+    try:
+        # Generate new prediction (this will check if enough time has passed)
+        period, purchase_type, color, selected_numbers = generate_auto_prediction(context)
+        
+        # Format numbers for display
+        numbers_text = f"{selected_numbers[0]} or {selected_numbers[1]}"
+        
+        auto_prediction_msg = (
+            "*🎰 Prediction for winGO 1 MIN 🎰*\n\n"
+            f"*📅 Period: {period}*\n"
+            f"*💸 Purchase: {purchase_type}*\n\n"
+            "*🔮 Risky Predictions:*\n"
+            f"*👉🏻 Colour: {color}*\n"
+            f"*👉🏻 Numbers: {numbers_text}*\n\n"
+            "*💡 Strategy Tip:*\n"
+            "*Use the 2x strategy for better chances of profit and winning.*\n\n"
+            "*📊 Fund Management:*\n"
+            "*Always play through fund management 5 level.*"
+        )
+
+        # Create keyboard with Next Prediction and Back buttons
+        keyboard = [
+            [InlineKeyboardButton("🔄 Next Prediction", callback_data="next_auto_prediction")],
+            [InlineKeyboardButton("🔙 Back", callback_data="prediction")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        # Edit the existing message
+        query.edit_message_text(
+            text=auto_prediction_msg,
+            parse_mode='Markdown',
+            reply_markup=reply_markup
+        )
+
+    except Exception as e:
+        logger.error(f"Error in next auto prediction: {e}")
+        query.answer("❌ Error generating next prediction. Please try again.")
 
 def handle_support_button(update: Update, context: CallbackContext):
     """
@@ -3089,6 +3222,7 @@ def main():
         dp.add_handler(CallbackQueryHandler(handle_prediction_button, pattern="prediction"))
         dp.add_handler(CallbackQueryHandler(handle_manual_prediction_button, pattern="manual_prediction"))
         dp.add_handler(CallbackQueryHandler(handle_auto_prediction_button, pattern="auto_prediction"))
+        dp.add_handler(CallbackQueryHandler(handle_next_auto_prediction, pattern="next_auto_prediction"))
         dp.add_handler(CallbackQueryHandler(handle_support_button, pattern="support"))
         dp.add_handler(CallbackQueryHandler(handle_confirm_delete_all_data, pattern="confirm_delete_all_data"))
         dp.add_handler(CallbackQueryHandler(handle_delete_all_data_yes, pattern="delete_all_data_yes"))
