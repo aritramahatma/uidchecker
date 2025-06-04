@@ -252,6 +252,7 @@ def get_user_activity_stats():
 
 # Global variables
 last_extractions = []
+restrict_mode = False  # Global restriction mode
 
 # Conversation states for dual mode update
 MODE_SELECT, SINGLE_UID, BULK_IMG = range(3)
@@ -3324,6 +3325,48 @@ def check_blocked_command(update: Update, context: CallbackContext):
         update.message.reply_text("❌ Error checking blocked users.")
 
 
+def restrict_command(update: Update, context: CallbackContext):
+    """
+    Toggle global restriction mode (Admin only)
+    Usage: /restrict on or /restrict off
+    """
+    global restrict_mode
+    
+    if update.message.from_user.id != ADMIN_UID:
+        update.message.reply_text("❌ Unauthorized access.")
+        return
+
+    if not context.args:
+        current_status = "ON" if restrict_mode else "OFF"
+        update.message.reply_text(
+            f"🔐 *Restriction Mode Control*\n\n"
+            f"*Current Status:* {current_status}\n\n"
+            f"*Usage:*\n"
+            f"• `/restrict on` - Enable restriction mode\n"
+            f"• `/restrict off` - Disable restriction mode",
+            parse_mode='Markdown')
+        return
+
+    try:
+        mode = context.args[0].lower()
+
+        if mode == 'on':
+            restrict_mode = True
+            update.message.reply_text("🔐 Restriction Mode is now ON")
+            logger.info(f"Admin {update.message.from_user.username} enabled restriction mode")
+        elif mode == 'off':
+            restrict_mode = False
+            update.message.reply_text("🔓 Restriction Mode is now OFF")
+            logger.info(f"Admin {update.message.from_user.username} disabled restriction mode")
+        else:
+            update.message.reply_text(
+                "❌ Invalid option. Use `/restrict on` or `/restrict off`")
+
+    except Exception as e:
+        logger.error(f"Error in restrict command: {e}")
+        update.message.reply_text("❌ Error processing restriction command.")
+
+
 def cast_command(update: Update, context: CallbackContext):
     """
     Broadcast message to all users (Admin only)
@@ -4029,6 +4072,7 @@ def main():
         dp.add_handler(CommandHandler("block", block_user_command))
         dp.add_handler(CommandHandler("unblock", block_user_command))
         dp.add_handler(CommandHandler("checkblocked", check_blocked_command))
+        dp.add_handler(CommandHandler("restrict", restrict_command))
         dp.add_handler(CommandHandler("cast", cast_command))
         dp.add_handler(
             CallbackQueryHandler(handle_screenshot_button,
