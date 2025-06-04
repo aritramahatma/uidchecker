@@ -2114,7 +2114,7 @@ def handle_wallet(update: Update, context: CallbackContext):
             })
             # Create inline keyboard with 4 buttons
             keyboard = [[
-                InlineKeyboardButton("Prediction", callback_data="prediction"),
+                InlineKeyboardButton("📊 Prediction", callback_data="prediction_menu"),
                 InlineKeyboardButton("Gift Codes", callback_data="gift_codes")
             ],
                         [
