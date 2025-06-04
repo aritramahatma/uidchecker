@@ -2961,12 +2961,35 @@ def handle_all(update: Update, context: CallbackContext):
                     )
                     return
 
-            # Handle text messages - look for UID
-            text = update.message.text.upper()
+            # Handle text messages - look for UID (but exclude 3-digit numbers)
+            text = update.message.text.upper().strip()
+            
+            # Check if it's exactly 3 digits (should show error message)
+            if re.match(r'^\d{3}$', text):
+                update.message.reply_text(
+                    "*❌ Invalid Input*\n"
+                    "*🔢 Please send exactly 3 digits*\n"
+                    "*✅ Example: 789*\n\n"
+                    "*🧠 Let's keep it simple and accurate!*",
+                    parse_mode='Markdown'
+                )
+                return
+            
+            # Look for valid UIDs (6-12 digits, not exactly 3)
             uid_match = re.search(r'(?:UID\s*)?(\d{6,12})', text)
 
             if uid_match:
                 uid = uid_match.group(1)
+                # Double check it's not exactly 3 digits
+                if len(uid) == 3:
+                    update.message.reply_text(
+                        "*❌ Invalid Input - 3 digits detected*\n"
+                        "*🆔 Please send your full UID (6-12 digits)*\n"
+                        "*✅ Example: 123456789*\n\n"
+                        "*💡 For predictions, click Manual Prediction button first*",
+                        parse_mode='Markdown'
+                    )
+                    return
                 check_uid(update, context, uid, user_id, username)
             else:
                 update.message.reply_text(
