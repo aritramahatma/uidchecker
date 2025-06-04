@@ -2990,9 +2990,27 @@ def handle_all(update: Update, context: CallbackContext):
 
                     # Send sticker first
                     try:
-                        update.message.reply_sticker(
+                        manual_sticker = update.message.reply_sticker(
                             sticker="CAACAgQAAxkBAAEOn6RoPTKiSte1vk8IStJRTBsfRYRdCwAC4xgAAoo2OVGWcfjhDFS9nTYE"
                         )
+                        
+                        # Schedule sticker deletion after 2 minutes
+                        import threading
+                        
+                        def delete_manual_sticker_after_delay():
+                            try:
+                                import time
+                                time.sleep(120)  # Wait 2 minutes (120 seconds)
+                                context.bot.delete_message(chat_id=user_id, message_id=manual_sticker.message_id)
+                                logger.info(f"Manual prediction sticker deleted after 2 minutes for user {user_id}")
+                            except Exception as e:
+                                logger.error(f"Error deleting manual prediction sticker after delay: {e}")
+                        
+                        # Start the deletion timer in a separate thread
+                        manual_deletion_thread = threading.Thread(target=delete_manual_sticker_after_delay)
+                        manual_deletion_thread.daemon = True  # Thread will exit when main program exits
+                        manual_deletion_thread.start()
+                        
                     except Exception as e:
                         logger.error(f"Error sending sticker: {e}")
 
