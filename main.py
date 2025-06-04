@@ -1557,6 +1557,42 @@ def prediction_menu_handler(update: Update, context: CallbackContext):
             logger.error(f"Error sending prediction menu message: {e2}")
 
 
+def wingo_menu_handler(update: Update, context: CallbackContext):
+    """
+    Handle the wingo menu showing Manual and Auto Prediction options
+    """
+    query = update.callback_query
+    query.answer()
+
+    # Wingo menu message
+    wingo_menu_msg = ("*🎯 Wingo Predictions*\n\n"
+                      "*Choose your prediction method:*\n\n"
+                      "*📝 Manual Prediction - Send 3 digits for instant results*\n"
+                      "*🤖 Auto Prediction - AI-powered automatic predictions*")
+
+    # Create keyboard with Manual and Auto Prediction buttons
+    keyboard = [[
+        InlineKeyboardButton("📝 Manual Prediction", callback_data="manual_prediction"),
+        InlineKeyboardButton("🤖 Auto Prediction", callback_data="auto_prediction")
+    ], [InlineKeyboardButton("🔙 Back", callback_data="prediction_menu")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Edit existing message with new content
+    try:
+        query.edit_message_caption(caption=wingo_menu_msg,
+                                   parse_mode='Markdown',
+                                   reply_markup=reply_markup)
+    except Exception as e:
+        logger.error(f"Error editing message in wingo menu: {e}")
+        # Fallback to sending new message if edit fails
+        try:
+            query.message.reply_text(wingo_menu_msg,
+                                     parse_mode='Markdown',
+                                     reply_markup=reply_markup)
+        except Exception as e2:
+            logger.error(f"Error sending wingo menu message: {e2}")
+
+
 def handle_screenshot_button(update: Update, context: CallbackContext):
     """
     Handle the 'Send Screenshot' button callback
@@ -4026,6 +4062,8 @@ def main():
             CallbackQueryHandler(handle_support_button, pattern="support"))
         dp.add_handler(
             CallbackQueryHandler(prediction_menu_handler, pattern="prediction_menu"))
+        dp.add_handler(
+            CallbackQueryHandler(wingo_menu_handler, pattern="wingo_menu"))
         dp.add_handler(
             CallbackQueryHandler(handle_confirm_delete_all_data,
                                  pattern="confirm_delete_all_data"))
