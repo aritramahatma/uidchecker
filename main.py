@@ -474,7 +474,7 @@ def handle_bonus_button(update: Update, context: CallbackContext):
         InlineKeyboardButton(
             "Register Here",
             url="https://www.jalwa.fun/#/register?invitationCode=66385106362")
-    ], [InlineKeyboardButton("Back", callback_data="back")]]
+    ], [InlineKeyboardButton("🔙 Back", callback_data="back")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     # Edit existing message with new photo and content
