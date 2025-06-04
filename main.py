@@ -751,7 +751,6 @@ def handle_unlock_gift_code(update: Update, context: CallbackContext):
             )
 
             keyboard = [
-                [InlineKeyboardButton("🔄 Try Again After Joining", callback_data="unlock_gift_code")],
                 [InlineKeyboardButton("🔙 Back to Menu", callback_data="back")]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
