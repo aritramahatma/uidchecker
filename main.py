@@ -2114,7 +2114,7 @@ def handle_wallet(update: Update, context: CallbackContext):
             })
             # Create inline keyboard with 4 buttons
             keyboard = [[
-                InlineKeyboardButton("📊 Prediction", callback_data="prediction_menu"),
+                InlineKeyboardButton("Prediction", callback_data="prediction"),
                 InlineKeyboardButton("Gift Codes", callback_data="gift_codes")
             ],
                         [
@@ -4090,12 +4090,6 @@ def main():
                                  pattern="next_auto_prediction"))
         dp.add_handler(
             CallbackQueryHandler(handle_support_button, pattern="support"))
-        dp.add_handler(
-            CallbackQueryHandler(prediction_menu_handler, pattern="prediction_menu"))
-        dp.add_handler(
-            CallbackQueryHandler(wingo_menu_handler, pattern="wingo_menu"))
-        dp.add_handler(
-            CallbackQueryHandler(aviator_menu_handler, pattern="aviator_menu"))
         dp.add_handler(
             CallbackQueryHandler(prediction_menu_handler, pattern="prediction_menu"))
         dp.add_handler(
