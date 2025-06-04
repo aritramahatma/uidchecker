@@ -1826,8 +1826,9 @@ def check_newly_verified_uids(update: Update, context: CallbackContext):
 
 def check_uid(update, context, uid, user_id, username):
     """
-    Check if UID exists in database and update user info
+    Check if UID exists in database and update user info with restriction mode logic
     """
+    global restrict_mode
     max_retries = 3
     retry_count = 0
 
@@ -1842,59 +1843,136 @@ def check_uid(update, context, uid, user_id, username):
 
             found = uids_col.find_one({'uid': uid})
 
-            if found:
-                # UID found in database
-                uids_col.update_one({'uid': uid}, {
-                    '$set': {
-                        'user_id': user_id,
-                        'username': username,
-                        'verified': True,
-                        'last_checked': update.message.date
-                    }
-                },
-                                    upsert=True)
-                update.message.reply_text(
-                    f"*✅ UID {uid} Verified*\n"
-                    f"*📸 Please Send Your Wallet Screenshot For Balance Verification.*\n"
-                    f"*💰 Minimum Required Balance: ₹100*",
-                    parse_mode='Markdown')
+            if restrict_mode:
+                # Restriction mode is ON
+                if found:
+                    # UID exists in database
+                    verified_by = found.get('verified_by')
+                    
+                    if verified_by == user_id:
+                        # Same user already verified this UID
+                        update.message.reply_text(
+                            f"*✅ Already verified by you.*\n"
+                            f"*🆔 UID: {uid}*\n"
+                            f"*👤 This UID was previously verified by your account.*",
+                            parse_mode='Markdown')
+                        return
+                    elif verified_by and verified_by != user_id:
+                        # Different user already verified this UID
+                        update.message.reply_text(
+                            f"*❌ UID already verified by another account.*\n"
+                            f"*🆔 UID: {uid}*\n"
+                            f"*🚫 This UID has been claimed by a different user.*\n"
+                            f"*⚠️ Each UID can only be verified once.*",
+                            parse_mode='Markdown')
+                        return
+                    else:
+                        # UID exists but no verified_by field - update it
+                        uids_col.update_one({'uid': uid}, {
+                            '$set': {
+                                'user_id': user_id,
+                                'username': username,
+                                'verified': True,
+                                'verified_by': user_id,
+                                'last_checked': update.message.date
+                            }
+                        })
+                        update.message.reply_text(
+                            f"*✅ UID {uid} Verified*\n"
+                            f"*📸 Please Send Your Wallet Screenshot For Balance Verification.*\n"
+                            f"*💰 Minimum Required Balance: ₹100*",
+                            parse_mode='Markdown')
 
-                # Store pending wallet verification
-                if 'pending_wallets' not in context.bot_data:
-                    context.bot_data['pending_wallets'] = {}
-                context.bot_data['pending_wallets'][user_id] = uid
-                return
-
-            else:
-                # UID not found
-                uids_col.update_one({'uid': uid}, {
-                    '$set': {
+                        # Store pending wallet verification
+                        if 'pending_wallets' not in context.bot_data:
+                            context.bot_data['pending_wallets'] = {}
+                        context.bot_data['pending_wallets'][user_id] = uid
+                        return
+                else:
+                    # UID not found in database - insert with verified_by
+                    uids_col.insert_one({
+                        'uid': uid,
                         'user_id': user_id,
                         'username': username,
                         'verified': False,
                         'fully_verified': False,
+                        'verified_by': user_id,
                         'added_date': update.message.date
-                    }
-                },
-                                    upsert=True)
-                approval_message = (
-                    "*☑️ Your UID Successfully Sent For Approval !*\n\n"
-                    "*🔴 You Will Get Access Within Few Minutes If You Enter Correct Details*"
-                )
-                update.message.reply_text(approval_message,
-                                          parse_mode='Markdown')
+                    })
+                    approval_message = (
+                        "*☑️ Your UID Successfully Sent For Approval !*\n\n"
+                        "*🔴 You Will Get Access Within Few Minutes If You Enter Correct Details*"
+                    )
+                    update.message.reply_text(approval_message,
+                                              parse_mode='Markdown')
 
-                # Notify admin
-                try:
-                    update.message.bot.send_message(
-                        chat_id=ADMIN_UID,
-                        text=f"⚠️ New UID verification attempt:\n"
-                        f"UID: {uid}\n"
-                        f"User: @{username} (ID: {user_id})\n"
-                        f"Status: NOT FOUND")
-                except Exception as e:
-                    logger.error(f"Error notifying admin: {e}")
-                return
+                    # Notify admin
+                    try:
+                        update.message.bot.send_message(
+                            chat_id=ADMIN_UID,
+                            text=f"⚠️ New UID verification attempt (RESTRICT MODE):\n"
+                            f"UID: {uid}\n"
+                            f"User: @{username} (ID: {user_id})\n"
+                            f"Status: NOT FOUND\n"
+                            f"🔒 Verified by: {user_id}")
+                    except Exception as e:
+                        logger.error(f"Error notifying admin: {e}")
+                    return
+            else:
+                # Restriction mode is OFF - original logic
+                if found:
+                    # UID found in database
+                    uids_col.update_one({'uid': uid}, {
+                        '$set': {
+                            'user_id': user_id,
+                            'username': username,
+                            'verified': True,
+                            'last_checked': update.message.date
+                        }
+                    },
+                                        upsert=True)
+                    update.message.reply_text(
+                        f"*✅ UID {uid} Verified*\n"
+                        f"*📸 Please Send Your Wallet Screenshot For Balance Verification.*\n"
+                        f"*💰 Minimum Required Balance: ₹100*",
+                        parse_mode='Markdown')
+
+                    # Store pending wallet verification
+                    if 'pending_wallets' not in context.bot_data:
+                        context.bot_data['pending_wallets'] = {}
+                    context.bot_data['pending_wallets'][user_id] = uid
+                    return
+
+                else:
+                    # UID not found
+                    uids_col.update_one({'uid': uid}, {
+                        '$set': {
+                            'user_id': user_id,
+                            'username': username,
+                            'verified': False,
+                            'fully_verified': False,
+                            'added_date': update.message.date
+                        }
+                    },
+                                        upsert=True)
+                    approval_message = (
+                        "*☑️ Your UID Successfully Sent For Approval !*\n\n"
+                        "*🔴 You Will Get Access Within Few Minutes If You Enter Correct Details*"
+                    )
+                    update.message.reply_text(approval_message,
+                                              parse_mode='Markdown')
+
+                    # Notify admin
+                    try:
+                        update.message.bot.send_message(
+                            chat_id=ADMIN_UID,
+                            text=f"⚠️ New UID verification attempt:\n"
+                            f"UID: {uid}\n"
+                            f"User: @{username} (ID: {user_id})\n"
+                            f"Status: NOT FOUND")
+                    except Exception as e:
+                        logger.error(f"Error notifying admin: {e}")
+                    return
 
         except Exception as e:
             logger.error(
