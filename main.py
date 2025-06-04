@@ -1157,6 +1157,14 @@ def handle_auto_prediction_button(update: Update, context: CallbackContext):
     query.answer()
 
     try:
+        # Send sticker first for auto prediction analysis
+        try:
+            analysis_sticker = query.message.reply_sticker(
+                sticker="CAACAgUAAxkBAAEOokJoP6kNi3LIIAtNP6bOG-oNDN71qwACYQADO0qzKcFoBwUrNwVWNgQ"
+            )
+        except Exception as e:
+            logger.error(f"Error sending sticker: {e}")
+
         # Generate prediction with real period number
         period, purchase_type, color, selected_numbers = generate_auto_prediction(context)
         
