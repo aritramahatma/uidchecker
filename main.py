@@ -1557,6 +1557,43 @@ def prediction_menu_handler(update: Update, context: CallbackContext):
             logger.error(f"Error sending prediction menu message: {e2}")
 
 
+def wingo_menu_handler(update: Update, context: CallbackContext):
+    """
+    Handle the wingo menu showing Manual and Auto Prediction options
+    """
+    query = update.callback_query
+    query.answer()
+
+    # Wingo prediction menu message
+    wingo_menu_msg = ("*🥷 VIP AI Predictions*\n\n"
+                      "*⚡️ Unlock Exclusive Predictions Powered by AI*\n"
+                      "*🚀 High Accuracy & Smart Analysis*\n"
+                      "*💰 Maximize Your Winnings Like Never Before*\n\n"
+                      "*⚠️ Make Sure to Maintain Level '5'*")
+
+    # Create keyboard with Manual and Auto Prediction buttons
+    keyboard = [[
+        InlineKeyboardButton("Manual Prediction", callback_data="manual_prediction"),
+        InlineKeyboardButton("Auto Prediction", callback_data="auto_prediction")
+    ], [InlineKeyboardButton("🔙 Back", callback_data="prediction_menu")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Edit existing message with new content
+    try:
+        query.edit_message_caption(caption=wingo_menu_msg,
+                                   parse_mode='Markdown',
+                                   reply_markup=reply_markup)
+    except Exception as e:
+        logger.error(f"Error editing message in wingo menu: {e}")
+        # Fallback to sending new message if edit fails
+        try:
+            query.message.reply_text(wingo_menu_msg,
+                                     parse_mode='Markdown',
+                                     reply_markup=reply_markup)
+        except Exception as e2:
+            logger.error(f"Error sending wingo menu message: {e2}")
+
+
 def handle_screenshot_button(update: Update, context: CallbackContext):
     """
     Handle the 'Send Screenshot' button callback
