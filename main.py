@@ -1141,6 +1141,41 @@ def wingo_menu_handler(update: Update, context: CallbackContext):
             logger.error(f"Error editing caption in wingo menu: {e2}")
 
 
+def aviator_menu_handler(update: Update, context: CallbackContext):
+    """
+    Handle the aviator menu callback - shows coming soon message
+    """
+    query = update.callback_query
+    query.answer()
+
+    # Aviator coming soon message
+    aviator_msg = ("*🛩️ Aviator Predictions*\n\n"
+                   "*Coming Soon 🚧*\n\n"
+                   "*We're working hard to bring you Aviator predictions!*\n"
+                   "*Stay tuned for updates.*")
+
+    # Create keyboard with Back button only
+    keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="prediction_menu")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Edit existing message with aviator coming soon
+    try:
+        query.edit_message_media(media=InputMediaPhoto(
+            media="https://files.catbox.moe/ytmaec.jpg",
+            caption=aviator_msg,
+            parse_mode='Markdown'),
+                                 reply_markup=reply_markup)
+    except Exception as e:
+        logger.error(f"Error editing message in aviator menu: {e}")
+        # Fallback to editing just caption if photo edit fails
+        try:
+            query.edit_message_caption(caption=aviator_msg,
+                                       parse_mode='Markdown',
+                                       reply_markup=reply_markup)
+        except Exception as e2:
+            logger.error(f"Error editing caption in aviator menu: {e2}")
+
+
 def handle_manual_prediction_button(update: Update, context: CallbackContext):
     """
     Handle the 'Manual Prediction' button callback (same as old start prediction)
@@ -4025,6 +4060,9 @@ def main():
         dp.add_handler(
             CallbackQueryHandler(wingo_menu_handler,
                                  pattern="wingo_menu"))
+        dp.add_handler(
+            CallbackQueryHandler(aviator_menu_handler,
+                                 pattern="aviator_menu"))
         dp.add_handler(
             CallbackQueryHandler(handle_manual_prediction_button,
                                  pattern="manual_prediction"))
