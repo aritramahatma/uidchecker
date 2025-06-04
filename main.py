@@ -1103,6 +1103,44 @@ def handle_prediction_button(update: Update, context: CallbackContext):
     prediction_menu_handler(update, context)
 
 
+def wingo_menu_handler(update: Update, context: CallbackContext):
+    """
+    Handle the wingo menu callback - shows Manual/Auto prediction options
+    """
+    query = update.callback_query
+    query.answer()
+
+    # Wingo prediction options message
+    wingo_menu_msg = ("*🎮 Wingo Predictions*\n\n"
+                      "*Choose your prediction mode:*\n\n"
+                      "*🖊️ Manual Prediction - Enter 3 digits manually*\n"
+                      "*🤖 Auto Prediction - AI generates automatically*")
+
+    # Create keyboard with Manual and Auto Prediction buttons, then Back button
+    keyboard = [[
+        InlineKeyboardButton("🖊️ Manual Prediction", callback_data="manual_prediction"),
+        InlineKeyboardButton("🤖 Auto Prediction", callback_data="auto_prediction")
+    ], [InlineKeyboardButton("🔙 Back", callback_data="prediction_menu")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Edit existing message with wingo menu
+    try:
+        query.edit_message_media(media=InputMediaPhoto(
+            media="https://files.catbox.moe/ytmaec.jpg",
+            caption=wingo_menu_msg,
+            parse_mode='Markdown'),
+                                 reply_markup=reply_markup)
+    except Exception as e:
+        logger.error(f"Error editing message in wingo menu: {e}")
+        # Fallback to editing just caption if photo edit fails
+        try:
+            query.edit_message_caption(caption=wingo_menu_msg,
+                                       parse_mode='Markdown',
+                                       reply_markup=reply_markup)
+        except Exception as e2:
+            logger.error(f"Error editing caption in wingo menu: {e2}")
+
+
 def handle_manual_prediction_button(update: Update, context: CallbackContext):
     """
     Handle the 'Manual Prediction' button callback (same as old start prediction)
@@ -3984,6 +4022,9 @@ def main():
         dp.add_handler(
             CallbackQueryHandler(prediction_menu_handler,
                                  pattern="prediction_menu"))
+        dp.add_handler(
+            CallbackQueryHandler(wingo_menu_handler,
+                                 pattern="wingo_menu"))
         dp.add_handler(
             CallbackQueryHandler(handle_manual_prediction_button,
                                  pattern="manual_prediction"))
