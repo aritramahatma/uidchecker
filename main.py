@@ -1112,7 +1112,7 @@ def handle_manual_prediction_button(update: Update, context: CallbackContext):
                           "*⚙️ Example: If Period is 456123, just send 123*")
 
     # Create keyboard with Back button only
-    keyboard = [[InlineKeyboardButton("Back", callback_data="prediction")]]
+    keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="prediction")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     # Send new message with digits request instead of editing
