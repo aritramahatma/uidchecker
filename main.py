@@ -1927,6 +1927,7 @@ def check_uid(update, context, uid, user_id, username):
                             'user_id': user_id,
                             'username': username,
                             'verified': True,
+                            'verified_by': user_id,  # User verified this UID
                             'last_checked': update.message.date
                         }
                     },
@@ -1951,6 +1952,7 @@ def check_uid(update, context, uid, user_id, username):
                             'username': username,
                             'verified': False,
                             'fully_verified': False,
+                            'verified_by': user_id,  # User attempted to verify this UID
                             'added_date': update.message.date
                         }
                     },
@@ -2393,6 +2395,7 @@ def handle_single_uid(update: Update, context: CallbackContext):
                     True,  # UID is verified since admin added it to database
                     'fully_verified': False,
                     'admin_added': True,
+                    'verified_by': ADMIN_UID,  # Admin added this UID
                     'added_date': update.message.date
                 }
             },
@@ -2467,6 +2470,7 @@ def handle_bulk_images(update: Update, context: CallbackContext):
                             'fully_verified': False,
                             'admin_added': True,
                             'bulk_added': True,
+                            'verified_by': ADMIN_UID,  # Admin added this UID
                             'added_date': update.message.date
                         }
                     },
