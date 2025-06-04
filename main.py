@@ -2831,31 +2831,54 @@ def check_blocked_command(update: Update, context: CallbackContext):
 def cast_command(update: Update, context: CallbackContext):
     """
     Broadcast message to all users (Admin only)
-    Usage: /cast <message>
+    Usage: /cast <message> or reply to a message with /cast
     """
     if update.message.from_user.id != ADMIN_UID:
         update.message.reply_text("❌ Unauthorized access.")
         return
 
-    if not context.args:
+    broadcast_message = ""
+
+    # Check if the command is a reply to another message
+    if update.message.reply_to_message:
+        # Use the replied message content
+        if update.message.reply_to_message.text:
+            broadcast_message = update.message.reply_to_message.text
+        elif update.message.reply_to_message.caption:
+            broadcast_message = update.message.reply_to_message.caption
+        else:
+            update.message.reply_text("❌ Cannot cast this type of message. Please reply to a text message or provide text after /cast.")
+            return
+    elif context.args:
+        # Use the arguments provided with the command
+        broadcast_message = ' '.join(context.args)
+    else:
+        # No arguments and no reply
         update.message.reply_text(
             "📢 *Cast Message to All Users*\n\n"
-            "Usage: `/cast <your_message>`\n"
-            "Example: `/cast 🎉 New features coming soon! Stay tuned!`\n\n"
+            "*Two ways to use cast:*\n\n"
+            "*Method 1:* `/cast <your_message>`\n"
+            "*Example:* `/cast 🎉 New features coming soon! Stay tuned!`\n\n"
+            "*Method 2:* Reply to any message with `/cast`\n"
+            "*Example:* Reply to a message and type `/cast`\n\n"
             "⚠️ This will send the message to ALL bot users.",
             parse_mode='Markdown'
         )
         return
 
-    try:
-        # Get the message to broadcast
-        broadcast_message = ' '.join(context.args)
-        
-        if not broadcast_message.strip():
-            update.message.reply_text("❌ Message cannot be empty.")
-            return
+    if not broadcast_message.strip():
+        update.message.reply_text("❌ Message cannot be empty.")
+        return
 
-        update.message.reply_text("📡 Starting broadcast... This may take a while.")
+    try:
+        # Show what message will be broadcasted
+        preview_message = (
+            f"📡 *Starting broadcast...*\n\n"
+            f"*Message to broadcast:*\n"
+            f"`{broadcast_message[:200]}{'...' if len(broadcast_message) > 200 else ''}`\n\n"
+            f"*This may take a while.*"
+        )
+        update.message.reply_text(preview_message, parse_mode='Markdown')
 
         # Get all users who have interacted with the bot (not blocked by admin)
         all_users = list(user_stats_col.find({
@@ -2879,14 +2902,11 @@ def cast_command(update: Update, context: CallbackContext):
             try:
                 user_id = user_doc['user_id']
                 
-                # Format the broadcast message (send directly without header)
-                formatted_message = broadcast_message
-
                 # Send message using safe_send_message
                 sent = safe_send_message(
                     context=context,
                     chat_id=user_id,
-                    text=formatted_message,
+                    text=broadcast_message,
                     parse_mode='Markdown'
                 )
 
