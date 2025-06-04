@@ -1184,12 +1184,28 @@ def handle_auto_prediction_button(update: Update, context: CallbackContext):
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        # Send new message with auto prediction and store message info
-        sent_message = query.message.reply_text(
-            auto_prediction_msg,
-            parse_mode='Markdown',
-            reply_markup=reply_markup
-        )
+        # Choose image based on prediction result
+        if purchase_type == "Big":
+            image_url = "https://files.catbox.moe/h5bgxo.jpg"
+        else:  # Small
+            image_url = "https://files.catbox.moe/mstdso.jpg"
+
+        # Send new message with auto prediction photo and store message info
+        try:
+            sent_message = query.message.reply_photo(
+                photo=image_url,
+                caption=auto_prediction_msg,
+                parse_mode='Markdown',
+                reply_markup=reply_markup
+            )
+        except Exception as e:
+            logger.error(f"Error sending photo in auto prediction: {e}")
+            # Fallback to text message if photo fails
+            sent_message = query.message.reply_text(
+                auto_prediction_msg,
+                parse_mode='Markdown',
+                reply_markup=reply_markup
+            )
         
         # Store the message ID for future deletion
         if 'auto_prediction_messages' not in context.bot_data:
@@ -1251,12 +1267,28 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
 
+            # Choose image based on prediction result
+            if purchase_type == "Big":
+                image_url = "https://files.catbox.moe/h5bgxo.jpg"
+            else:  # Small
+                image_url = "https://files.catbox.moe/mstdso.jpg"
+
             # Send new message with new prediction
-            sent_message = query.message.reply_text(
-                auto_prediction_msg,
-                parse_mode='Markdown',
-                reply_markup=reply_markup
-            )
+            try:
+                sent_message = query.message.reply_photo(
+                    photo=image_url,
+                    caption=auto_prediction_msg,
+                    parse_mode='Markdown',
+                    reply_markup=reply_markup
+                )
+            except Exception as e:
+                logger.error(f"Error sending photo in next auto prediction: {e}")
+                # Fallback to text message if photo fails
+                sent_message = query.message.reply_text(
+                    auto_prediction_msg,
+                    parse_mode='Markdown',
+                    reply_markup=reply_markup
+                )
             
             # Update stored message ID
             if 'auto_prediction_messages' not in context.bot_data:
@@ -1299,12 +1331,39 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
 
-            # Edit the existing message with same prediction
-            query.edit_message_text(
-                text=auto_prediction_msg,
-                parse_mode='Markdown',
-                reply_markup=reply_markup
-            )
+            # Choose image based on prediction result
+            if purchase_type == "Big":
+                image_url = "https://files.catbox.moe/h5bgxo.jpg"
+            else:  # Small
+                image_url = "https://files.catbox.moe/mstdso.jpg"
+
+            # Edit the existing message with same prediction and image
+            try:
+                query.edit_message_media(
+                    media=InputMediaPhoto(
+                        media=image_url,
+                        caption=auto_prediction_msg,
+                        parse_mode='Markdown'
+                    ),
+                    reply_markup=reply_markup
+                )
+            except Exception as e:
+                logger.error(f"Error editing message with photo in same period auto prediction: {e}")
+                # Fallback to editing just caption
+                try:
+                    query.edit_message_caption(
+                        caption=auto_prediction_msg,
+                        parse_mode='Markdown',
+                        reply_markup=reply_markup
+                    )
+                except Exception as e2:
+                    logger.error(f"Error editing caption in same period auto prediction: {e2}")
+                    # Last fallback to text edit
+                    query.edit_message_text(
+                        text=auto_prediction_msg,
+                        parse_mode='Markdown',
+                        reply_markup=reply_markup
+                    )
 
             # Answer callback with same result message
             query.answer("🔄 Same period - showing current prediction again", show_alert=False)
@@ -2969,7 +3028,7 @@ def handle_all(update: Update, context: CallbackContext):
                         except Exception as e:
                             logger.error(f"Error deleting previous digits message: {e}")
 
-                    # Send VIP prediction message
+                    # Send VIP prediction message with image based on result
                     vip_prediction_msg = (
                         "*🔐 VIP Hack Manual Prediction ⏳*\n\n"
                         "*🎮 Game: Wingo 1 Minute*\n"
@@ -2985,11 +3044,28 @@ def handle_all(update: Update, context: CallbackContext):
                     ]
                     reply_markup = InlineKeyboardMarkup(keyboard)
 
-                    update.message.reply_text(
-                        vip_prediction_msg,
-                        parse_mode='Markdown',
-                        reply_markup=reply_markup
-                    )
+                    # Choose image based on prediction result
+                    if purchase_type == "BIG":
+                        image_url = "https://files.catbox.moe/h5bgxo.jpg"
+                    else:  # SMALL
+                        image_url = "https://files.catbox.moe/mstdso.jpg"
+
+                    # Send photo with caption and buttons
+                    try:
+                        update.message.reply_photo(
+                            photo=image_url,
+                            caption=vip_prediction_msg,
+                            parse_mode='Markdown',
+                            reply_markup=reply_markup
+                        )
+                    except Exception as e:
+                        logger.error(f"Error sending photo in manual prediction: {e}")
+                        # Fallback to text message if photo fails
+                        update.message.reply_text(
+                            vip_prediction_msg,
+                            parse_mode='Markdown',
+                            reply_markup=reply_markup
+                        )
                     return
                 else:
                     update.message.reply_text(
