@@ -1521,6 +1521,42 @@ def handle_support_button(update: Update, context: CallbackContext):
             logger.error(f"Error editing caption in support button: {e2}")
 
 
+def prediction_menu_handler(update: Update, context: CallbackContext):
+    """
+    Handle the prediction menu showing Wingo and Aviator options
+    """
+    query = update.callback_query
+    query.answer()
+
+    # Prediction menu message
+    prediction_menu_msg = ("*🎮 Select Your Game*\n\n"
+                          "*Choose which game you want predictions for:*\n\n"
+                          "*🎯 Wingo - Color & Number Predictions*\n"
+                          "*✈️ Aviator - Multiplier Predictions*")
+
+    # Create keyboard with Wingo and Aviator buttons
+    keyboard = [[
+        InlineKeyboardButton("🎯 Wingo", callback_data="wingo_menu"),
+        InlineKeyboardButton("✈️ Aviator", callback_data="aviator_menu")
+    ], [InlineKeyboardButton("🔙 Back", callback_data="back")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Edit existing message with new content
+    try:
+        query.edit_message_caption(caption=prediction_menu_msg,
+                                   parse_mode='Markdown',
+                                   reply_markup=reply_markup)
+    except Exception as e:
+        logger.error(f"Error editing message in prediction menu: {e}")
+        # Fallback to sending new message if edit fails
+        try:
+            query.message.reply_text(prediction_menu_msg,
+                                     parse_mode='Markdown',
+                                     reply_markup=reply_markup)
+        except Exception as e2:
+            logger.error(f"Error sending prediction menu message: {e2}")
+
+
 def handle_screenshot_button(update: Update, context: CallbackContext):
     """
     Handle the 'Send Screenshot' button callback
@@ -3988,6 +4024,8 @@ def main():
                                  pattern="next_auto_prediction"))
         dp.add_handler(
             CallbackQueryHandler(handle_support_button, pattern="support"))
+        dp.add_handler(
+            CallbackQueryHandler(prediction_menu_handler, pattern="prediction_menu"))
         dp.add_handler(
             CallbackQueryHandler(handle_confirm_delete_all_data,
                                  pattern="confirm_delete_all_data"))
