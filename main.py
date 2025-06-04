@@ -2744,7 +2744,7 @@ def broadcast_gift_code_notification(context: CallbackContext, new_code: str):
             ]
         }))
 
-        notification_message = "*Hey Buddy ! Your gift code is Live .Tap /claim and grab It now! 🚀*"
+        notification_message = "*Hey Buddy 😉 !! Your Gift Code is Live ,Tap /claim and Grab It Now! 🚀*"
 
         sent_count = 0
         failed_count = 0
@@ -2869,14 +2869,14 @@ def claim_command(update: Update, context: CallbackContext):
             
             verification_msg = (
                 "*🎁 Ready to Grab Your Reward ⁉️*\n\n"
-                f"*📥 Code : {partial_code}*\n"
+                f"*📥 Code : `{partial_code}`*\n"
                 "*🔐 Verify your ID & Wallet to unlock the surprise!*\n"
                 "*💸 Up to ₹500 Gift Code is waiting just for YOU!*\n\n"
                 "*⏳ Hurry Up !! Limited codes Available 🦋*"
             )
 
             # Create inline keyboard with register button
-            keyboard = [[InlineKeyboardButton("✅ Register & Verify Now", url="https://www.jalwagames2.com/#/register?invitationCode=542113286414")]]
+            keyboard = [[InlineKeyboardButton("Register & Verify Now", url="https://www.jalwagames2.com/#/register?invitationCode=542113286414")]]
             reply_markup = InlineKeyboardMarkup(keyboard)
 
             update.message.reply_text(verification_msg, parse_mode='Markdown', reply_markup=reply_markup)
