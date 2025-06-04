@@ -1500,7 +1500,7 @@ def handle_support_button(update: Update, context: CallbackContext):
     # Create buttons with Contact and Back
     keyboard = [[
         InlineKeyboardButton("Contact", url="https://t.me/streamerflex_bot")
-    ], [InlineKeyboardButton("Back", callback_data="back")]]
+    ], [InlineKeyboardButton("🔙 Back", callback_data="back")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     # Edit existing message with new photo and content
