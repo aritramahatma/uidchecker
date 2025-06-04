@@ -1109,7 +1109,7 @@ def handle_manual_prediction_button(update: Update, context: CallbackContext):
     # Request 3 digits message
     digits_request_msg = ("*🔢 Send the Last 3 Digits of the Period Number*\n"
                           "*📟 To Instantly Receive Your VIP Prediction!*\n\n"
-                          "*⚙️ Example: If Period is 456789, just send 789*")
+                          "*⚙️ Example: If Period is 456123, just send 123*")
 
     # Create keyboard with Back button only
     keyboard = [[InlineKeyboardButton("Back", callback_data="prediction")]]
