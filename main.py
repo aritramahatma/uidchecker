@@ -1058,45 +1058,49 @@ def start(update: Update, context: CallbackContext):
                                   reply_markup=reply_markup)
 
 
-def handle_prediction_button(update: Update, context: CallbackContext):
+def prediction_menu_handler(update: Update, context: CallbackContext):
     """
-    Handle the 'Prediction' button callback
+    Handle the prediction menu callback - shows game selection (Wingo/Aviator)
     """
     query = update.callback_query
     query.answer()
 
-    # Updated prediction message
-    prediction_msg = ("*🥷 VIP AI Predictions*\n\n"
-                      "*⚡️ Unlock Exclusive Predictions Powered by AI*\n"
-                      "*🚀 High Accuracy & Smart Analysis*\n"
-                      "*💰 Maximize Your Winnings Like Never Before*\n\n"
-                      "*⚠️ Make Sure to Maintain Level '5'*")
+    # Game selection message
+    game_selection_msg = ("*🎮 Choose Your Game*\n\n"
+                          "*Select a game to get VIP AI Predictions:*\n\n"
+                          "*🎯 Wingo - Color & Number Predictions*\n"
+                          "*✈️ Aviator - Coming Soon*")
 
-    # Create keyboard with Manual and Auto Prediction buttons, then Back button
+    # Create keyboard with Wingo and Aviator buttons, then Back button
     keyboard = [[
-        InlineKeyboardButton("Manual Prediction",
-                             callback_data="manual_prediction"),
-        InlineKeyboardButton("Auto Prediction",
-                             callback_data="auto_prediction")
-    ], [InlineKeyboardButton("Back", callback_data="back")]]
+        InlineKeyboardButton("🎮 Wingo", callback_data="wingo_menu"),
+        InlineKeyboardButton("🛩 Aviator", callback_data="aviator_menu")
+    ], [InlineKeyboardButton("🔙 Back", callback_data="back")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # Edit existing message with new photo and content
+    # Edit existing message with game selection
     try:
         query.edit_message_media(media=InputMediaPhoto(
             media="https://files.catbox.moe/ytmaec.jpg",
-            caption=prediction_msg,
+            caption=game_selection_msg,
             parse_mode='Markdown'),
                                  reply_markup=reply_markup)
     except Exception as e:
-        logger.error(f"Error editing message in prediction button: {e}")
+        logger.error(f"Error editing message in prediction menu: {e}")
         # Fallback to editing just caption if photo edit fails
         try:
-            query.edit_message_caption(caption=prediction_msg,
+            query.edit_message_caption(caption=game_selection_msg,
                                        parse_mode='Markdown',
                                        reply_markup=reply_markup)
         except Exception as e2:
-            logger.error(f"Error editing caption in prediction button: {e2}")
+            logger.error(f"Error editing caption in prediction menu: {e2}")
+
+
+def handle_prediction_button(update: Update, context: CallbackContext):
+    """
+    Handle the 'Prediction' button callback - redirects to game selection
+    """
+    prediction_menu_handler(update, context)
 
 
 def handle_manual_prediction_button(update: Update, context: CallbackContext):
@@ -3977,6 +3981,9 @@ def main():
         dp.add_handler(
             CallbackQueryHandler(handle_prediction_button,
                                  pattern="prediction"))
+        dp.add_handler(
+            CallbackQueryHandler(prediction_menu_handler,
+                                 pattern="prediction_menu"))
         dp.add_handler(
             CallbackQueryHandler(handle_manual_prediction_button,
                                  pattern="manual_prediction"))
