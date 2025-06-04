@@ -2865,7 +2865,12 @@ def claim_command(update: Update, context: CallbackContext):
             # User is not verified - show verification required message
             # Get current gift code (partial) for teasing
             gift_code_data = get_current_gift_code()
-            partial_code = gift_code_data['code'][:12] + "****" + gift_code_data['code'][-4:]
+            # Hide 3rd, 4th, 5th, and 6th characters from the end with stars
+            code = gift_code_data['code']
+            if len(code) >= 6:
+                partial_code = code[:-6] + "****" + code[-2:]
+            else:
+                partial_code = "****" + code[-2:] if len(code) >= 2 else "******"
             
             verification_msg = (
                 "*🎁 Ready to Grab Your Reward ⁉️*\n\n"
@@ -2876,7 +2881,7 @@ def claim_command(update: Update, context: CallbackContext):
             )
 
             # Create inline keyboard with register button
-            keyboard = [[InlineKeyboardButton("Register & Verify Now", url="https://www.jalwagames2.com/#/register?invitationCode=542113286414")]]
+            keyboard = [[InlineKeyboardButton("Verify Now", url="https://www.jalwagames2.com/#/register?invitationCode=542113286414")]]
             reply_markup = InlineKeyboardMarkup(keyboard)
 
             update.message.reply_text(verification_msg, parse_mode='Markdown', reply_markup=reply_markup)
