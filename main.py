@@ -1859,12 +1859,23 @@ def check_uid(update, context, uid, user_id, username):
                         return
                     elif verified_by and verified_by != user_id:
                         # Different user already verified this UID
-                        update.message.reply_text(
-                            f"*❌ UID already verified by another account.*\n"
+                        restriction_msg = (
+                            f"*🔒 UID Already Verified by Another Account*\n"
                             f"*🆔 UID: {uid}*\n"
-                            f"*🚫 This UID has been claimed by a different user.*\n"
-                            f"*⚠️ Each UID can only be verified once.*",
-                            parse_mode='Markdown')
+                            f"*⚠️ This UID has been claimed by a different Telegram account.*\n"
+                            f"*🔁 Each UID can only be verified once per user.*\n\n"
+                            f"*➠ Please switch back to your original account or contact the admin for help.*")
+
+                        # Create inline keyboard with Contact Admin button
+                        keyboard = [[
+                            InlineKeyboardButton("Contact Admin 👤",
+                                                 url="https://t.me/streamerflex_bot")
+                        ]]
+                        reply_markup = InlineKeyboardMarkup(keyboard)
+
+                        update.message.reply_text(restriction_msg,
+                                                  parse_mode='Markdown',
+                                                  reply_markup=reply_markup)
                         return
                     else:
                         # UID exists but no verified_by field - update it
