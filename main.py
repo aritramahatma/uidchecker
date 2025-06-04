@@ -1595,6 +1595,43 @@ def wingo_menu_handler(update: Update, context: CallbackContext):
             logger.error(f"Error sending wingo menu message: {e2}")
 
 
+def aviator_menu_handler(update: Update, context: CallbackContext):
+    """
+    Handle the aviator menu showing Aviator prediction options
+    """
+    query = update.callback_query
+    query.answer()
+
+    # Aviator prediction menu message
+    aviator_menu_msg = ("*✈️ Aviator VIP Predictions*\n\n"
+                        "*🚀 AI-Powered Multiplier Predictions*\n"
+                        "*📊 Advanced Pattern Analysis*\n"
+                        "*💎 Premium Aviator Strategies*\n\n"
+                        "*⚠️ Recommended Bet Amount: Level 5*")
+
+    # Create keyboard with Aviator prediction options
+    keyboard = [[
+        InlineKeyboardButton("🎯 Get Aviator Prediction", callback_data="aviator_prediction"),
+        InlineKeyboardButton("📈 Multiplier Analysis", callback_data="aviator_analysis")
+    ], [InlineKeyboardButton("🔙 Back", callback_data="prediction_menu")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Edit existing message with new content
+    try:
+        query.edit_message_caption(caption=aviator_menu_msg,
+                                   parse_mode='Markdown',
+                                   reply_markup=reply_markup)
+    except Exception as e:
+        logger.error(f"Error editing message in aviator menu: {e}")
+        # Fallback to sending new message if edit fails
+        try:
+            query.message.reply_text(aviator_menu_msg,
+                                     parse_mode='Markdown',
+                                     reply_markup=reply_markup)
+        except Exception as e2:
+            logger.error(f"Error sending aviator menu message: {e2}")
+
+
 def handle_screenshot_button(update: Update, context: CallbackContext):
     """
     Handle the 'Send Screenshot' button callback
@@ -4198,8 +4235,13 @@ def main():
                                  pattern="next_auto_prediction"))
         dp.add_handler(
             CallbackQueryHandler(handle_support_button, pattern="support"))
+        # Add the three missing callback query handlers
         dp.add_handler(
             CallbackQueryHandler(prediction_menu_handler, pattern="prediction_menu"))
+        dp.add_handler(
+            CallbackQueryHandler(wingo_menu_handler, pattern="wingo_menu"))
+        dp.add_handler(
+            CallbackQueryHandler(aviator_menu_handler, pattern="aviator_menu"))
         dp.add_handler(
             CallbackQueryHandler(handle_confirm_delete_all_data,
                                  pattern="confirm_delete_all_data"))
