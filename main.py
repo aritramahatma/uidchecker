@@ -1174,12 +1174,7 @@ def handle_auto_prediction_button(update: Update, context: CallbackContext):
             "*🔮 Risky Predictions:*\n\n"
             f"*➟ Colour: {color}*\n"
             f"*➟ Numbers: {numbers_text}*\n\n"
-            "*⚠️ Important: Always maintain Level 5 funds*\n\n"
-            "*💡 Strategy Tip:*\n"
-            "*Use the 2x strategy for better chances of profit and winning.*\n\n"
-            "*📊 Fund Management:*\n"
-            "*Always play through fund management 5 level.*\n\n"
-            "*ℹ️ Period updates every minute automatically*"
+            "*⚠️ Important: Always maintain Level 5 funds*"
         )
 
         # Create keyboard with Next Prediction and Back buttons
@@ -1246,12 +1241,7 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
                 "*🔮 Risky Predictions:*\n\n"
                 f"*➟ Colour: {color}*\n"
                 f"*➟ Numbers: {numbers_text}*\n\n"
-                f"*⚠️ Important: Always maintain Level 5 funds*\n\n"
-                "*💡 Strategy Tip:*\n"
-                "*Use the 2x strategy for better chances of profit and winning.*\n\n"
-                "*📊 Fund Management:*\n"
-                "*Always play through fund management 5 level.*\n\n"
-                "*ℹ️ Real-time period updates every minute*"
+                "*⚠️ Important: Always maintain Level 5 funds*"
             )
 
             # Create keyboard with Next Prediction and Back buttons
@@ -1299,12 +1289,7 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
                 "*🔮 Risky Predictions:*\n\n"
                 f"*➟ Colour: {color}*\n"
                 f"*➟ Numbers: {numbers_text}*\n\n"
-                "*⚠️ Important: Always maintain Level 5 funds*\n\n"
-                "*💡 Strategy Tip:*\n"
-                "*Use the 2x strategy for better chances of profit and winning.*\n\n"
-                "*📊 Fund Management:*\n"
-                "*Always play through fund management 5 level.*\n\n"
-                "*ℹ️ Real-time period updates every minute*"
+                "*⚠️ Important: Always maintain Level 5 funds*"
             )
 
             # Create keyboard with Next Prediction and Back buttons
