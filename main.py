@@ -4097,6 +4097,12 @@ def main():
         dp.add_handler(
             CallbackQueryHandler(aviator_menu_handler, pattern="aviator_menu"))
         dp.add_handler(
+            CallbackQueryHandler(prediction_menu_handler, pattern="prediction_menu"))
+        dp.add_handler(
+            CallbackQueryHandler(wingo_menu_handler, pattern="wingo_menu"))
+        dp.add_handler(
+            CallbackQueryHandler(aviator_menu_handler, pattern="aviator_menu"))
+        dp.add_handler(
             CallbackQueryHandler(handle_confirm_delete_all_data,
                                  pattern="confirm_delete_all_data"))
         dp.add_handler(
