@@ -3014,15 +3014,28 @@ def handle_all(update: Update, context: CallbackContext):
             # Handle text messages - look for UID (but exclude 3-digit numbers)
             text = update.message.text.upper().strip()
             
-            # Check if it's exactly 3 digits (should show error message)
+            # Check if it's exactly 3 digits but user is not in prediction mode
             if re.match(r'^\d{3}$', text):
-                update.message.reply_text(
-                    "*❌ Invalid Input*\n"
-                    "*🔢 Please send exactly 3 digits*\n"
-                    "*✅ Example: 789*\n\n"
-                    "*🧠 Let's keep it simple and accurate!*",
-                    parse_mode='Markdown'
-                )
+                # If user is not waiting for digits, show UID request message
+                if ('waiting_for_digits' not in context.bot_data or 
+                    user_id not in context.bot_data['waiting_for_digits']):
+                    update.message.reply_text(
+                        "*📩 Send Your UID or Screenshot to Proceed*\n\n"
+                        "*☑️ Valid UID Format: 123456789 or UID 123456789*\n\n"
+                        "*🖼 Or upload a clear screenshot showing UID*\n"
+                        "*🔐 UID must be 6–12 digits only*\n"
+                        "*🚀 Let's get you verified in seconds!*",
+                        parse_mode='Markdown'
+                    )
+                else:
+                    # User is in prediction mode but sent invalid 3 digits
+                    update.message.reply_text(
+                        "*❌ Invalid Input*\n"
+                        "*🔢 Please send exactly 3 digits*\n"
+                        "*✅ Example: 789*\n\n"
+                        "*🧠 Let's keep it simple and accurate!*",
+                        parse_mode='Markdown'
+                    )
                 return
             
             # Look for valid UIDs (6-12 digits, not exactly 3)
@@ -3033,10 +3046,11 @@ def handle_all(update: Update, context: CallbackContext):
                 # Double check it's not exactly 3 digits
                 if len(uid) == 3:
                     update.message.reply_text(
-                        "*❌ Invalid Input - 3 digits detected*\n"
-                        "*🆔 Please send your full UID (6-12 digits)*\n"
-                        "*✅ Example: 123456789*\n\n"
-                        "*💡 For predictions, click Manual Prediction button first*",
+                        "*📩 Send Your UID or Screenshot to Proceed*\n\n"
+                        "*☑️ Valid UID Format: 123456789 or UID 123456789*\n\n"
+                        "*🖼 Or upload a clear screenshot showing UID*\n"
+                        "*🔐 UID must be 6–12 digits only*\n"
+                        "*🚀 Let's get you verified in seconds!*",
                         parse_mode='Markdown'
                     )
                     return
