@@ -2712,15 +2712,178 @@ def newcode_command(update: Update, context: CallbackContext):
             f"✅ *Gift Code Updated Successfully!*\n\n"
             f"🎁 New Code: `{new_code}`\n"
             f"🕒 Updated: {current_date}\n"
-            f"🔄 Next Update: 24 hours Later",
+            f"🔄 Next Update: 24 hours Later\n\n"
+            f"🔔 *Broadcasting notification to all users...*",
             parse_mode='Markdown'
         )
+
+        # Broadcast notification to all users
+        broadcast_gift_code_notification(context, new_code)
 
         logger.info(f"Admin {update.message.from_user.username} updated gift code to: {new_code}")
 
     except Exception as e:
         logger.error(f"Error updating gift code: {e}")
         update.message.reply_text("❌ Error updating gift code.")
+
+def broadcast_gift_code_notification(context: CallbackContext, new_code: str):
+    """
+    Broadcast gift code notification to all users
+    """
+    try:
+        # Get all users who have interacted with the bot (not blocked by admin)
+        all_users = list(user_stats_col.find({
+            'user_id': {'$ne': 'global_stats', '$exists': True},
+            '$or': [
+                {'is_blocked': {'$ne': True}},
+                {'is_blocked': {'$exists': False}},
+                {
+                    'is_blocked': True,
+                    'blocked_by_user': True  # Include users who blocked the bot (they might unblock)
+                }
+            ]
+        }))
+
+        notification_message = "*Hey Buddy ! Your gift code is Live .Tap /claim and grab It now! 🚀*"
+
+        sent_count = 0
+        failed_count = 0
+
+        for user_doc in all_users:
+            try:
+                user_id = user_doc['user_id']
+                
+                # Send notification using safe_send_message
+                sent = safe_send_message(
+                    context=context,
+                    chat_id=user_id,
+                    text=notification_message,
+                    parse_mode='Markdown'
+                )
+
+                if sent is None:
+                    failed_count += 1
+                else:
+                    sent_count += 1
+
+                # Add small delay to avoid rate limiting
+                import time
+                time.sleep(0.1)
+
+            except Exception as e:
+                logger.error(f"Error sending gift code notification to user {user_doc.get('user_id', 'Unknown')}: {e}")
+                failed_count += 1
+
+        logger.info(f"Gift code notification sent to {sent_count} users, {failed_count} failed")
+
+    except Exception as e:
+        logger.error(f"Error broadcasting gift code notification: {e}")
+
+def claim_command(update: Update, context: CallbackContext):
+    """
+    Handle /claim command for gift codes
+    """
+    user_id = update.message.from_user.id
+    
+    # Track user activity
+    update_user_stats(user_id, 'claim_command')
+
+    # Check if user is blocked
+    try:
+        user_doc = user_stats_col.find_one({'user_id': user_id})
+        if user_doc and user_doc.get('is_blocked', False):
+            update.message.reply_text("🚫 You have been blocked from using this bot.")
+            return
+    except Exception as e:
+        logger.error(f"Error checking blocked status in claim: {e}")
+
+    # If user was previously marked as blocked by user action, unblock them
+    try:
+        user_doc = user_stats_col.find_one({'user_id': user_id})
+        if user_doc and user_doc.get('is_blocked', False) and user_doc.get('blocked_by_user', False):
+            # User is back, unblock them
+            user_stats_col.update_one(
+                {'user_id': user_id},
+                {
+                    '$set': {
+                        'is_blocked': False,
+                        'blocked_by_user': False,
+                        'unblocked_date': datetime.now()
+                    }
+                }
+            )
+            # Update global counts
+            user_stats_col.update_one(
+                {'_id': 'global_stats'},
+                {
+                    '$inc': {
+                        'blocked_users': -1,
+                        'total_users': 1
+                    }
+                },
+                upsert=True
+            )
+            logger.info(f"User {user_id} automatically unblocked in claim command")
+    except Exception as e:
+        logger.error(f"Error checking/updating unblock status in claim: {e}")
+
+    try:
+        # Check if user is fully verified
+        user_uid_doc = uids_col.find_one({'user_id': user_id, 'fully_verified': True})
+        
+        if user_uid_doc:
+            # User is fully verified - show gift codes page
+            gift_codes_msg = (
+                "*📋 Join All Channels To Unlock the Gift Code!*\n\n"
+                "*🎁 Earn More Exclusive Gift Codes From Here*\n\n"
+                "*⚠️ You must join ALL 4 channels below to unlock gift codes:*"
+            )
+
+            # Create inline keyboard with JOIN buttons for all 4 channels and unlock button
+            keyboard = [
+                [InlineKeyboardButton("JOIN", url="https://t.me/+vge9Lu_k4wUyYTY9"),
+                 InlineKeyboardButton("JOIN", url="https://t.me/+7io6Ktb7WwQzZjll")],
+                [InlineKeyboardButton("JOIN", url="https://t.me/+mm3dF_L31cg2NjA1"),
+                 InlineKeyboardButton("JOIN", url="https://t.me/+2u_ekSv7S71lZTll")],
+                [InlineKeyboardButton("🔐 Unlock Gift Code", callback_data="unlock_gift_code")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+
+            # Send photo with gift codes page
+            try:
+                update.message.reply_photo(
+                    photo="https://files.catbox.moe/zk8ir9.webp",
+                    caption=gift_codes_msg,
+                    parse_mode='Markdown',
+                    reply_markup=reply_markup
+                )
+            except Exception as e:
+                logger.error(f"Error sending photo in claim command: {e}")
+                # Fallback to text message if photo fails
+                update.message.reply_text(gift_codes_msg, parse_mode='Markdown', reply_markup=reply_markup)
+        else:
+            # User is not verified - show verification required message
+            # Get current gift code (partial) for teasing
+            gift_code_data = get_current_gift_code()
+            partial_code = gift_code_data['code'][:12] + "****" + gift_code_data['code'][-4:]
+            
+            verification_msg = (
+                "*🎁 Ready to Grab Your Reward ⁉️*\n\n"
+                f"*📥 Code : {partial_code}*\n"
+                "*🔐 Verify your ID & Wallet to unlock the surprise!*\n"
+                "*💸 Up to ₹500 Gift Code is waiting just for YOU!*\n\n"
+                "*⏳ Hurry Up !! Limited codes Available 🦋*"
+            )
+
+            # Create inline keyboard with register button
+            keyboard = [[InlineKeyboardButton("✅ Register & Verify Now", url="https://www.jalwagames2.com/#/register?invitationCode=542113286414")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+
+            update.message.reply_text(verification_msg, parse_mode='Markdown', reply_markup=reply_markup)
+
+    except Exception as e:
+        logger.error(f"Error in claim command: {e}")
+        update.message.reply_text("❌ Error processing your claim request. Please try again.")
 
 def block_user_command(update: Update, context: CallbackContext):
     """
@@ -3470,6 +3633,7 @@ def main():
 
         # Add handlers
         dp.add_handler(CommandHandler("start", start))
+        dp.add_handler(CommandHandler("claim", claim_command))
         dp.add_handler(CommandHandler("stats", stats))
         dp.add_handler(CommandHandler("verified", verified))
         dp.add_handler(CommandHandler("nonverified", nonverified))
