@@ -2879,7 +2879,7 @@ def claim_command(update: Update, context: CallbackContext):
             
             verification_msg = (
                 "*🎁 Ready to Grab Your Reward ⁉️*\n\n"
-                f"*📥 Code : `{partial_code}`*\n"
+                f"📥 Code : `{partial_code}`\n"
                 "*🔐 Verify your ID & Wallet to unlock the surprise!*\n"
                 "*💸 Up to ₹500 Gift Code is waiting just for YOU!*\n\n"
                 "*⏳ Hurry Up !! Limited codes Available 🦋*"
