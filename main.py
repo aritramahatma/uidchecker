@@ -1181,19 +1181,24 @@ def handle_auto_prediction_button(update: Update, context: CallbackContext):
             "*ℹ️ Period updates every minute automatically*"
         )
 
-        # Create keyboard with Refresh Period and Back buttons
+        # Create keyboard with Next Prediction and Back buttons
         keyboard = [
-            [InlineKeyboardButton("🔄 Refresh Period", callback_data="next_auto_prediction")],
+            [InlineKeyboardButton("Next Prediction", callback_data="next_auto_prediction")],
             [InlineKeyboardButton("🔙 Back", callback_data="prediction")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        # Send new message with auto prediction
-        query.message.reply_text(
+        # Send new message with auto prediction and store message info
+        sent_message = query.message.reply_text(
             auto_prediction_msg,
             parse_mode='Markdown',
             reply_markup=reply_markup
         )
+        
+        # Store the message ID for future deletion
+        if 'auto_prediction_messages' not in context.bot_data:
+            context.bot_data['auto_prediction_messages'] = {}
+        context.bot_data['auto_prediction_messages'][query.from_user.id] = sent_message.message_id
 
     except Exception as e:
         logger.error(f"Error in auto prediction: {e}")
@@ -1201,11 +1206,11 @@ def handle_auto_prediction_button(update: Update, context: CallbackContext):
 
 def handle_next_auto_prediction(update: Update, context: CallbackContext):
     """
-    Handle the 'Refresh Period' button for auto prediction
-    Always shows current real period number and updates prediction if period changed
+    Handle the 'Next Prediction' button for auto prediction
+    Shows same result if same period, deletes old message and shows new prediction if period changed
     """
     query = update.callback_query
-    query.answer()
+    user_id = query.from_user.id
 
     try:
         # Get current real period number
@@ -1215,63 +1220,108 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
         # Check if period has changed
         is_new_period = previous_period != current_period
         
-        # If period changed, generate new prediction
         if is_new_period:
+            # Period has changed - delete old message and create new one
+            try:
+                # Delete the old message
+                context.bot.delete_message(
+                    chat_id=user_id,
+                    message_id=query.message.message_id
+                )
+            except Exception as e:
+                logger.error(f"Error deleting old auto prediction message: {e}")
+            
+            # Generate new prediction for new period
             period, purchase_type, color, selected_numbers = generate_auto_prediction(context)
+            
+            # Format numbers for display
+            numbers_text = f"{selected_numbers[0]} or {selected_numbers[1]}"
+            
+            auto_prediction_msg = (
+                "*🎰 Prediction for winGO 1 MIN 🎰*\n\n"
+                f"*📅 Period: {period}* 🆕 NEW PERIOD\n"
+                f"*💸 Purchase: {purchase_type}*\n\n"
+                "*🔮 Risky Predictions:*\n"
+                f"*👉🏻 Colour: {color}*\n"
+                f"*👉🏻 Numbers: {numbers_text}*\n\n"
+                "*💡 Strategy Tip:*\n"
+                "*Use the 2x strategy for better chances of profit and winning.*\n\n"
+                "*📊 Fund Management:*\n"
+                "*Always play through fund management 5 level.*\n\n"
+                "*ℹ️ Real-time period updates every minute*"
+            )
+
+            # Create keyboard with Next Prediction and Back buttons
+            keyboard = [
+                [InlineKeyboardButton("Next Prediction", callback_data="next_auto_prediction")],
+                [InlineKeyboardButton("🔙 Back", callback_data="prediction")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+
+            # Send new message with new prediction
+            sent_message = query.message.reply_text(
+                auto_prediction_msg,
+                parse_mode='Markdown',
+                reply_markup=reply_markup
+            )
+            
+            # Update stored message ID
+            if 'auto_prediction_messages' not in context.bot_data:
+                context.bot_data['auto_prediction_messages'] = {}
+            context.bot_data['auto_prediction_messages'][user_id] = sent_message.message_id
+            
+            # Store current displayed period
+            context.bot_data['displayed_period'] = period
+            
+            # Answer callback with new period message
+            query.answer("🆕 New period detected! Fresh prediction generated.", show_alert=False)
+            
         else:
+            # Same period - show same result again (edit existing message)
             # Keep existing prediction but show current period
             prediction_data = context.bot_data.get('auto_prediction_data', {})
             period = current_period
             purchase_type = prediction_data.get('purchase_type', 'Big')
             color = prediction_data.get('color', 'Green')
             selected_numbers = prediction_data.get('numbers', [3, 6])
-        
-        # Store current displayed period
-        context.bot_data['displayed_period'] = period
-        
-        # Format numbers for display
-        numbers_text = f"{selected_numbers[0]} or {selected_numbers[1]}"
-        
-        # Create status indicator
-        status_indicator = "🆕 NEW PERIOD" if is_new_period else "🔴 LIVE"
-        
-        auto_prediction_msg = (
-            f"*🎰 Prediction for winGO 1 MIN 🎰*\n\n"
-            f"*📅 Period: {period}* {status_indicator}\n"
-            f"*💸 Purchase: {purchase_type}*\n\n"
-            "*🔮 Risky Predictions:*\n"
-            f"*👉🏻 Colour: {color}*\n"
-            f"*👉🏻 Numbers: {numbers_text}*\n\n"
-            "*💡 Strategy Tip:*\n"
-            "*Use the 2x strategy for better chances of profit and winning.*\n\n"
-            "*📊 Fund Management:*\n"
-            "*Always play through fund management 5 level.*\n\n"
-            f"*ℹ️ Real-time period updates every minute*"
-        )
+            
+            # Format numbers for display
+            numbers_text = f"{selected_numbers[0]} or {selected_numbers[1]}"
+            
+            auto_prediction_msg = (
+                "*🎰 Prediction for winGO 1 MIN 🎰*\n\n"
+                f"*📅 Period: {period}* 🔴 LIVE\n"
+                f"*💸 Purchase: {purchase_type}*\n\n"
+                "*🔮 Risky Predictions:*\n"
+                f"*👉🏻 Colour: {color}*\n"
+                f"*👉🏻 Numbers: {numbers_text}*\n\n"
+                "*💡 Strategy Tip:*\n"
+                "*Use the 2x strategy for better chances of profit and winning.*\n\n"
+                "*📊 Fund Management:*\n"
+                "*Always play through fund management 5 level.*\n\n"
+                "*ℹ️ Real-time period updates every minute*"
+            )
 
-        # Create keyboard with Refresh Period and Back buttons
-        keyboard = [
-            [InlineKeyboardButton("🔄 Refresh Period", callback_data="next_auto_prediction")],
-            [InlineKeyboardButton("🔙 Back", callback_data="prediction")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
+            # Create keyboard with Next Prediction and Back buttons
+            keyboard = [
+                [InlineKeyboardButton("Next Prediction", callback_data="next_auto_prediction")],
+                [InlineKeyboardButton("🔙 Back", callback_data="prediction")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
 
-        # Edit the existing message
-        query.edit_message_text(
-            text=auto_prediction_msg,
-            parse_mode='Markdown',
-            reply_markup=reply_markup
-        )
+            # Edit the existing message with same prediction
+            query.edit_message_text(
+                text=auto_prediction_msg,
+                parse_mode='Markdown',
+                reply_markup=reply_markup
+            )
 
-        # Provide feedback to user
-        if is_new_period:
-            query.answer("🆕 New period! Prediction updated.", show_alert=False)
-        else:
-            query.answer("🔄 Period refreshed - showing current period", show_alert=False)
+            # Answer callback with same result message
+            query.answer("🔄 Same period - showing current prediction again", show_alert=False)
 
     except Exception as e:
-        logger.error(f"Error refreshing period: {e}")
-        query.answer("❌ Error refreshing period. Please try again.")
+        logger.error(f"Error in next auto prediction: {e}")
+        query.answer("❌ Error processing request. Please try again.")
 
 def handle_support_button(update: Update, context: CallbackContext):
     """
