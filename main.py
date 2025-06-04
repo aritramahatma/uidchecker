@@ -2865,17 +2865,17 @@ def claim_command(update: Update, context: CallbackContext):
             # User is not verified - show verification required message
             # Get current gift code (partial) for teasing
             gift_code_data = get_current_gift_code()
-            # Hide middle characters with stars (show first few and last few characters)
+            # Format code like: 677AFD5E6F79-XXXX-75FH
             code = gift_code_data['code']
             if len(code) >= 16:
-                # For long codes like the example, show first 12 and last 4 with stars in middle
-                partial_code = code[:12] + "****" + code[-4:]
+                # For long codes, show first 12 characters, then -XXXX-, then last 4
+                partial_code = code[:12] + "-XXXX-" + code[-4:]
             elif len(code) >= 8:
-                # For shorter codes, show first 4 and last 2 with stars in middle
-                partial_code = code[:4] + "****" + code[-2:]
+                # For shorter codes, show first 4, then -XXXX-, then last 2
+                partial_code = code[:4] + "-XXXX-" + code[-2:]
             else:
-                # For very short codes, just show stars
-                partial_code = "****" + code[-2:] if len(code) >= 2 else "******"
+                # For very short codes, just show XXXX
+                partial_code = "XXXX-" + code[-2:] if len(code) >= 2 else "XXXXXX"
             
             verification_msg = (
                 "*🎁 Ready to Grab Your Reward ⁉️*\n\n"
