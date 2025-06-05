@@ -1083,7 +1083,7 @@ def handle_prediction_button(update: Update, context: CallbackContext):
     # Edit existing message with game selection image and content
     try:
         query.edit_message_media(media=InputMediaPhoto(
-            media="https://files.catbox.moe/xevf55.webp",
+            media="https://files.catbox.moe/szmfsp.webp",
             caption=prediction_msg,
             parse_mode='Markdown'),
                                  reply_markup=reply_markup)
@@ -1607,9 +1607,9 @@ def aviator_menu_handler(update: Update, context: CallbackContext):
     query.answer()
 
     # Aviator prediction menu message
-    aviator_menu_msg = ("*✈️ Aviator VIP Predictions*\n\n"
-                        "*🚀 AI-Powered Multiplier Predictions*\n"
-                        "*📊 Advanced Pattern Analysis*\n"
+    aviator_menu_msg = ("*🚀 Aviator VIP Predictions*\n\n"
+                        "*⚡️ AI-Powered Multiplier Predictions*\n"
+                        "*🎳 Advanced Pattern Analysis*\n"
                         "*💎 Premium Aviator Strategies*\n\n"
                         "*⚠️ Recommended Bet Amount: Level 5*")
 
@@ -1625,7 +1625,7 @@ def aviator_menu_handler(update: Update, context: CallbackContext):
     # Edit existing message with aviator image and content
     try:
         query.edit_message_media(media=InputMediaPhoto(
-            media="https://files.catbox.moe/ikjjio.webp",
+            media="https://files.catbox.moe/etovfv.webp",
             caption=aviator_menu_msg,
             parse_mode='Markdown'),
                                  reply_markup=reply_markup)
