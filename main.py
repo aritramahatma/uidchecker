@@ -963,7 +963,7 @@ def handle_back_button(update: Update, context: CallbackContext):
     # Edit the current message to show main menu instead of sending new one
     try:
         query.edit_message_media(media=InputMediaPhoto(
-            media="https://files.catbox.moe/3ae7md.webp",
+            media="https://files.catbox.moe/4hd1vl.png",
             caption=msg,
             parse_mode='Markdown'),
                                  reply_markup=reply_markup)
@@ -1077,10 +1077,13 @@ def handle_prediction_button(update: Update, context: CallbackContext):
     keyboard = [[
         InlineKeyboardButton("🎯 Wingo", callback_data="wingo_menu"),
         InlineKeyboardButton("🚀 Aviator", callback_data="aviator_menu")
-    ], [
-        InlineKeyboardButton("💎 Mines Pro", callback_data="mines_menu"),
-        InlineKeyboardButton("🐲 Dragon Tiger", callback_data="dragon_tiger_menu")
-    ], [InlineKeyboardButton("🔙 Back", callback_data="back")]]
+    ],
+                [
+                    InlineKeyboardButton("💎 Mines Pro",
+                                         callback_data="mines_menu"),
+                    InlineKeyboardButton("🐲 Dragon Tiger",
+                                         callback_data="dragon_tiger_menu")
+                ], [InlineKeyboardButton("🔙 Back", callback_data="back")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     # Edit existing message with game selection image and content
@@ -1483,16 +1486,19 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
                             )
                             # Last fallback to text edit
                             try:
-                                query.edit_message_text(text=auto_prediction_msg,
-                                                        parse_mode='Markdown',
-                                                        reply_markup=reply_markup)
+                                query.edit_message_text(
+                                    text=auto_prediction_msg,
+                                    parse_mode='Markdown',
+                                    reply_markup=reply_markup)
                             except Exception as e3:
                                 error_msg3 = str(e3).lower()
                                 if "message is not modified" in error_msg3 or "no text in the message" in error_msg3:
                                     # Message content is identical or no text, just skip silently
                                     pass
                                 else:
-                                    logger.error(f"Error editing text in same period auto prediction: {e3}")
+                                    logger.error(
+                                        f"Error editing text in same period auto prediction: {e3}"
+                                    )
 
             # Answer callback with same result message
             query.answer("🔄 Same period - showing current prediction again",
@@ -1560,10 +1566,13 @@ def prediction_menu_handler(update: Update, context: CallbackContext):
     keyboard = [[
         InlineKeyboardButton("🎯 Wingo", callback_data="wingo_menu"),
         InlineKeyboardButton("✈️ Aviator", callback_data="aviator_menu")
-    ], [
-        InlineKeyboardButton("💎 Mines Pro", callback_data="mines_menu"),
-        InlineKeyboardButton("🐉 Dragon Tiger", callback_data="dragon_tiger_menu")
-    ], [InlineKeyboardButton("🔙 Back", callback_data="back")]]
+    ],
+                [
+                    InlineKeyboardButton("💎 Mines Pro",
+                                         callback_data="mines_menu"),
+                    InlineKeyboardButton("🐉 Dragon Tiger",
+                                         callback_data="dragon_tiger_menu")
+                ], [InlineKeyboardButton("🔙 Back", callback_data="back")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     # Edit existing message with game selection image and content
@@ -1671,13 +1680,16 @@ def mines_menu_handler(update: Update, context: CallbackContext):
     query.answer()
 
     # Mines coming soon message
-    mines_menu_msg = ("*💎 Mines Pro*\n\n"
-                      "*🚧 Coming Soon! 🚧*\n\n"
-                      "*We're working hard to bring you the best Mines predictions!*\n"
-                      "*Stay tuned for amazing features and high-accuracy predictions.*")
+    mines_menu_msg = (
+        "*💎 Mines Pro*\n\n"
+        "*🚧 Coming Soon! 🚧*\n\n"
+        "*We're working hard to bring you the best Mines predictions!*\n"
+        "*Stay tuned for amazing features and high-accuracy predictions.*")
 
     # Create keyboard with back button
-    keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="prediction_menu")]]
+    keyboard = [[
+        InlineKeyboardButton("🔙 Back", callback_data="prediction_menu")
+    ]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     # Edit existing message with mines image and content
@@ -1706,13 +1718,16 @@ def dragon_tiger_menu_handler(update: Update, context: CallbackContext):
     query.answer()
 
     # Dragon Tiger coming soon message
-    dragon_tiger_menu_msg = ("*🐲 Dragon Tiger*\n\n"
-                            "*🚧 Coming Soon! 🚧*\n\n"
-                            "*Get ready for the ultimate Dragon Tiger predictions!*\n"
-                            "*Advanced AI algorithms are being fine-tuned for maximum wins.*")
+    dragon_tiger_menu_msg = (
+        "*🐲 Dragon Tiger*\n\n"
+        "*🚧 Coming Soon! 🚧*\n\n"
+        "*Get ready for the ultimate Dragon Tiger predictions!*\n"
+        "*Advanced AI algorithms are being fine-tuned for maximum wins.*")
 
     # Create keyboard with back button
-    keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="prediction_menu")]]
+    keyboard = [[
+        InlineKeyboardButton("🔙 Back", callback_data="prediction_menu")
+    ]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     # Edit existing message with dragon tiger image and content
@@ -1735,7 +1750,7 @@ def dragon_tiger_menu_handler(update: Update, context: CallbackContext):
 
 def handle_aviator_signals_button(update: Update, context: CallbackContext):
     """
-    Handle the aviator signals button - similar to manual prediction but for aviator
+    Handle the aviator signals button - show instructions for round ID input
     """
     query = update.callback_query
     query.answer()
@@ -1754,63 +1769,135 @@ def handle_aviator_signals_button(update: Update, context: CallbackContext):
     except Exception as e:
         logger.error(f"Error checking blocked status in aviator signals: {e}")
 
-    # Generate random aviator prediction
-    import random
-
-    # Random multiplier between 1.5x and 10x
-    multipliers = ["1.5x", "2.0x", "2.5x", "3.0x", "3.5x", "4.0x", "4.5x", "5.0x", "6.0x", "7.0x", "8.0x", "9.0x", "10.0x"]
-    prediction_multiplier = random.choice(multipliers)
-
-    # Generate random round ID
-    round_id = random.randint(800000, 999999)
-
-    # Send aviator prediction message with specific format
-    aviator_prediction_msg = (
-        f"*🎮 Game: Aviator*\n"
-        f"*🚀 Prediction: Fly till {prediction_multiplier}*\n"
-        f"*🔒 Round ID: {round_id}*\n"
-        f"*⏱️ Apply Before Flying*\n\n"
-        f"*♻️ Strategy: Trust the Process - Consistency Wins 😉*"
+    # Show instruction message for round ID input
+    instruction_msg = (
+        "*🚀 Drop The Last 3 Digits Of The Round ID*\n"
+        "*🎯 Claim Your VIP Aviator Tip – Instantly!*\n"
+        "*⚙️ Example: 6456123 ➡️ Just Send 123*"
     )
 
+    # Create keyboard with back button only
+    keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="aviator_menu")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Set user state to wait for round ID input
+    if 'aviator_waiting_round_id' not in context.bot_data:
+        context.bot_data['aviator_waiting_round_id'] = set()
+    context.bot_data['aviator_waiting_round_id'].add(user_id)
+
+    # Try to edit the message with instructions
+    try:
+        query.edit_message_text(text=instruction_msg,
+                                parse_mode='Markdown',
+                                reply_markup=reply_markup)
+    except Exception as e:
+        logger.error(f"Error editing message in aviator signals instruction: {e}")
+        try:
+            # Fallback to sending new message
+            query.message.reply_text(instruction_msg,
+                                     parse_mode='Markdown',
+                                     reply_markup=reply_markup)
+        except Exception as e2:
+            logger.error(f"Error sending aviator signals instruction message: {e2}")
+            query.answer("❌ Error showing instructions. Please try again.", show_alert=True)
+
+
+def generate_aviator_prediction(round_id):
+    """
+    Generate aviator prediction based on round ID with weighted probabilities
+    """
+    import random
+    
+    # Weighted probability distribution
+    # 40% chance for 1.5x-3x
+    # 20% chance for up to 5x  
+    # 10% chance for up to 15x
+    # 1-2% chance for up to 50x
+    
+    rand = random.random()
+    
+    if rand < 0.40:  # 40% - Low multipliers (1.3x-3x)
+        multipliers = ["1.3x", "1.5x", "1.7x", "1.8x", "2.0x", "2.1x", "2.3x", "2.5x", "2.7x", "3.0x"]
+        return random.choice(multipliers)
+    elif rand < 0.60:  # 20% - Medium multipliers (3.5x-5x)
+        multipliers = ["3.5x", "4.0x", "4.2x", "4.5x", "4.8x", "5.0x"]
+        return random.choice(multipliers)
+    elif rand < 0.70:  # 10% - High multipliers (6x-15x)
+        multipliers = ["6.0x", "7.0x", "8.0x", "9.0x", "10.0x", "12.0x", "15.0x"]
+        return random.choice(multipliers)
+    else:  # 1-2% - Very high multipliers (20x-50x)
+        multipliers = ["20.0x", "25.0x", "30.0x", "35.0x", "40.0x", "50.0x"]
+        return random.choice(multipliers)
+
+
+def handle_aviator_round_id_input(update: Update, context: CallbackContext, round_id):
+    """
+    Handle user's round ID input and generate prediction
+    """
+    user_id = update.message.from_user.id
+    
+    # Generate prediction based on round ID
+    prediction_multiplier = generate_aviator_prediction(round_id)
+    
+    # Create prediction message
+    prediction_msg = (
+        "*🔐 VIP Hack Aviator Prediction ⏳*\n\n"
+        "*🎮 Game: Aviator*\n"
+        f"*📥 Period Number: {round_id}*\n"
+        f"*💸 Cash Out Target: {prediction_multiplier}*\n\n"
+        "*💡 Reminder: Always maintain Level 3 funds*"
+    )
+    
     # Create keyboard with Next Prediction and Back buttons
     keyboard = [[
         InlineKeyboardButton("Next Prediction", callback_data="aviator_signals")
     ], [InlineKeyboardButton("🔙 Back", callback_data="aviator_menu")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
-
-    # Try multiple approaches to send the message with better error handling
-    try:
-        # First try to edit the message media with an image
-        query.edit_message_media(media=InputMediaPhoto(
-            media="https://files.catbox.moe/etovfv.webp",
-            caption=aviator_prediction_msg,
-            parse_mode='Markdown'),
-                                 reply_markup=reply_markup)
-    except Exception as e:
-        logger.error(f"Error editing message media in aviator signals: {e}")
+    
+    # Remove user from waiting state and clear error count
+    if 'aviator_waiting_round_id' in context.bot_data and user_id in context.bot_data['aviator_waiting_round_id']:
+        context.bot_data['aviator_waiting_round_id'].remove(user_id)
+    
+    # Clear error count on successful prediction
+    if 'aviator_error_count' in context.bot_data and user_id in context.bot_data['aviator_error_count']:
+        context.bot_data['aviator_error_count'][user_id] = 0
+    
+    # Store the last message ID to delete old predictions
+    if 'aviator_prediction_messages' not in context.bot_data:
+        context.bot_data['aviator_prediction_messages'] = {}
+    
+    # Delete old prediction message if exists
+    if user_id in context.bot_data['aviator_prediction_messages']:
         try:
-            # Fallback to editing caption only
-            query.edit_message_caption(caption=aviator_prediction_msg,
-                                       parse_mode='Markdown',
-                                       reply_markup=reply_markup)
+            context.bot.delete_message(
+                chat_id=user_id,
+                message_id=context.bot_data['aviator_prediction_messages'][user_id]
+            )
+        except Exception as e:
+            logger.error(f"Error deleting old aviator prediction message: {e}")
+    
+    # Send new prediction with image
+    try:
+        sent_message = update.message.reply_photo(
+            photo="https://files.catbox.moe/nvrvwg.png",
+            caption=prediction_msg,
+            parse_mode='Markdown',
+            reply_markup=reply_markup
+        )
+        # Store new message ID
+        context.bot_data['aviator_prediction_messages'][user_id] = sent_message.message_id
+    except Exception as e:
+        logger.error(f"Error sending aviator prediction with photo: {e}")
+        # Fallback to text message
+        try:
+            sent_message = update.message.reply_text(
+                prediction_msg,
+                parse_mode='Markdown',
+                reply_markup=reply_markup
+            )
+            context.bot_data['aviator_prediction_messages'][user_id] = sent_message.message_id
         except Exception as e2:
-            logger.error(f"Error editing caption in aviator signals: {e2}")
-            try:
-                # Fallback to editing text only
-                query.edit_message_text(text=aviator_prediction_msg,
-                                        parse_mode='Markdown',
-                                        reply_markup=reply_markup)
-            except Exception as e3:
-                logger.error(f"Error editing text in aviator signals: {e3}")
-                try:
-                    # Last fallback to sending new message
-                    query.message.reply_text(aviator_prediction_msg,
-                                             parse_mode='Markdown',
-                                             reply_markup=reply_markup)
-                except Exception as e4:
-                    logger.error(f"Error sending new aviator signals message: {e4}")
-                    query.answer("❌ Error generating prediction. Please try again.", show_alert=True)
+            logger.error(f"Error sending aviator prediction text: {e2}")
 
 
 def handle_screenshot_button(update: Update, context: CallbackContext):
@@ -2118,10 +2205,12 @@ def check_uid(update, context, uid, user_id, username):
                     # UID not found in database in restriction mode
                     # Check if user already submitted this UID before
                     existing_submission = uids_col.find_one({
-                        'uid': uid,
-                        'verified_by': user_id
+                        'uid':
+                        uid,
+                        'verified_by':
+                        user_id
                     })
-                    
+
                     if existing_submission:
                         # User already submitted this UID before
                         if existing_submission.get('verified', False):
@@ -2131,7 +2220,7 @@ def check_uid(update, context, uid, user_id, username):
                                 f"*📸 Please Send Your Wallet Screenshot For Balance Verification.*\n"
                                 f"*💰 Minimum Required Balance: ₹100*",
                                 parse_mode='Markdown')
-                            
+
                             # Store pending wallet verification
                             if 'pending_wallets' not in context.bot_data:
                                 context.bot_data['pending_wallets'] = {}
@@ -2446,7 +2535,7 @@ def handle_wallet(update: Update, context: CallbackContext):
             # Send photo with verification message and buttons
             try:
                 update.message.reply_photo(
-                    photo="https://files.catbox.moe/3ae7md.webp",
+                    photo="https://files.catbox.moe/4hd1vl.png",
                     caption=
                     (f"*✅ Verification Successful! 🎯*\n\n"
                      f"*You're now eligible for VIP AI Predictions ⚡️& Daily Gift Codes worth up to ₹500 🎁*\n\n"
@@ -3905,8 +3994,49 @@ def handle_all(update: Update, context: CallbackContext):
 
     try:
         if update.message.text:
-            # Check if user is waiting for 3 digits
-            if ('waiting_for_digits' in context.bot_data
+            # Check if user is waiting for aviator round ID (3 digits)
+            if ('aviator_waiting_round_id' in context.bot_data
+                    and user_id in context.bot_data['aviator_waiting_round_id']):
+                
+                text = update.message.text.strip()
+                
+                # Check if it's exactly 3 digits
+                if re.match(r'^\d{3}$', text):
+                    handle_aviator_round_id_input(update, context, text)
+                    return
+                else:
+                    # Invalid input for aviator - give specific error and clear the waiting state after 3 attempts
+                    if 'aviator_error_count' not in context.bot_data:
+                        context.bot_data['aviator_error_count'] = {}
+                    
+                    if user_id not in context.bot_data['aviator_error_count']:
+                        context.bot_data['aviator_error_count'][user_id] = 0
+                    
+                    context.bot_data['aviator_error_count'][user_id] += 1
+                    
+                    if context.bot_data['aviator_error_count'][user_id] >= 3:
+                        # Clear waiting state after 3 failed attempts
+                        context.bot_data['aviator_waiting_round_id'].remove(user_id)
+                        context.bot_data['aviator_error_count'][user_id] = 0
+                        
+                        update.message.reply_text(
+                            "*❌ Aviator Signals Cancelled*\n"
+                            "*🔄 Too many invalid attempts*\n\n"
+                            "*🚀 Click 'Get Signals' again to restart*",
+                            parse_mode='Markdown')
+                    else:
+                        attempts_left = 3 - context.bot_data['aviator_error_count'][user_id]
+                        update.message.reply_text(
+                            "*❌ Invalid Aviator Round ID*\n"
+                            "*🎮 For Aviator Game: Send exactly 3 digits only*\n"
+                            "*✅ Example: 123*\n"
+                            "*⚙️ From 6456123 ➡️ Send 123*\n\n"
+                            f"*⏰ Attempts left: {attempts_left}*",
+                            parse_mode='Markdown')
+                    return
+            
+            # Check if user is waiting for 3 digits (manual prediction)
+            elif ('waiting_for_digits' in context.bot_data
                     and user_id in context.bot_data['waiting_for_digits']):
 
                 text = update.message.text.strip()
@@ -4273,9 +4403,18 @@ def handle_delete_all_data_no(update: Update, context: CallbackContext):
         ]]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        query.edit_message_text(text=msg,
-                                parse_mode='Markdown',
-                                reply_markup=reply_markup)
+        try:
+            query.edit_message_text(text=msg,
+                                    parse_mode='Markdown',
+                                    reply_markup=reply_markup)
+        except Exception as edit_error:
+            error_msg = str(edit_error).lower()
+            if "message is not modified" in error_msg:
+                # Message content is identical, just skip silently
+                pass
+            else:
+                logger.error(f"Error editing stats message: {edit_error}")
+                query.edit_message_text("❌ Error returning to stats view.")
 
     except Exception as e:
         logger.error(f"Error returning to stats: {e}")
@@ -4468,9 +4607,11 @@ def main():
         dp.add_handler(
             CallbackQueryHandler(mines_menu_handler, pattern="mines_menu"))
         dp.add_handler(
-            CallbackQueryHandler(dragon_tiger_menu_handler, pattern="dragon_tiger_menu"))
+            CallbackQueryHandler(dragon_tiger_menu_handler,
+                                 pattern="dragon_tiger_menu"))
         dp.add_handler(
-            CallbackQueryHandler(handle_aviator_signals_button, pattern="aviator_signals"))
+            CallbackQueryHandler(handle_aviator_signals_button,
+                                 pattern="aviator_signals"))
         dp.add_handler(
             CallbackQueryHandler(handle_confirm_delete_all_data,
                                  pattern="confirm_delete_all_data"))
