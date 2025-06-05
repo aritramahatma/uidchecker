@@ -1066,38 +1066,33 @@ def handle_prediction_button(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
 
-    # Updated prediction message
-    prediction_msg = ("*🥷 VIP AI Predictions*\n\n"
-                      "*⚡️ Unlock Exclusive Predictions Powered by AI*\n"
-                      "*🚀 High Accuracy & Smart Analysis*\n"
-                      "*💰 Maximize Your Winnings Like Never Before*\n\n"
-                      "*⚠️ Make Sure to Maintain Level '5'*")
+    # Prediction menu message showing game selection
+    prediction_msg = ("*🎮 Select Your Game*\n\n"
+                      "*Choose which game you want predictions for:*\n\n"
+                      "*🎯 Wingo - Color & Number Predictions*\n"
+                      "*✈️ Aviator - Multiplier Predictions*")
 
-    # Create keyboard with Manual and Auto Prediction buttons, then Back button
+    # Create keyboard with Wingo and Aviator buttons
     keyboard = [[
-        InlineKeyboardButton("Manual Prediction",
-                             callback_data="manual_prediction"),
-        InlineKeyboardButton("Auto Prediction",
-                             callback_data="auto_prediction")
-    ], [InlineKeyboardButton("Back", callback_data="back")]]
+        InlineKeyboardButton("🎯 Wingo", callback_data="wingo_menu"),
+        InlineKeyboardButton("✈️ Aviator", callback_data="aviator_menu")
+    ], [InlineKeyboardButton("🔙 Back", callback_data="back")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # Edit existing message with new photo and content
+    # Edit existing message with new content
     try:
-        query.edit_message_media(media=InputMediaPhoto(
-            media="https://files.catbox.moe/ytmaec.jpg",
-            caption=prediction_msg,
-            parse_mode='Markdown'),
-                                 reply_markup=reply_markup)
+        query.edit_message_caption(caption=prediction_msg,
+                                   parse_mode='Markdown',
+                                   reply_markup=reply_markup)
     except Exception as e:
         logger.error(f"Error editing message in prediction button: {e}")
-        # Fallback to editing just caption if photo edit fails
+        # Fallback to sending new message if edit fails
         try:
-            query.edit_message_caption(caption=prediction_msg,
-                                       parse_mode='Markdown',
-                                       reply_markup=reply_markup)
+            query.message.reply_text(prediction_msg,
+                                     parse_mode='Markdown',
+                                     reply_markup=reply_markup)
         except Exception as e2:
-            logger.error(f"Error editing caption in prediction button: {e2}")
+            logger.error(f"Error sending prediction menu message: {e2}")
 
 
 def handle_manual_prediction_button(update: Update, context: CallbackContext):
