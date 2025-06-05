@@ -1069,28 +1069,31 @@ def handle_prediction_button(update: Update, context: CallbackContext):
     # Prediction menu message showing game selection
     prediction_msg = ("*🎮 Select Your Game*\n\n"
                       "*Choose which game you want predictions for:*\n\n"
-                      "*🎯 Wingo - Color & Number Predictions*\n"
-                      "*✈️ Aviator - Multiplier Predictions*")
+                      "*🎯 Wingo – Color & Number Predictions*\n"
+                      "*🚀 Aviator – Multiplier Predictions*\n\n"
+                      "*More games coming soon 🔜*")
 
     # Create keyboard with Wingo and Aviator buttons
     keyboard = [[
         InlineKeyboardButton("🎯 Wingo", callback_data="wingo_menu"),
-        InlineKeyboardButton("✈️ Aviator", callback_data="aviator_menu")
+        InlineKeyboardButton("🚀 Aviator", callback_data="aviator_menu")
     ], [InlineKeyboardButton("🔙 Back", callback_data="back")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # Edit existing message with new content
+    # Edit existing message with game selection image and content
     try:
-        query.edit_message_caption(caption=prediction_msg,
-                                   parse_mode='Markdown',
-                                   reply_markup=reply_markup)
+        query.edit_message_media(media=InputMediaPhoto(
+            media="https://files.catbox.moe/xevf55.webp",
+            caption=prediction_msg,
+            parse_mode='Markdown'),
+                                 reply_markup=reply_markup)
     except Exception as e:
         logger.error(f"Error editing message in prediction button: {e}")
-        # Fallback to sending new message if edit fails
+        # Fallback to editing just caption if photo edit fails
         try:
-            query.message.reply_text(prediction_msg,
-                                     parse_mode='Markdown',
-                                     reply_markup=reply_markup)
+            query.edit_message_caption(caption=prediction_msg,
+                                       parse_mode='Markdown',
+                                       reply_markup=reply_markup)
         except Exception as e2:
             logger.error(f"Error sending prediction menu message: {e2}")
 
@@ -1526,9 +1529,9 @@ def prediction_menu_handler(update: Update, context: CallbackContext):
 
     # Prediction menu message
     prediction_menu_msg = ("*🎮 Select Your Game*\n\n"
-                          "*Choose which game you want predictions for:*\n\n"
-                          "*🎯 Wingo - Color & Number Predictions*\n"
-                          "*✈️ Aviator - Multiplier Predictions*")
+                           "*Choose which game you want predictions for:*\n\n"
+                           "*🎯 Wingo - Color & Number Predictions*\n"
+                           "*✈️ Aviator - Multiplier Predictions*")
 
     # Create keyboard with Wingo and Aviator buttons
     keyboard = [[
@@ -1537,18 +1540,20 @@ def prediction_menu_handler(update: Update, context: CallbackContext):
     ], [InlineKeyboardButton("🔙 Back", callback_data="back")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # Edit existing message with new content
+    # Edit existing message with game selection image and content
     try:
-        query.edit_message_caption(caption=prediction_menu_msg,
-                                   parse_mode='Markdown',
-                                   reply_markup=reply_markup)
+        query.edit_message_media(media=InputMediaPhoto(
+            media="https://files.catbox.moe/xevf55.webp",
+            caption=prediction_menu_msg,
+            parse_mode='Markdown'),
+                                 reply_markup=reply_markup)
     except Exception as e:
         logger.error(f"Error editing message in prediction menu: {e}")
-        # Fallback to sending new message if edit fails
+        # Fallback to editing just caption if photo edit fails
         try:
-            query.message.reply_text(prediction_menu_msg,
-                                     parse_mode='Markdown',
-                                     reply_markup=reply_markup)
+            query.edit_message_caption(caption=prediction_menu_msg,
+                                       parse_mode='Markdown',
+                                       reply_markup=reply_markup)
         except Exception as e2:
             logger.error(f"Error sending prediction menu message: {e2}")
 
@@ -1569,23 +1574,27 @@ def wingo_menu_handler(update: Update, context: CallbackContext):
 
     # Create keyboard with Manual and Auto Prediction buttons
     keyboard = [[
-        InlineKeyboardButton("Manual Prediction", callback_data="manual_prediction"),
-        InlineKeyboardButton("Auto Prediction", callback_data="auto_prediction")
+        InlineKeyboardButton("Manual Prediction",
+                             callback_data="manual_prediction"),
+        InlineKeyboardButton("Auto Prediction",
+                             callback_data="auto_prediction")
     ], [InlineKeyboardButton("🔙 Back", callback_data="prediction_menu")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # Edit existing message with new content
+    # Edit existing message with wingo image and content
     try:
-        query.edit_message_caption(caption=wingo_menu_msg,
-                                   parse_mode='Markdown',
-                                   reply_markup=reply_markup)
+        query.edit_message_media(media=InputMediaPhoto(
+            media="https://files.catbox.moe/fo19ii.jpg",
+            caption=wingo_menu_msg,
+            parse_mode='Markdown'),
+                                 reply_markup=reply_markup)
     except Exception as e:
         logger.error(f"Error editing message in wingo menu: {e}")
-        # Fallback to sending new message if edit fails
+        # Fallback to editing just caption if photo edit fails
         try:
-            query.message.reply_text(wingo_menu_msg,
-                                     parse_mode='Markdown',
-                                     reply_markup=reply_markup)
+            query.edit_message_caption(caption=wingo_menu_msg,
+                                       parse_mode='Markdown',
+                                       reply_markup=reply_markup)
         except Exception as e2:
             logger.error(f"Error sending wingo menu message: {e2}")
 
@@ -1606,23 +1615,27 @@ def aviator_menu_handler(update: Update, context: CallbackContext):
 
     # Create keyboard with Aviator prediction options
     keyboard = [[
-        InlineKeyboardButton("🎯 Get Aviator Prediction", callback_data="aviator_prediction"),
-        InlineKeyboardButton("📈 Multiplier Analysis", callback_data="aviator_analysis")
+        InlineKeyboardButton("🎯 Get Aviator Prediction",
+                             callback_data="aviator_prediction"),
+        InlineKeyboardButton("📈 Multiplier Analysis",
+                             callback_data="aviator_analysis")
     ], [InlineKeyboardButton("🔙 Back", callback_data="prediction_menu")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # Edit existing message with new content
+    # Edit existing message with aviator image and content
     try:
-        query.edit_message_caption(caption=aviator_menu_msg,
-                                   parse_mode='Markdown',
-                                   reply_markup=reply_markup)
+        query.edit_message_media(media=InputMediaPhoto(
+            media="https://files.catbox.moe/ikjjio.webp",
+            caption=aviator_menu_msg,
+            parse_mode='Markdown'),
+                                 reply_markup=reply_markup)
     except Exception as e:
         logger.error(f"Error editing message in aviator menu: {e}")
-        # Fallback to sending new message if edit fails
+        # Fallback to editing just caption if photo edit fails
         try:
-            query.message.reply_text(aviator_menu_msg,
-                                     parse_mode='Markdown',
-                                     reply_markup=reply_markup)
+            query.edit_message_caption(caption=aviator_menu_msg,
+                                       parse_mode='Markdown',
+                                       reply_markup=reply_markup)
         except Exception as e2:
             logger.error(f"Error sending aviator menu message: {e2}")
 
@@ -1880,7 +1893,7 @@ def check_uid(update, context, uid, user_id, username):
                 if found:
                     # UID exists in database
                     verified_by = found.get('verified_by')
-                    
+
                     if verified_by == user_id:
                         # Same user already verified this UID
                         update.message.reply_text(
@@ -1896,12 +1909,14 @@ def check_uid(update, context, uid, user_id, username):
                             f"*🆔 UID: {uid}*\n"
                             f"*⚠️ This UID has been claimed by a different Telegram account.*\n"
                             f"*🔁 Each UID can only be verified once per user.*\n\n"
-                            f"*➠ Please switch back to your original account or contact the admin for help.*")
+                            f"*➠ Please switch back to your original account or contact the admin for help.*"
+                        )
 
                         # Create inline keyboard with Contact Admin button
                         keyboard = [[
-                            InlineKeyboardButton("Contact Admin 👤",
-                                                 url="https://t.me/streamerflex_bot")
+                            InlineKeyboardButton(
+                                "Contact Admin 👤",
+                                url="https://t.me/streamerflex_bot")
                         ]]
                         reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -1953,7 +1968,8 @@ def check_uid(update, context, uid, user_id, username):
                     try:
                         update.message.bot.send_message(
                             chat_id=ADMIN_UID,
-                            text=f"⚠️ New UID verification attempt (RESTRICT MODE):\n"
+                            text=
+                            f"⚠️ New UID verification attempt (RESTRICT MODE):\n"
                             f"UID: {uid}\n"
                             f"User: @{username} (ID: {user_id})\n"
                             f"Status: NOT FOUND\n"
@@ -1965,16 +1981,19 @@ def check_uid(update, context, uid, user_id, username):
                 # Restriction mode is OFF - original logic
                 if found:
                     # UID found in database
-                    uids_col.update_one({'uid': uid}, {
-                        '$set': {
-                            'user_id': user_id,
-                            'username': username,
-                            'verified': True,
-                            'verified_by': user_id,  # User verified this UID
-                            'last_checked': update.message.date
-                        }
-                    },
-                                        upsert=True)
+                    uids_col.update_one(
+                        {'uid': uid},
+                        {
+                            '$set': {
+                                'user_id': user_id,
+                                'username': username,
+                                'verified': True,
+                                'verified_by':
+                                user_id,  # User verified this UID
+                                'last_checked': update.message.date
+                            }
+                        },
+                        upsert=True)
                     update.message.reply_text(
                         f"*✅ UID {uid} Verified*\n"
                         f"*📸 Please Send Your Wallet Screenshot For Balance Verification.*\n"
@@ -1989,17 +2008,20 @@ def check_uid(update, context, uid, user_id, username):
 
                 else:
                     # UID not found
-                    uids_col.update_one({'uid': uid}, {
-                        '$set': {
-                            'user_id': user_id,
-                            'username': username,
-                            'verified': False,
-                            'fully_verified': False,
-                            'verified_by': user_id,  # User attempted to verify this UID
-                            'added_date': update.message.date
-                        }
-                    },
-                                        upsert=True)
+                    uids_col.update_one(
+                        {'uid': uid},
+                        {
+                            '$set': {
+                                'user_id': user_id,
+                                'username': username,
+                                'verified': False,
+                                'fully_verified': False,
+                                'verified_by':
+                                user_id,  # User attempted to verify this UID
+                                'added_date': update.message.date
+                            }
+                        },
+                        upsert=True)
                     approval_message = (
                         "*☑️ Your UID Successfully Sent For Approval !*\n\n"
                         "*🔴 You Will Get Access Within Few Minutes If You Enter Correct Details*"
@@ -3456,7 +3478,7 @@ def restrict_command(update: Update, context: CallbackContext):
     Usage: /restrict on or /restrict off
     """
     global restrict_mode
-    
+
     if update.message.from_user.id != ADMIN_UID:
         update.message.reply_text("❌ Unauthorized access.")
         return
@@ -3478,11 +3500,15 @@ def restrict_command(update: Update, context: CallbackContext):
         if mode == 'on':
             restrict_mode = True
             update.message.reply_text("🔐 Restriction Mode is now ON")
-            logger.info(f"Admin {update.message.from_user.username} enabled restriction mode")
+            logger.info(
+                f"Admin {update.message.from_user.username} enabled restriction mode"
+            )
         elif mode == 'off':
             restrict_mode = False
             update.message.reply_text("🔓 Restriction Mode is now OFF")
-            logger.info(f"Admin {update.message.from_user.username} disabled restriction mode")
+            logger.info(
+                f"Admin {update.message.from_user.username} disabled restriction mode"
+            )
         else:
             update.message.reply_text(
                 "❌ Invalid option. Use `/restrict on` or `/restrict off`")
@@ -4232,7 +4258,8 @@ def main():
             CallbackQueryHandler(handle_support_button, pattern="support"))
         # Add the three missing callback query handlers
         dp.add_handler(
-            CallbackQueryHandler(prediction_menu_handler, pattern="prediction_menu"))
+            CallbackQueryHandler(prediction_menu_handler,
+                                 pattern="prediction_menu"))
         dp.add_handler(
             CallbackQueryHandler(wingo_menu_handler, pattern="wingo_menu"))
         dp.add_handler(
