@@ -4043,8 +4043,12 @@ def handle_all(update: Update, context: CallbackContext):
 
                 # Check if it's exactly 3 digits
                 if re.match(r'^\d{3}$', text):
-                    # Remove user from waiting state
+                    # Remove user from waiting state and clear error count
                     context.bot_data['waiting_for_digits'].discard(user_id)
+                    
+                    # Clear error count on successful prediction
+                    if 'wingo_error_count' in context.bot_data and user_id in context.bot_data['wingo_error_count']:
+                        context.bot_data['wingo_error_count'][user_id] = 0
 
                     # Send sticker first
                     try:
@@ -4159,12 +4163,34 @@ def handle_all(update: Update, context: CallbackContext):
                                                   reply_markup=reply_markup)
                     return
                 else:
-                    update.message.reply_text(
-                        "*❌ Invalid Input*\n"
-                        "*🔢 Please send exactly 3 digits*\n"
-                        "*✅ Example: 789*\n\n"
-                        "*🧠 Let's keep it simple and accurate!*",
-                        parse_mode='Markdown')
+                    # Invalid input for manual Wingo prediction - give specific error and clear state after 3 attempts
+                    if 'wingo_error_count' not in context.bot_data:
+                        context.bot_data['wingo_error_count'] = {}
+                    
+                    if user_id not in context.bot_data['wingo_error_count']:
+                        context.bot_data['wingo_error_count'][user_id] = 0
+                    
+                    context.bot_data['wingo_error_count'][user_id] += 1
+                    
+                    if context.bot_data['wingo_error_count'][user_id] >= 3:
+                        # Clear waiting state after 3 failed attempts
+                        context.bot_data['waiting_for_digits'].discard(user_id)
+                        context.bot_data['wingo_error_count'][user_id] = 0
+                        
+                        update.message.reply_text(
+                            "*❌ Wingo Manual Prediction Cancelled*\n"
+                            "*🔄 Too many invalid attempts*\n\n"
+                            "*🚀 Click 'Manual Prediction' again to restart*",
+                            parse_mode='Markdown')
+                    else:
+                        attempts_left = 3 - context.bot_data['wingo_error_count'][user_id]
+                        update.message.reply_text(
+                            "*❌ Invalid Wingo Period Number*\n"
+                            "*🎮 For Wingo Game: Send exactly 3 digits only*\n"
+                            "*✅ Example: 789*\n"
+                            "*🔢 Period format: XXX (3 digits)*\n\n"
+                            f"*⏰ Attempts left: {attempts_left}*",
+                            parse_mode='Markdown')
                     return
 
             # Handle text messages - look for UID (but exclude 3-digit numbers)
