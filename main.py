@@ -1803,30 +1803,29 @@ def handle_aviator_signals_button(update: Update, context: CallbackContext):
 
 def generate_aviator_prediction(round_id):
     """
-    Generate aviator prediction based on round ID with weighted probabilities
+    Generate aviator prediction based on round ID with range 1.0x to 3.0x
     """
     import random
     
-    # Weighted probability distribution
-    # 40% chance for 1.5x-3x
-    # 20% chance for up to 5x  
-    # 10% chance for up to 15x
-    # 1-2% chance for up to 50x
+    # Generate multipliers from 1.0x to 3.0x with 0.2x increments
+    # 1.0x, 1.2x, 1.4x, 1.6x, 1.8x, 2.0x, 2.2x, 2.4x, 2.6x, 2.8x, 3.0x
+    multipliers = []
+    for i in range(11):  # 0 to 10
+        multiplier = 1.0 + (i * 0.2)
+        multipliers.append(f"{multiplier:.1f}x")
     
+    # Weighted probability distribution for more realistic aviator game
     rand = random.random()
     
-    if rand < 0.40:  # 40% - Low multipliers (1.3x-3x)
-        multipliers = ["1.3x", "1.5x", "1.7x", "1.8x", "2.0x", "2.1x", "2.3x", "2.5x", "2.7x", "3.0x"]
-        return random.choice(multipliers)
-    elif rand < 0.60:  # 20% - Medium multipliers (3.5x-5x)
-        multipliers = ["3.5x", "4.0x", "4.2x", "4.5x", "4.8x", "5.0x"]
-        return random.choice(multipliers)
-    elif rand < 0.70:  # 10% - High multipliers (6x-15x)
-        multipliers = ["6.0x", "7.0x", "8.0x", "9.0x", "10.0x", "12.0x", "15.0x"]
-        return random.choice(multipliers)
-    else:  # 1-2% - Very high multipliers (20x-50x)
-        multipliers = ["20.0x", "25.0x", "30.0x", "35.0x", "40.0x", "50.0x"]
-        return random.choice(multipliers)
+    if rand < 0.35:  # 35% - Lower multipliers (1.0x-1.8x)
+        low_multipliers = ["1.0x", "1.2x", "1.4x", "1.6x", "1.8x"]
+        return random.choice(low_multipliers)
+    elif rand < 0.70:  # 35% - Medium multipliers (2.0x-2.6x)
+        medium_multipliers = ["2.0x", "2.2x", "2.4x", "2.6x"]
+        return random.choice(medium_multipliers)
+    else:  # 30% - Higher multipliers (2.8x-3.0x)
+        high_multipliers = ["2.8x", "3.0x"]
+        return random.choice(high_multipliers)
 
 
 def handle_aviator_round_id_input(update: Update, context: CallbackContext, round_id):
@@ -1840,31 +1839,6 @@ def handle_aviator_round_id_input(update: Update, context: CallbackContext, roun
         aviator_sticker = update.message.reply_sticker(
             sticker="CAACAgEAAxkBAAEOpMhoQZoGuaWt7uRSTMj_Iqlok-VO_QACWgIAAqaQ2USiYhZ1luPyBDYE"
         )
-
-        # Schedule sticker deletion after 2 minutes
-        import threading
-
-        def delete_aviator_sticker_after_delay():
-            try:
-                import time
-                time.sleep(120)  # Wait 2 minutes (120 seconds)
-                context.bot.delete_message(
-                    chat_id=user_id,
-                    message_id=aviator_sticker.message_id)
-                logger.info(
-                    f"Aviator prediction sticker deleted after 2 minutes for user {user_id}"
-                )
-            except Exception as e:
-                logger.error(
-                    f"Error deleting aviator prediction sticker after delay: {e}"
-                )
-
-        # Start the deletion timer in a separate thread
-        aviator_deletion_thread = threading.Thread(
-            target=delete_aviator_sticker_after_delay)
-        aviator_deletion_thread.daemon = True  # Thread will exit when main program exits
-        aviator_deletion_thread.start()
-
     except Exception as e:
         logger.error(f"Error sending aviator sticker: {e}")
     
@@ -1894,31 +1868,7 @@ def handle_aviator_round_id_input(update: Update, context: CallbackContext, roun
     if 'aviator_error_count' in context.bot_data and user_id in context.bot_data['aviator_error_count']:
         context.bot_data['aviator_error_count'][user_id] = 0
     
-    # Delete the instruction message when new prediction arrives
-    if 'aviator_instruction_messages' in context.bot_data and user_id in context.bot_data['aviator_instruction_messages']:
-        try:
-            context.bot.delete_message(
-                chat_id=user_id,
-                message_id=context.bot_data['aviator_instruction_messages'][user_id]
-            )
-            # Remove from tracking after deletion
-            del context.bot_data['aviator_instruction_messages'][user_id]
-        except Exception as e:
-            logger.error(f"Error deleting aviator instruction message: {e}")
-    
-    # Store the last message ID to delete old predictions
-    if 'aviator_prediction_messages' not in context.bot_data:
-        context.bot_data['aviator_prediction_messages'] = {}
-    
-    # Delete old prediction message if exists
-    if user_id in context.bot_data['aviator_prediction_messages']:
-        try:
-            context.bot.delete_message(
-                chat_id=user_id,
-                message_id=context.bot_data['aviator_prediction_messages'][user_id]
-            )
-        except Exception as e:
-            logger.error(f"Error deleting old aviator prediction message: {e}")
+    # Keep prediction history - no automatic deletion
     
     # Send new prediction with image
     try:
@@ -2196,13 +2146,42 @@ def check_uid(update, context, uid, user_id, username):
                 # Restriction mode is ON
                 if found:
                     # UID exists in database
-                    verified_by = found.get('verified_by')
+                    verified_by_tg_id = found.get('verified_by_tg_id')
+                    is_verified = found.get('verified', False)
 
-                    if verified_by == user_id:
-                        # Same user already verified this UID - silently skip
-                        return
-                    elif verified_by and verified_by != user_id:
-                        # Different user already verified this UID
+                    if verified_by_tg_id == user_id:
+                        # Same Telegram user trying to verify same UID again - allow multiple times
+                        if is_verified:
+                            # UID is already verified by this user - allow re-verification
+                            uids_col.update_one({'uid': uid}, {
+                                '$set': {
+                                    'user_id': user_id,
+                                    'username': username,
+                                    'last_checked': update.message.date
+                                }
+                            })
+                            update.message.reply_text(
+                                f"*✅ UID {uid} Verified*\n"
+                                f"*📸 Please Send Your Wallet Screenshot For Balance Verification.*\n"
+                                f"*💰 Minimum Required Balance: ₹100*",
+                                parse_mode='Markdown')
+
+                            # Store pending wallet verification
+                            if 'pending_wallets' not in context.bot_data:
+                                context.bot_data['pending_wallets'] = {}
+                            context.bot_data['pending_wallets'][user_id] = uid
+                            return
+                        else:
+                            # UID submitted by same user but still pending approval
+                            approval_message = (
+                                "*⏳ UID Still Under Review*\n\n"
+                                "*🔴 Your UID is already submitted and waiting for admin approval.*\n"
+                                "*⏰ Please wait for verification. No need to submit again.*"
+                            )
+                            update.message.reply_text(approval_message, parse_mode='Markdown')
+                            return
+                    elif verified_by_tg_id and verified_by_tg_id != user_id and is_verified:
+                        # Different user trying to verify UID that's already verified by another user
                         restriction_msg = (
                             f"*🔒 UID Already Verified by Another Account*\n"
                             f"*🆔 UID: {uid}*\n"
@@ -2224,13 +2203,14 @@ def check_uid(update, context, uid, user_id, username):
                                                   reply_markup=reply_markup)
                         return
                     else:
-                        # UID exists but no verified_by field - update it
+                        # UID exists but no verified_by_tg_id field or not verified yet - update it
                         uids_col.update_one({'uid': uid}, {
                             '$set': {
                                 'user_id': user_id,
                                 'username': username,
                                 'verified': True,
                                 'verified_by': user_id,
+                                'verified_by_tg_id': user_id,  # Save Telegram ID
                                 'last_checked': update.message.date
                             }
                         })
@@ -2249,10 +2229,8 @@ def check_uid(update, context, uid, user_id, username):
                     # UID not found in database in restriction mode
                     # Check if user already submitted this UID before
                     existing_submission = uids_col.find_one({
-                        'uid':
-                        uid,
-                        'verified_by':
-                        user_id
+                        'uid': uid,
+                        'verified_by_tg_id': user_id
                     })
 
                     if existing_submission:
@@ -2281,7 +2259,7 @@ def check_uid(update, context, uid, user_id, username):
                                                       parse_mode='Markdown')
                             return
                     else:
-                        # First time submission - insert with verified_by
+                        # First time submission - insert with verified_by_tg_id
                         uids_col.insert_one({
                             'uid': uid,
                             'user_id': user_id,
@@ -2289,6 +2267,7 @@ def check_uid(update, context, uid, user_id, username):
                             'verified': False,
                             'fully_verified': False,
                             'verified_by': user_id,
+                            'verified_by_tg_id': user_id,  # Save Telegram ID
                             'added_date': update.message.date
                         })
                         approval_message = (
@@ -2307,12 +2286,12 @@ def check_uid(update, context, uid, user_id, username):
                                 f"UID: {uid}\n"
                                 f"User: @{username} (ID: {user_id})\n"
                                 f"Status: NOT FOUND\n"
-                                f"🔒 Verified by: {user_id}")
+                                f"🔒 Verified by TG ID: {user_id}")
                         except Exception as e:
                             logger.error(f"Error notifying admin: {e}")
                         return
             else:
-                # Restriction mode is OFF - original logic
+                # Restriction mode is OFF - original logic with Telegram ID tracking
                 if found:
                     # UID found in database
                     uids_col.update_one(
@@ -2322,8 +2301,8 @@ def check_uid(update, context, uid, user_id, username):
                                 'user_id': user_id,
                                 'username': username,
                                 'verified': True,
-                                'verified_by':
-                                user_id,  # User verified this UID
+                                'verified_by': user_id,
+                                'verified_by_tg_id': user_id,  # Save Telegram ID
                                 'last_checked': update.message.date
                             }
                         },
@@ -2350,8 +2329,8 @@ def check_uid(update, context, uid, user_id, username):
                                 'username': username,
                                 'verified': False,
                                 'fully_verified': False,
-                                'verified_by':
-                                user_id,  # User attempted to verify this UID
+                                'verified_by': user_id,
+                                'verified_by_tg_id': user_id,  # Save Telegram ID
                                 'added_date': update.message.date
                             }
                         },
@@ -2370,7 +2349,8 @@ def check_uid(update, context, uid, user_id, username):
                             text=f"⚠️ New UID verification attempt:\n"
                             f"UID: {uid}\n"
                             f"User: @{username} (ID: {user_id})\n"
-                            f"Status: NOT FOUND")
+                            f"Status: NOT FOUND\n"
+                            f"🔒 Verified by TG ID: {user_id}")
                     except Exception as e:
                         logger.error(f"Error notifying admin: {e}")
                     return
@@ -2795,6 +2775,7 @@ def handle_single_uid(update: Update, context: CallbackContext):
                     'fully_verified': False,
                     'admin_added': True,
                     'verified_by': ADMIN_UID,  # Admin added this UID
+                    'verified_by_tg_id': None,  # Admin added - no specific user TG ID
                     'added_date': update.message.date
                 }
             },
@@ -2870,6 +2851,7 @@ def handle_bulk_images(update: Update, context: CallbackContext):
                             'admin_added': True,
                             'bulk_added': True,
                             'verified_by': ADMIN_UID,  # Admin added this UID
+                            'verified_by_tg_id': None,  # Admin added - no specific user TG ID
                             'added_date': update.message.date
                         }
                     },
