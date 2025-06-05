@@ -1525,7 +1525,7 @@ def handle_support_button(update: Update, context: CallbackContext):
 
 def prediction_menu_handler(update: Update, context: CallbackContext):
     """
-    Handle the prediction menu showing Wingo and Aviator options
+    Handle the prediction menu showing Wingo, Aviator, Mines Pro and Dragon Tiger options
     """
     query = update.callback_query
     query.answer()
@@ -1534,12 +1534,17 @@ def prediction_menu_handler(update: Update, context: CallbackContext):
     prediction_menu_msg = ("*🎮 Select Your Game*\n\n"
                            "*Choose which game you want predictions for:*\n\n"
                            "*🎯 Wingo - Color & Number Predictions*\n"
-                           "*✈️ Aviator - Multiplier Predictions*")
+                           "*✈️ Aviator - Multiplier Predictions*\n"
+                           "*💎 Mines Pro - Coming Soon*\n"
+                           "*🐉 Dragon Tiger - Coming Soon*")
 
-    # Create keyboard with Wingo and Aviator buttons
+    # Create keyboard with all four buttons
     keyboard = [[
         InlineKeyboardButton("🎯 Wingo", callback_data="wingo_menu"),
         InlineKeyboardButton("✈️ Aviator", callback_data="aviator_menu")
+    ], [
+        InlineKeyboardButton("💎 Mines Pro", callback_data="mines_menu"),
+        InlineKeyboardButton("🐉 Dragon Tiger", callback_data="dragon_tiger_menu")
     ], [InlineKeyboardButton("🔙 Back", callback_data="back")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
