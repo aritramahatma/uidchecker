@@ -1772,7 +1772,7 @@ def handle_aviator_signals_button(update: Update, context: CallbackContext):
     # Show instruction message for round ID input
     instruction_msg = (
         "*🚀 Drop The Last 3 Digits Of The Round ID*\n"
-        "*🎯 Claim Your VIP Aviator Tip – Instantly!*\n"
+        "*🎯 Claim Your VIP Aviator Tip – Instantly!*\n\n"
         "*⚙️ Example: 6456123 ➡️ Just Send 123*"
     )
 
@@ -1835,6 +1835,39 @@ def handle_aviator_round_id_input(update: Update, context: CallbackContext, roun
     Handle user's round ID input and generate prediction
     """
     user_id = update.message.from_user.id
+    
+    # Send sticker first before prediction
+    try:
+        aviator_sticker = update.message.reply_sticker(
+            sticker="CAACAgEAAxkBAAEOpMhoQZoGuaWt7uRSTMj_Iqlok-VO_QACWgIAAqaQ2USiYhZ1luPyBDYE"
+        )
+
+        # Schedule sticker deletion after 2 minutes
+        import threading
+
+        def delete_aviator_sticker_after_delay():
+            try:
+                import time
+                time.sleep(120)  # Wait 2 minutes (120 seconds)
+                context.bot.delete_message(
+                    chat_id=user_id,
+                    message_id=aviator_sticker.message_id)
+                logger.info(
+                    f"Aviator prediction sticker deleted after 2 minutes for user {user_id}"
+                )
+            except Exception as e:
+                logger.error(
+                    f"Error deleting aviator prediction sticker after delay: {e}"
+                )
+
+        # Start the deletion timer in a separate thread
+        aviator_deletion_thread = threading.Thread(
+            target=delete_aviator_sticker_after_delay)
+        aviator_deletion_thread.daemon = True  # Thread will exit when main program exits
+        aviator_deletion_thread.start()
+
+    except Exception as e:
+        logger.error(f"Error sending aviator sticker: {e}")
     
     # Generate prediction based on round ID
     prediction_multiplier = generate_aviator_prediction(round_id)
