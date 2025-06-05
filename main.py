@@ -252,7 +252,7 @@ def get_user_activity_stats():
 
 # Global variables
 last_extractions = []
-restrict_mode = False  # Global restriction mode
+restrict_mode = True  # Global restriction mode (ON by default)
 
 # Conversation states for dual mode update
 MODE_SELECT, SINGLE_UID, BULK_IMG = range(3)
@@ -1459,22 +1459,40 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
                     parse_mode='Markdown'),
                                          reply_markup=reply_markup)
             except Exception as e:
-                logger.error(
-                    f"Error editing message with photo in same period auto prediction: {e}"
-                )
-                # Fallback to editing just caption
-                try:
-                    query.edit_message_caption(caption=auto_prediction_msg,
-                                               parse_mode='Markdown',
-                                               reply_markup=reply_markup)
-                except Exception as e2:
+                error_msg = str(e).lower()
+                if "message is not modified" in error_msg:
+                    # Message content is identical, just skip silently
+                    pass
+                else:
                     logger.error(
-                        f"Error editing caption in same period auto prediction: {e2}"
+                        f"Error editing message with photo in same period auto prediction: {e}"
                     )
-                    # Last fallback to text edit
-                    query.edit_message_text(text=auto_prediction_msg,
-                                            parse_mode='Markdown',
-                                            reply_markup=reply_markup)
+                    # Fallback to editing just caption
+                    try:
+                        query.edit_message_caption(caption=auto_prediction_msg,
+                                                   parse_mode='Markdown',
+                                                   reply_markup=reply_markup)
+                    except Exception as e2:
+                        error_msg2 = str(e2).lower()
+                        if "message is not modified" in error_msg2:
+                            # Message content is identical, just skip silently
+                            pass
+                        else:
+                            logger.error(
+                                f"Error editing caption in same period auto prediction: {e2}"
+                            )
+                            # Last fallback to text edit
+                            try:
+                                query.edit_message_text(text=auto_prediction_msg,
+                                                        parse_mode='Markdown',
+                                                        reply_markup=reply_markup)
+                            except Exception as e3:
+                                error_msg3 = str(e3).lower()
+                                if "message is not modified" in error_msg3 or "no text in the message" in error_msg3:
+                                    # Message content is identical or no text, just skip silently
+                                    pass
+                                else:
+                                    logger.error(f"Error editing text in same period auto prediction: {e3}")
 
             # Answer callback with same result message
             query.answer("🔄 Same period - showing current prediction again",
@@ -1761,20 +1779,38 @@ def handle_aviator_signals_button(update: Update, context: CallbackContext):
     ], [InlineKeyboardButton("🔙 Back", callback_data="aviator_menu")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # Edit message with aviator prediction
+    # Try multiple approaches to send the message with better error handling
     try:
-        query.edit_message_caption(caption=aviator_prediction_msg,
-                                   parse_mode='Markdown',
-                                   reply_markup=reply_markup)
+        # First try to edit the message media with an image
+        query.edit_message_media(media=InputMediaPhoto(
+            media="https://files.catbox.moe/etovfv.webp",
+            caption=aviator_prediction_msg,
+            parse_mode='Markdown'),
+                                 reply_markup=reply_markup)
     except Exception as e:
-        logger.error(f"Error editing message in aviator signals: {e}")
-        # Fallback to sending new message if edit fails
+        logger.error(f"Error editing message media in aviator signals: {e}")
         try:
-            query.message.reply_text(aviator_prediction_msg,
-                                     parse_mode='Markdown',
-                                     reply_markup=reply_markup)
+            # Fallback to editing caption only
+            query.edit_message_caption(caption=aviator_prediction_msg,
+                                       parse_mode='Markdown',
+                                       reply_markup=reply_markup)
         except Exception as e2:
-            logger.error(f"Error sending aviator signals message: {e2}")
+            logger.error(f"Error editing caption in aviator signals: {e2}")
+            try:
+                # Fallback to editing text only
+                query.edit_message_text(text=aviator_prediction_msg,
+                                        parse_mode='Markdown',
+                                        reply_markup=reply_markup)
+            except Exception as e3:
+                logger.error(f"Error editing text in aviator signals: {e3}")
+                try:
+                    # Last fallback to sending new message
+                    query.message.reply_text(aviator_prediction_msg,
+                                             parse_mode='Markdown',
+                                             reply_markup=reply_markup)
+                except Exception as e4:
+                    logger.error(f"Error sending new aviator signals message: {e4}")
+                    query.answer("❌ Error generating prediction. Please try again.", show_alert=True)
 
 
 def handle_screenshot_button(update: Update, context: CallbackContext):
@@ -2032,12 +2068,7 @@ def check_uid(update, context, uid, user_id, username):
                     verified_by = found.get('verified_by')
 
                     if verified_by == user_id:
-                        # Same user already verified this UID
-                        update.message.reply_text(
-                            f"*✅ Already verified by you.*\n"
-                            f"*🆔 UID: {uid}*\n"
-                            f"*👤 This UID was previously verified by your account.*",
-                            parse_mode='Markdown')
+                        # Same user already verified this UID - silently skip
                         return
                     elif verified_by and verified_by != user_id:
                         # Different user already verified this UID
@@ -2084,36 +2115,69 @@ def check_uid(update, context, uid, user_id, username):
                         context.bot_data['pending_wallets'][user_id] = uid
                         return
                 else:
-                    # UID not found in database - insert with verified_by
-                    uids_col.insert_one({
+                    # UID not found in database in restriction mode
+                    # Check if user already submitted this UID before
+                    existing_submission = uids_col.find_one({
                         'uid': uid,
-                        'user_id': user_id,
-                        'username': username,
-                        'verified': False,
-                        'fully_verified': False,
-                        'verified_by': user_id,
-                        'added_date': update.message.date
+                        'verified_by': user_id
                     })
-                    approval_message = (
-                        "*☑️ Your UID Successfully Sent For Approval !*\n\n"
-                        "*🔴 You Will Get Access Within Few Minutes If You Enter Correct Details*"
-                    )
-                    update.message.reply_text(approval_message,
-                                              parse_mode='Markdown')
+                    
+                    if existing_submission:
+                        # User already submitted this UID before
+                        if existing_submission.get('verified', False):
+                            # Admin has already verified this UID for this user
+                            update.message.reply_text(
+                                f"*✅ UID {uid} Verified*\n"
+                                f"*📸 Please Send Your Wallet Screenshot For Balance Verification.*\n"
+                                f"*💰 Minimum Required Balance: ₹100*",
+                                parse_mode='Markdown')
+                            
+                            # Store pending wallet verification
+                            if 'pending_wallets' not in context.bot_data:
+                                context.bot_data['pending_wallets'] = {}
+                            context.bot_data['pending_wallets'][user_id] = uid
+                            return
+                        else:
+                            # Still pending approval
+                            approval_message = (
+                                "*⏳ UID Still Under Review*\n\n"
+                                "*🔴 Your UID is already submitted and waiting for admin approval.*\n"
+                                "*⏰ Please wait for verification. No need to submit again.*"
+                            )
+                            update.message.reply_text(approval_message,
+                                                      parse_mode='Markdown')
+                            return
+                    else:
+                        # First time submission - insert with verified_by
+                        uids_col.insert_one({
+                            'uid': uid,
+                            'user_id': user_id,
+                            'username': username,
+                            'verified': False,
+                            'fully_verified': False,
+                            'verified_by': user_id,
+                            'added_date': update.message.date
+                        })
+                        approval_message = (
+                            "*☑️ Your UID Successfully Sent For Approval !*\n\n"
+                            "*🔴 You Will Get Access Within Few Minutes If You Enter Correct Details*"
+                        )
+                        update.message.reply_text(approval_message,
+                                                  parse_mode='Markdown')
 
-                    # Notify admin
-                    try:
-                        update.message.bot.send_message(
-                            chat_id=ADMIN_UID,
-                            text=
-                            f"⚠️ New UID verification attempt (RESTRICT MODE):\n"
-                            f"UID: {uid}\n"
-                            f"User: @{username} (ID: {user_id})\n"
-                            f"Status: NOT FOUND\n"
-                            f"🔒 Verified by: {user_id}")
-                    except Exception as e:
-                        logger.error(f"Error notifying admin: {e}")
-                    return
+                        # Notify admin
+                        try:
+                            update.message.bot.send_message(
+                                chat_id=ADMIN_UID,
+                                text=
+                                f"⚠️ New UID verification attempt (RESTRICT MODE):\n"
+                                f"UID: {uid}\n"
+                                f"User: @{username} (ID: {user_id})\n"
+                                f"Status: NOT FOUND\n"
+                                f"🔒 Verified by: {user_id}")
+                        except Exception as e:
+                            logger.error(f"Error notifying admin: {e}")
+                        return
             else:
                 # Restriction mode is OFF - original logic
                 if found:
