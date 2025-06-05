@@ -1785,21 +1785,20 @@ def handle_aviator_signals_button(update: Update, context: CallbackContext):
         context.bot_data['aviator_waiting_round_id'] = set()
     context.bot_data['aviator_waiting_round_id'].add(user_id)
 
-    # Try to edit the message with instructions
+    # Send instruction message and store its ID for later deletion
     try:
-        query.edit_message_text(text=instruction_msg,
-                                parse_mode='Markdown',
-                                reply_markup=reply_markup)
+        instruction_message = query.message.reply_text(instruction_msg,
+                                                      parse_mode='Markdown',
+                                                      reply_markup=reply_markup)
+        
+        # Store instruction message ID for deletion when prediction arrives
+        if 'aviator_instruction_messages' not in context.bot_data:
+            context.bot_data['aviator_instruction_messages'] = {}
+        context.bot_data['aviator_instruction_messages'][user_id] = instruction_message.message_id
+        
     except Exception as e:
-        logger.error(f"Error editing message in aviator signals instruction: {e}")
-        try:
-            # Fallback to sending new message
-            query.message.reply_text(instruction_msg,
-                                     parse_mode='Markdown',
-                                     reply_markup=reply_markup)
-        except Exception as e2:
-            logger.error(f"Error sending aviator signals instruction message: {e2}")
-            query.answer("❌ Error showing instructions. Please try again.", show_alert=True)
+        logger.error(f"Error sending aviator signals instruction message: {e}")
+        query.answer("❌ Error showing instructions. Please try again.", show_alert=True)
 
 
 def generate_aviator_prediction(round_id):
@@ -1894,6 +1893,18 @@ def handle_aviator_round_id_input(update: Update, context: CallbackContext, roun
     # Clear error count on successful prediction
     if 'aviator_error_count' in context.bot_data and user_id in context.bot_data['aviator_error_count']:
         context.bot_data['aviator_error_count'][user_id] = 0
+    
+    # Delete the instruction message when new prediction arrives
+    if 'aviator_instruction_messages' in context.bot_data and user_id in context.bot_data['aviator_instruction_messages']:
+        try:
+            context.bot.delete_message(
+                chat_id=user_id,
+                message_id=context.bot_data['aviator_instruction_messages'][user_id]
+            )
+            # Remove from tracking after deletion
+            del context.bot_data['aviator_instruction_messages'][user_id]
+        except Exception as e:
+            logger.error(f"Error deleting aviator instruction message: {e}")
     
     # Store the last message ID to delete old predictions
     if 'aviator_prediction_messages' not in context.bot_data:
