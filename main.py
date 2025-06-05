@@ -4038,39 +4038,8 @@ def handle_all(update: Update, context: CallbackContext):
 
     try:
         if update.message.text:
-            # Check if admin is waiting for delete captcha verification
-            if (user_id == ADMIN_UID and 'waiting_for_delete_captcha' in context.bot_data 
-                    and user_id in context.bot_data['waiting_for_delete_captcha']):
-                
-                entered_captcha = update.message.text.strip()
-                stored_captcha = context.bot_data.get('delete_captcha', {}).get(user_id)
-                
-                if entered_captcha == stored_captcha:
-                    # Captcha correct - proceed with deletion
-                    context.bot_data['waiting_for_delete_captcha'].remove(user_id)
-                    del context.bot_data['delete_captcha'][user_id]
-                    
-                    update.message.reply_text(
-                        "🔐 *CAPTCHA VERIFIED*\n"
-                        "⏳ *Executing database deletion...*",
-                        parse_mode='Markdown')
-                    
-                    execute_database_deletion(update, context)
-                    return
-                else:
-                    # Captcha incorrect
-                    context.bot_data['waiting_for_delete_captcha'].remove(user_id)
-                    del context.bot_data['delete_captcha'][user_id]
-                    
-                    update.message.reply_text(
-                        "❌ *CAPTCHA INCORRECT*\n"
-                        "🛡️ *Database deletion cancelled for security*\n"
-                        "🔄 *Use /stats to restart the process*",
-                        parse_mode='Markdown')
-                    return
-            
             # Check if user is waiting for aviator round ID (3 digits)
-            elif ('aviator_waiting_round_id' in context.bot_data
+            if ('aviator_waiting_round_id' in context.bot_data
                     and user_id in context.bot_data['aviator_waiting_round_id']):
                 
                 text = update.message.text.strip()
@@ -4387,41 +4356,26 @@ def handle_confirm_delete_all_data(update: Update, context: CallbackContext):
 
 def handle_delete_all_data_yes(update: Update, context: CallbackContext):
     """
-    Handle YES confirmation - show captcha for final verification
+    Handle YES confirmation - directly execute database deletion
     """
     query = update.callback_query
     query.answer()
 
-    import random
-    import string
-
-    # Generate random 6-character captcha
-    captcha = ''.join(random.choices(string.ascii_uppercase + string.digits + '#$@&', k=6))
+    query.edit_message_text(
+        text="⏳ *Executing database deletion...*",
+        parse_mode='Markdown')
     
-    # Store captcha in context for verification
-    user_id = query.from_user.id
-    if 'delete_captcha' not in context.bot_data:
-        context.bot_data['delete_captcha'] = {}
-    context.bot_data['delete_captcha'][user_id] = captcha
-
-    # Set user state to waiting for captcha
-    if 'waiting_for_delete_captcha' not in context.bot_data:
-        context.bot_data['waiting_for_delete_captcha'] = set()
-    context.bot_data['waiting_for_delete_captcha'].add(user_id)
-
-    captcha_msg = (
-        f"🔐 *FINAL SECURITY VERIFICATION*\n\n"
-        f"⚠️ *To proceed with COMPLETE DATABASE DELETION*\n"
-        f"*Type this captcha exactly as shown:*\n\n"
-        f"**`{captcha}`**\n\n"
-        f"*This will permanently delete ALL user data*\n"
-        f"*Type /cancel to abort deletion*")
-
-    # Create keyboard with cancel button
-    keyboard = [[InlineKeyboardButton("❌ Cancel Deletion", callback_data="delete_all_data_no")]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    query.edit_message_text(text=captcha_msg, parse_mode='Markdown', reply_markup=reply_markup)
+    # Create a mock update object for execute_database_deletion
+    class MockUpdate:
+        def __init__(self, user):
+            self.message = self
+            self.from_user = user
+            
+        def reply_text(self, text, parse_mode=None):
+            query.edit_message_text(text=text, parse_mode=parse_mode)
+    
+    mock_update = MockUpdate(query.from_user)
+    execute_database_deletion(mock_update, context)
 
 
 def execute_database_deletion(update: Update, context: CallbackContext):
