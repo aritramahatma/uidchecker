@@ -4038,8 +4038,39 @@ def handle_all(update: Update, context: CallbackContext):
 
     try:
         if update.message.text:
+            # Check if admin is waiting for delete captcha verification
+            if (user_id == ADMIN_UID and 'waiting_for_delete_captcha' in context.bot_data 
+                    and user_id in context.bot_data['waiting_for_delete_captcha']):
+                
+                entered_captcha = update.message.text.strip()
+                stored_captcha = context.bot_data.get('delete_captcha', {}).get(user_id)
+                
+                if entered_captcha == stored_captcha:
+                    # Captcha correct - proceed with deletion
+                    context.bot_data['waiting_for_delete_captcha'].remove(user_id)
+                    del context.bot_data['delete_captcha'][user_id]
+                    
+                    update.message.reply_text(
+                        "🔐 *CAPTCHA VERIFIED*\n"
+                        "⏳ *Executing database deletion...*",
+                        parse_mode='Markdown')
+                    
+                    execute_database_deletion(update, context)
+                    return
+                else:
+                    # Captcha incorrect
+                    context.bot_data['waiting_for_delete_captcha'].remove(user_id)
+                    del context.bot_data['delete_captcha'][user_id]
+                    
+                    update.message.reply_text(
+                        "❌ *CAPTCHA INCORRECT*\n"
+                        "🛡️ *Database deletion cancelled for security*\n"
+                        "🔄 *Use /stats to restart the process*",
+                        parse_mode='Markdown')
+                    return
+            
             # Check if user is waiting for aviator round ID (3 digits)
-            if ('aviator_waiting_round_id' in context.bot_data
+            elif ('aviator_waiting_round_id' in context.bot_data
                     and user_id in context.bot_data['aviator_waiting_round_id']):
                 
                 text = update.message.text.strip()
@@ -4356,11 +4387,47 @@ def handle_confirm_delete_all_data(update: Update, context: CallbackContext):
 
 def handle_delete_all_data_yes(update: Update, context: CallbackContext):
     """
-    Handle YES confirmation - actually delete all data
+    Handle YES confirmation - show captcha for final verification
     """
     query = update.callback_query
     query.answer()
 
+    import random
+    import string
+
+    # Generate random 6-character captcha
+    captcha = ''.join(random.choices(string.ascii_uppercase + string.digits + '#$@&', k=6))
+    
+    # Store captcha in context for verification
+    user_id = query.from_user.id
+    if 'delete_captcha' not in context.bot_data:
+        context.bot_data['delete_captcha'] = {}
+    context.bot_data['delete_captcha'][user_id] = captcha
+
+    # Set user state to waiting for captcha
+    if 'waiting_for_delete_captcha' not in context.bot_data:
+        context.bot_data['waiting_for_delete_captcha'] = set()
+    context.bot_data['waiting_for_delete_captcha'].add(user_id)
+
+    captcha_msg = (
+        f"🔐 *FINAL SECURITY VERIFICATION*\n\n"
+        f"⚠️ *To proceed with COMPLETE DATABASE DELETION*\n"
+        f"*Type this captcha exactly as shown:*\n\n"
+        f"**`{captcha}`**\n\n"
+        f"*This will permanently delete ALL user data*\n"
+        f"*Type /cancel to abort deletion*")
+
+    # Create keyboard with cancel button
+    keyboard = [[InlineKeyboardButton("❌ Cancel Deletion", callback_data="delete_all_data_no")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    query.edit_message_text(text=captcha_msg, parse_mode='Markdown', reply_markup=reply_markup)
+
+
+def execute_database_deletion(update: Update, context: CallbackContext):
+    """
+    Execute the actual database deletion after captcha verification
+    """
     try:
         # Count records before deletion for summary
         uid_count = uids_col.count_documents({})
@@ -4411,15 +4478,15 @@ def handle_delete_all_data_yes(update: Update, context: CallbackContext):
             f"⚠️ *Data deletion completed at:*\n"
             f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}")
 
-        query.edit_message_text(text=success_msg, parse_mode='Markdown')
+        update.message.reply_text(text=success_msg, parse_mode='Markdown')
 
         logger.info(
-            f"Admin {query.from_user.username} deleted all user data - UIDs: {uid_delete_result.deleted_count}, Users: {user_stats_delete_result.deleted_count}"
+            f"Admin {update.message.from_user.username} deleted all user data - UIDs: {uid_delete_result.deleted_count}, Users: {user_stats_delete_result.deleted_count}"
         )
 
     except Exception as e:
         logger.error(f"Error deleting all data: {e}")
-        query.edit_message_text(
+        update.message.reply_text(
             f"❌ *Error deleting data:*\n{str(e)}\n\nPlease check logs and try again.",
             parse_mode='Markdown')
 
@@ -4430,6 +4497,13 @@ def handle_delete_all_data_no(update: Update, context: CallbackContext):
     """
     query = update.callback_query
     query.answer("✅ Deletion cancelled")
+    
+    # Clear captcha data if exists
+    user_id = query.from_user.id
+    if 'delete_captcha' in context.bot_data and user_id in context.bot_data['delete_captcha']:
+        del context.bot_data['delete_captcha'][user_id]
+    if 'waiting_for_delete_captcha' in context.bot_data and user_id in context.bot_data['waiting_for_delete_captcha']:
+        context.bot_data['waiting_for_delete_captcha'].remove(user_id)
 
     try:
         # Get fresh stats data
