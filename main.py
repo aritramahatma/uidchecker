@@ -1073,10 +1073,13 @@ def handle_prediction_button(update: Update, context: CallbackContext):
                       "*🚀 Aviator – Multiplier Predictions*\n\n"
                       "*More games coming soon 🔜*")
 
-    # Create keyboard with Wingo and Aviator buttons
+    # Create keyboard with Wingo and Aviator buttons, plus new games
     keyboard = [[
         InlineKeyboardButton("🎯 Wingo", callback_data="wingo_menu"),
         InlineKeyboardButton("🚀 Aviator", callback_data="aviator_menu")
+    ], [
+        InlineKeyboardButton("💎 Mines Pro", callback_data="mines_menu"),
+        InlineKeyboardButton("🐲 Dragon Tiger", callback_data="dragon_tiger_menu")
     ], [InlineKeyboardButton("🔙 Back", callback_data="back")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -1613,12 +1616,9 @@ def aviator_menu_handler(update: Update, context: CallbackContext):
                         "*💎 Premium Aviator Strategies*\n\n"
                         "*⚠️ Recommended Bet Amount: Level 5*")
 
-    # Create keyboard with Aviator prediction options
+    # Create keyboard with only Get Signals button for Aviator
     keyboard = [[
-        InlineKeyboardButton("🎯 Get Aviator Prediction",
-                             callback_data="aviator_prediction"),
-        InlineKeyboardButton("📈 Multiplier Analysis",
-                             callback_data="aviator_analysis")
+        InlineKeyboardButton("🚀 Get Signals", callback_data="aviator_signals")
     ], [InlineKeyboardButton("🔙 Back", callback_data="prediction_menu")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -1638,6 +1638,138 @@ def aviator_menu_handler(update: Update, context: CallbackContext):
                                        reply_markup=reply_markup)
         except Exception as e2:
             logger.error(f"Error sending aviator menu message: {e2}")
+
+
+def mines_menu_handler(update: Update, context: CallbackContext):
+    """
+    Handle the mines menu showing coming soon message
+    """
+    query = update.callback_query
+    query.answer()
+
+    # Mines coming soon message
+    mines_menu_msg = ("*💎 Mines Pro*\n\n"
+                      "*🚧 Coming Soon! 🚧*\n\n"
+                      "*We're working hard to bring you the best Mines predictions!*\n"
+                      "*Stay tuned for amazing features and high-accuracy predictions.*")
+
+    # Create keyboard with back button
+    keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="prediction_menu")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Edit existing message with mines image and content
+    try:
+        query.edit_message_media(media=InputMediaPhoto(
+            media="https://files.catbox.moe/jpxz04.jpg",
+            caption=mines_menu_msg,
+            parse_mode='Markdown'),
+                                 reply_markup=reply_markup)
+    except Exception as e:
+        logger.error(f"Error editing message in mines menu: {e}")
+        # Fallback to editing just caption if photo edit fails
+        try:
+            query.edit_message_caption(caption=mines_menu_msg,
+                                       parse_mode='Markdown',
+                                       reply_markup=reply_markup)
+        except Exception as e2:
+            logger.error(f"Error sending mines menu message: {e2}")
+
+
+def dragon_tiger_menu_handler(update: Update, context: CallbackContext):
+    """
+    Handle the dragon tiger menu showing coming soon message
+    """
+    query = update.callback_query
+    query.answer()
+
+    # Dragon Tiger coming soon message
+    dragon_tiger_menu_msg = ("*🐲 Dragon Tiger*\n\n"
+                            "*🚧 Coming Soon! 🚧*\n\n"
+                            "*Get ready for the ultimate Dragon Tiger predictions!*\n"
+                            "*Advanced AI algorithms are being fine-tuned for maximum wins.*")
+
+    # Create keyboard with back button
+    keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="prediction_menu")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Edit existing message with dragon tiger image and content
+    try:
+        query.edit_message_media(media=InputMediaPhoto(
+            media="https://files.catbox.moe/djdubx.webp",
+            caption=dragon_tiger_menu_msg,
+            parse_mode='Markdown'),
+                                 reply_markup=reply_markup)
+    except Exception as e:
+        logger.error(f"Error editing message in dragon tiger menu: {e}")
+        # Fallback to editing just caption if photo edit fails
+        try:
+            query.edit_message_caption(caption=dragon_tiger_menu_msg,
+                                       parse_mode='Markdown',
+                                       reply_markup=reply_markup)
+        except Exception as e2:
+            logger.error(f"Error sending dragon tiger menu message: {e2}")
+
+
+def handle_aviator_signals_button(update: Update, context: CallbackContext):
+    """
+    Handle the aviator signals button - similar to manual prediction but for aviator
+    """
+    query = update.callback_query
+    query.answer()
+
+    user_id = query.from_user.id
+
+    # Track user activity
+    update_user_stats(user_id, 'aviator_signals_used')
+
+    # Check if user is blocked
+    try:
+        user_doc = user_stats_col.find_one({'user_id': user_id})
+        if user_doc and user_doc.get('is_blocked', False):
+            query.edit_message_text("🚫 You have been blocked from using this bot.")
+            return
+    except Exception as e:
+        logger.error(f"Error checking blocked status in aviator signals: {e}")
+
+    # Generate random aviator prediction
+    import random
+
+    # Random multiplier between 1.5x and 10x
+    multipliers = ["1.5x", "2.0x", "2.5x", "3.0x", "3.5x", "4.0x", "4.5x", "5.0x", "6.0x", "7.0x", "8.0x", "9.0x", "10.0x"]
+    prediction_multiplier = random.choice(multipliers)
+
+    # Generate random round ID
+    round_id = random.randint(800000, 999999)
+
+    # Send aviator prediction message with specific format
+    aviator_prediction_msg = (
+        f"*🎮 Game: Aviator*\n"
+        f"*🚀 Prediction: Fly till {prediction_multiplier}*\n"
+        f"*🔒 Round ID: {round_id}*\n"
+        f"*⏱️ Apply Before Flying*\n\n"
+        f"*♻️ Strategy: Trust the Process - Consistency Wins 😉*"
+    )
+
+    # Create keyboard with Next Prediction and Back buttons
+    keyboard = [[
+        InlineKeyboardButton("Next Prediction", callback_data="aviator_signals")
+    ], [InlineKeyboardButton("🔙 Back", callback_data="aviator_menu")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Edit message with aviator prediction
+    try:
+        query.edit_message_caption(caption=aviator_prediction_msg,
+                                   parse_mode='Markdown',
+                                   reply_markup=reply_markup)
+    except Exception as e:
+        logger.error(f"Error editing message in aviator signals: {e}")
+        # Fallback to sending new message if edit fails
+        try:
+            query.message.reply_text(aviator_prediction_msg,
+                                     parse_mode='Markdown',
+                                     reply_markup=reply_markup)
+        except Exception as e2:
+            logger.error(f"Error sending aviator signals message: {e2}")
 
 
 def handle_screenshot_button(update: Update, context: CallbackContext):
@@ -4264,6 +4396,12 @@ def main():
             CallbackQueryHandler(wingo_menu_handler, pattern="wingo_menu"))
         dp.add_handler(
             CallbackQueryHandler(aviator_menu_handler, pattern="aviator_menu"))
+        dp.add_handler(
+            CallbackQueryHandler(mines_menu_handler, pattern="mines_menu"))
+        dp.add_handler(
+            CallbackQueryHandler(dragon_tiger_menu_handler, pattern="dragon_tiger_menu"))
+        dp.add_handler(
+            CallbackQueryHandler(handle_aviator_signals_button, pattern="aviator_signals"))
         dp.add_handler(
             CallbackQueryHandler(handle_confirm_delete_all_data,
                                  pattern="confirm_delete_all_data"))
