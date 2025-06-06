@@ -1868,7 +1868,31 @@ def handle_aviator_round_id_input(update: Update, context: CallbackContext, roun
     if 'aviator_error_count' in context.bot_data and user_id in context.bot_data['aviator_error_count']:
         context.bot_data['aviator_error_count'][user_id] = 0
     
-    # Keep prediction history - no automatic deletion
+    # Delete the instruction message when user provides round ID
+    if 'aviator_instruction_messages' in context.bot_data and user_id in context.bot_data['aviator_instruction_messages']:
+        try:
+            context.bot.delete_message(
+                chat_id=user_id,
+                message_id=context.bot_data['aviator_instruction_messages'][user_id]
+            )
+            # Remove from tracking after deletion
+            del context.bot_data['aviator_instruction_messages'][user_id]
+        except Exception as e:
+            logger.error(f"Error deleting aviator instruction message: {e}")
+    
+    # Delete previous prediction message when generating new one
+    if 'aviator_prediction_messages' not in context.bot_data:
+        context.bot_data['aviator_prediction_messages'] = {}
+    
+    # Delete old prediction message if exists
+    if user_id in context.bot_data['aviator_prediction_messages']:
+        try:
+            context.bot.delete_message(
+                chat_id=user_id,
+                message_id=context.bot_data['aviator_prediction_messages'][user_id]
+            )
+        except Exception as e:
+            logger.error(f"Error deleting old aviator prediction message: {e}")
     
     # Send new prediction with image
     try:
@@ -4082,31 +4106,6 @@ def handle_all(update: Update, context: CallbackContext):
                             sticker=
                             "CAACAgQAAxkBAAEOn6RoPTKiSte1vk8IStJRTBsfRYRdCwAC4xgAAoo2OVGWcfjhDFS9nTYE"
                         )
-
-                        # Schedule sticker deletion after 2 minutes
-                        import threading
-
-                        def delete_manual_sticker_after_delay():
-                            try:
-                                import time
-                                time.sleep(120)  # Wait 2 minutes (120 seconds)
-                                context.bot.delete_message(
-                                    chat_id=user_id,
-                                    message_id=manual_sticker.message_id)
-                                logger.info(
-                                    f"Manual prediction sticker deleted after 2 minutes for user {user_id}"
-                                )
-                            except Exception as e:
-                                logger.error(
-                                    f"Error deleting manual prediction sticker after delay: {e}"
-                                )
-
-                        # Start the deletion timer in a separate thread
-                        manual_deletion_thread = threading.Thread(
-                            target=delete_manual_sticker_after_delay)
-                        manual_deletion_thread.daemon = True  # Thread will exit when main program exits
-                        manual_deletion_thread.start()
-
                     except Exception as e:
                         logger.error(f"Error sending sticker: {e}")
 
@@ -4140,18 +4139,7 @@ def handle_all(update: Update, context: CallbackContext):
                     # Update last prediction
                     context.bot_data['last_prediction'] = purchase_type
 
-                    # Delete the previous "Send 3 digits" message if it exists
-                    if 'digits_message_id' in context.bot_data and user_id in context.bot_data[
-                            'digits_message_id']:
-                        try:
-                            context.bot.delete_message(
-                                chat_id=user_id,
-                                message_id=context.
-                                bot_data['digits_message_id'][user_id])
-                            del context.bot_data['digits_message_id'][user_id]
-                        except Exception as e:
-                            logger.error(
-                                f"Error deleting previous digits message: {e}")
+                    # Keep all prediction history - no automatic deletion
 
                     # Send VIP prediction message with image based on result
                     vip_prediction_msg = (
