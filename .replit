@@ -1,12 +1,12 @@
 modules = ["python-3.11"]
-run = "npm start"
+run = "python setup_dependencies.py && python main.py"
 
 [nix]
 channel = "stable-24_05"
 packages = ["cacert", "freetype", "lcms2", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "tcl", "tk", "zlib"]
 
 [workflows]
-runButton = "Run Telegram Bot"
+runButton = "Setup and Run Bot"
 
 [[workflows.workflow]]
 name = "Project"
@@ -77,6 +77,19 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pip install -r requirements.txt"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
+
+[[workflows.workflow]]
+name = "Setup and Run Bot"
+author = 43540754
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python setup_dependencies.py"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
