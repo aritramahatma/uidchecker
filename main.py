@@ -495,34 +495,73 @@ def handle_hack_button(update: Update, context: CallbackContext):
     """
     query = update.callback_query
     query.answer()
+    user_id = query.from_user.id
 
     try:
-        # Send sticker first
-        query.message.reply_sticker(
-            sticker="CAACAgEAAxkBAAEOpo1oQqaPCGgGLUd0qZtGA9nfexJPpAAC7wEAApcBGEcg2Yn7A6RRWjYE"
+        # Send new sticker first
+        sticker_msg = query.message.reply_sticker(
+            sticker="CAACAgQAAxkBAAEOn6RoPTKiSte1vk8IStJRTBsfRYRdCwAC4xgAAoo2OVGWcfjhDFS9nTYE"
         )
         
-        # Forward message from private channel
+        # Copy message from private channel (without forward tag)
         try:
-            forwarded_msg = context.bot.forward_message(
-                chat_id=query.from_user.id,
-                from_chat_id=-1002807971867,
+            original_msg = context.bot.get_chat_message(
+                chat_id=-1002807971867,
                 message_id=3
             )
+            
+            # Copy the message content without forward tag
+            if original_msg.text:
+                copied_msg = query.message.reply_text(
+                    text=original_msg.text,
+                    parse_mode=original_msg.parse_mode
+                )
+            elif original_msg.photo:
+                copied_msg = query.message.reply_photo(
+                    photo=original_msg.photo[-1].file_id,
+                    caption=original_msg.caption,
+                    parse_mode=original_msg.parse_mode
+                )
+            elif original_msg.video:
+                copied_msg = query.message.reply_video(
+                    video=original_msg.video.file_id,
+                    caption=original_msg.caption,
+                    parse_mode=original_msg.parse_mode
+                )
+            elif original_msg.document:
+                copied_msg = query.message.reply_document(
+                    document=original_msg.document.file_id,
+                    caption=original_msg.caption,
+                    parse_mode=original_msg.parse_mode
+                )
+            else:
+                # Fallback if message type not supported
+                copied_msg = query.message.reply_text("*Content from channel*")
+            
+            # Store message IDs for deletion when back button is clicked
+            if 'hack_content_messages' not in context.bot_data:
+                context.bot_data['hack_content_messages'] = {}
+            context.bot_data['hack_content_messages'][user_id] = {
+                'sticker_id': sticker_msg.message_id,
+                'content_id': copied_msg.message_id
+            }
             
             # Send back button as a separate message
             keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="bonus")]]
             reply_markup = InlineKeyboardMarkup(keyboard)
             
-            query.message.reply_text(
+            back_msg = query.message.reply_text(
                 "*🔙 Use the button below to go back*",
                 parse_mode='Markdown',
                 reply_markup=reply_markup
             )
             
+            # Store back button message ID too
+            context.bot_data['hack_content_messages'][user_id]['back_id'] = back_msg.message_id
+            
         except Exception as e:
-            logger.error(f"Error forwarding hack message: {e}")
-            # Fallback message if forwarding fails
+            logger.error(f"Error copying hack message: {e}")
+            # Fallback message if copying fails
             hack_msg = ("*🔐 HACK FEATURE*\n\n"
                        "*🚧 Coming Soon! 🚧*\n\n"
                        "*We're preparing something amazing for you!*\n"
@@ -531,9 +570,17 @@ def handle_hack_button(update: Update, context: CallbackContext):
             keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="bonus")]]
             reply_markup = InlineKeyboardMarkup(keyboard)
             
-            query.message.reply_text(hack_msg,
+            fallback_msg = query.message.reply_text(hack_msg,
                                    parse_mode='Markdown',
                                    reply_markup=reply_markup)
+            
+            # Store fallback message IDs
+            if 'hack_content_messages' not in context.bot_data:
+                context.bot_data['hack_content_messages'] = {}
+            context.bot_data['hack_content_messages'][user_id] = {
+                'sticker_id': sticker_msg.message_id,
+                'content_id': fallback_msg.message_id
+            }
         
     except Exception as e:
         logger.error(f"Error in hack button handler: {e}")
@@ -546,34 +593,73 @@ def handle_tutorial_button(update: Update, context: CallbackContext):
     """
     query = update.callback_query
     query.answer()
+    user_id = query.from_user.id
 
     try:
-        # Send sticker first
-        query.message.reply_sticker(
-            sticker="CAACAgEAAxkBAAEOpo1oQqaPCGgGLUd0qZtGA9nfexJPpAAC7wEAApcBGEcg2Yn7A6RRWjYE"
+        # Send tutorial sticker first (before tutorial content)
+        tutorial_sticker_msg = query.message.reply_sticker(
+            sticker="CAACAgEAAxkBAAEOpqFoQqwdTg5-JT1Eyz6nLYyN2T7sCwACFQMAAv5NoUaoZTouVeYQODYE"
         )
         
-        # Forward message from private channel
+        # Copy message from private channel (without forward tag)
         try:
-            forwarded_msg = context.bot.forward_message(
-                chat_id=query.from_user.id,
-                from_chat_id=-1002807971867,
+            original_msg = context.bot.get_chat_message(
+                chat_id=-1002807971867,
                 message_id=4
             )
+            
+            # Copy the message content without forward tag
+            if original_msg.text:
+                copied_msg = query.message.reply_text(
+                    text=original_msg.text,
+                    parse_mode=original_msg.parse_mode
+                )
+            elif original_msg.photo:
+                copied_msg = query.message.reply_photo(
+                    photo=original_msg.photo[-1].file_id,
+                    caption=original_msg.caption,
+                    parse_mode=original_msg.parse_mode
+                )
+            elif original_msg.video:
+                copied_msg = query.message.reply_video(
+                    video=original_msg.video.file_id,
+                    caption=original_msg.caption,
+                    parse_mode=original_msg.parse_mode
+                )
+            elif original_msg.document:
+                copied_msg = query.message.reply_document(
+                    document=original_msg.document.file_id,
+                    caption=original_msg.caption,
+                    parse_mode=original_msg.parse_mode
+                )
+            else:
+                # Fallback if message type not supported
+                copied_msg = query.message.reply_text("*Tutorial content from channel*")
+            
+            # Store message IDs for deletion when back button is clicked
+            if 'tutorial_content_messages' not in context.bot_data:
+                context.bot_data['tutorial_content_messages'] = {}
+            context.bot_data['tutorial_content_messages'][user_id] = {
+                'sticker_id': tutorial_sticker_msg.message_id,
+                'content_id': copied_msg.message_id
+            }
             
             # Send back button as a separate message
             keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="bonus")]]
             reply_markup = InlineKeyboardMarkup(keyboard)
             
-            query.message.reply_text(
+            back_msg = query.message.reply_text(
                 "*🔙 Use the button below to go back*",
                 parse_mode='Markdown',
                 reply_markup=reply_markup
             )
             
+            # Store back button message ID too
+            context.bot_data['tutorial_content_messages'][user_id]['back_id'] = back_msg.message_id
+            
         except Exception as e:
-            logger.error(f"Error forwarding tutorial message: {e}")
-            # Fallback message if forwarding fails
+            logger.error(f"Error copying tutorial message: {e}")
+            # Fallback message if copying fails
             tutorial_msg = ("*📚 TUTORIAL SECTION*\n\n"
                            "*🚧 Coming Soon! 🚧*\n\n"
                            "*Detailed tutorials and guides will be available here!*\n"
@@ -582,9 +668,17 @@ def handle_tutorial_button(update: Update, context: CallbackContext):
             keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="bonus")]]
             reply_markup = InlineKeyboardMarkup(keyboard)
             
-            query.message.reply_text(tutorial_msg,
+            fallback_msg = query.message.reply_text(tutorial_msg,
                                    parse_mode='Markdown',
                                    reply_markup=reply_markup)
+            
+            # Store fallback message IDs
+            if 'tutorial_content_messages' not in context.bot_data:
+                context.bot_data['tutorial_content_messages'] = {}
+            context.bot_data['tutorial_content_messages'][user_id] = {
+                'sticker_id': tutorial_sticker_msg.message_id,
+                'content_id': fallback_msg.message_id
+            }
         
     except Exception as e:
         logger.error(f"Error in tutorial button handler: {e}")
@@ -1033,6 +1127,45 @@ def handle_back_button(update: Update, context: CallbackContext):
     """
     query = update.callback_query
     query.answer()
+    user_id = query.from_user.id
+
+    # Delete hack content messages if they exist
+    if 'hack_content_messages' in context.bot_data and user_id in context.bot_data['hack_content_messages']:
+        try:
+            hack_msgs = context.bot_data['hack_content_messages'][user_id]
+            # Delete sticker
+            if 'sticker_id' in hack_msgs:
+                context.bot.delete_message(chat_id=user_id, message_id=hack_msgs['sticker_id'])
+            # Delete content
+            if 'content_id' in hack_msgs:
+                context.bot.delete_message(chat_id=user_id, message_id=hack_msgs['content_id'])
+            # Delete back button message
+            if 'back_id' in hack_msgs:
+                context.bot.delete_message(chat_id=user_id, message_id=hack_msgs['back_id'])
+            # Remove from tracking
+            del context.bot_data['hack_content_messages'][user_id]
+            logger.info(f"Deleted hack content messages for user {user_id}")
+        except Exception as e:
+            logger.error(f"Error deleting hack content messages: {e}")
+
+    # Delete tutorial content messages if they exist
+    if 'tutorial_content_messages' in context.bot_data and user_id in context.bot_data['tutorial_content_messages']:
+        try:
+            tutorial_msgs = context.bot_data['tutorial_content_messages'][user_id]
+            # Delete sticker
+            if 'sticker_id' in tutorial_msgs:
+                context.bot.delete_message(chat_id=user_id, message_id=tutorial_msgs['sticker_id'])
+            # Delete content
+            if 'content_id' in tutorial_msgs:
+                context.bot.delete_message(chat_id=user_id, message_id=tutorial_msgs['content_id'])
+            # Delete back button message
+            if 'back_id' in tutorial_msgs:
+                context.bot.delete_message(chat_id=user_id, message_id=tutorial_msgs['back_id'])
+            # Remove from tracking
+            del context.bot_data['tutorial_content_messages'][user_id]
+            logger.info(f"Deleted tutorial content messages for user {user_id}")
+        except Exception as e:
+            logger.error(f"Error deleting tutorial content messages: {e}")
 
     # Create inline keyboard with 4 buttons (verification success menu)
     keyboard = [[
