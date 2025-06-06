@@ -990,7 +990,7 @@ def handle_back_button(update: Update, context: CallbackContext):
         InlineKeyboardButton("Gift Codes", callback_data="gift_codes")
     ],
                 [
-                    InlineKeyboardButton("Hack", callback_data="bonus"),
+                    InlineKeyboardButton("Get Hack", callback_data="bonus"),
                     InlineKeyboardButton("Support", callback_data="support")
                 ]]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -2691,7 +2691,7 @@ def handle_wallet(update: Update, context: CallbackContext):
                 InlineKeyboardButton("Gift Codes", callback_data="gift_codes")
             ],
                         [
-                            InlineKeyboardButton("Hack",
+                            InlineKeyboardButton("Get Hack",
                                                  callback_data="bonus"),
                             InlineKeyboardButton("Support",
                                                  callback_data="support")
