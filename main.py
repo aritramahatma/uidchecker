@@ -1880,19 +1880,9 @@ def handle_aviator_round_id_input(update: Update, context: CallbackContext, roun
         except Exception as e:
             logger.error(f"Error deleting aviator instruction message: {e}")
     
-    # Delete previous prediction message when generating new one
+    # Keep all prediction results - don't delete them
     if 'aviator_prediction_messages' not in context.bot_data:
         context.bot_data['aviator_prediction_messages'] = {}
-    
-    # Delete old prediction message if exists
-    if user_id in context.bot_data['aviator_prediction_messages']:
-        try:
-            context.bot.delete_message(
-                chat_id=user_id,
-                message_id=context.bot_data['aviator_prediction_messages'][user_id]
-            )
-        except Exception as e:
-            logger.error(f"Error deleting old aviator prediction message: {e}")
     
     # Send new prediction with image
     try:
@@ -3862,42 +3852,91 @@ def cast_command(update: Update, context: CallbackContext):
     """
     Broadcast message to all users (Admin only)
     Usage: /cast <message> or reply to a message with /cast
+    Supports: Text, Photos, Videos, Documents, Stickers, and Inline Keyboards
     """
     if update.message.from_user.id != ADMIN_UID:
         update.message.reply_text("❌ Unauthorized access.")
         return
 
+    broadcast_content = None
+    content_type = "text"
     broadcast_message = ""
+    reply_markup = None
 
     # Check if the command is a reply to another message
     if update.message.reply_to_message:
-        # Use the replied message content
-        if update.message.reply_to_message.text:
-            broadcast_message = update.message.reply_to_message.text
-        elif update.message.reply_to_message.caption:
-            broadcast_message = update.message.reply_to_message.caption
+        replied_msg = update.message.reply_to_message
+        
+        # Handle different message types
+        if replied_msg.photo:
+            content_type = "photo"
+            broadcast_content = replied_msg.photo[-1].file_id  # Get highest resolution
+            broadcast_message = replied_msg.caption or ""
+            reply_markup = replied_msg.reply_markup
+        elif replied_msg.video:
+            content_type = "video" 
+            broadcast_content = replied_msg.video.file_id
+            broadcast_message = replied_msg.caption or ""
+            reply_markup = replied_msg.reply_markup
+        elif replied_msg.document:
+            content_type = "document"
+            broadcast_content = replied_msg.document.file_id
+            broadcast_message = replied_msg.caption or ""
+            reply_markup = replied_msg.reply_markup
+        elif replied_msg.sticker:
+            content_type = "sticker"
+            broadcast_content = replied_msg.sticker.file_id
+            reply_markup = replied_msg.reply_markup
+        elif replied_msg.animation:
+            content_type = "animation"
+            broadcast_content = replied_msg.animation.file_id
+            broadcast_message = replied_msg.caption or ""
+            reply_markup = replied_msg.reply_markup
+        elif replied_msg.voice:
+            content_type = "voice"
+            broadcast_content = replied_msg.voice.file_id
+            broadcast_message = replied_msg.caption or ""
+            reply_markup = replied_msg.reply_markup
+        elif replied_msg.audio:
+            content_type = "audio"
+            broadcast_content = replied_msg.audio.file_id
+            broadcast_message = replied_msg.caption or ""
+            reply_markup = replied_msg.reply_markup
+        elif replied_msg.text:
+            content_type = "text"
+            broadcast_message = replied_msg.text
+            reply_markup = replied_msg.reply_markup
         else:
             update.message.reply_text(
-                "❌ Cannot cast this type of message. Please reply to a text message or provide text after /cast."
+                "❌ Cannot cast this type of message. Please reply to a supported message type."
             )
             return
     elif context.args:
         # Use the arguments provided with the command
+        content_type = "text"
         broadcast_message = ' '.join(context.args)
     else:
         # No arguments and no reply
         update.message.reply_text(
-            "📢 *Cast Message to All Users*\n\n"
-            "*Two ways to use cast:*\n\n"
+            "📢 *Enhanced Cast Message to All Users*\n\n"
+            "*Supported message types:*\n"
+            "• Text messages\n"
+            "• Photos with captions\n"
+            "• Videos with captions\n"
+            "• Documents/Files\n"
+            "• Stickers\n"
+            "• Voice messages\n"
+            "• Audio files\n"
+            "• GIFs/Animations\n"
+            "• Messages with inline keyboards/buttons\n\n"
+            "*Usage methods:*\n\n"
             "*Method 1:* `/cast <your_message>`\n"
-            "*Example:* `/cast 🎉 New features coming soon! Stay tuned!`\n\n"
-            "*Method 2:* Reply to any message with `/cast`\n"
-            "*Example:* Reply to a message and type `/cast`\n\n"
+            "*Method 2:* Reply to any supported message with `/cast`\n\n"
             "⚠️ This will send the message to ALL bot users.",
             parse_mode='Markdown')
         return
 
-    if not broadcast_message.strip():
+    if content_type == "text" and not broadcast_message.strip():
         update.message.reply_text("❌ Message cannot be empty.")
         return
 
@@ -3944,12 +3983,125 @@ def cast_command(update: Update, context: CallbackContext):
         for user_doc in all_users:
             try:
                 user_id = user_doc['user_id']
+                sent = None
 
-                # Send message using safe_send_message
-                sent = safe_send_message(context=context,
-                                         chat_id=user_id,
-                                         text=broadcast_message,
-                                         parse_mode='Markdown')
+                # Send different types of content
+                if content_type == "photo":
+                    try:
+                        sent_msg = context.bot.send_photo(
+                            chat_id=user_id,
+                            photo=broadcast_content,
+                            caption=broadcast_message if broadcast_message else None,
+                            parse_mode='Markdown',
+                            reply_markup=reply_markup
+                        )
+                        sent = True
+                    except Exception as e:
+                        if "blocked" in str(e).lower() or "chat not found" in str(e).lower():
+                            sent = None
+                        else:
+                            raise e
+
+                elif content_type == "video":
+                    try:
+                        sent_msg = context.bot.send_video(
+                            chat_id=user_id,
+                            video=broadcast_content,
+                            caption=broadcast_message if broadcast_message else None,
+                            parse_mode='Markdown',
+                            reply_markup=reply_markup
+                        )
+                        sent = True
+                    except Exception as e:
+                        if "blocked" in str(e).lower() or "chat not found" in str(e).lower():
+                            sent = None
+                        else:
+                            raise e
+
+                elif content_type == "document":
+                    try:
+                        sent_msg = context.bot.send_document(
+                            chat_id=user_id,
+                            document=broadcast_content,
+                            caption=broadcast_message if broadcast_message else None,
+                            parse_mode='Markdown',
+                            reply_markup=reply_markup
+                        )
+                        sent = True
+                    except Exception as e:
+                        if "blocked" in str(e).lower() or "chat not found" in str(e).lower():
+                            sent = None
+                        else:
+                            raise e
+
+                elif content_type == "sticker":
+                    try:
+                        sent_msg = context.bot.send_sticker(
+                            chat_id=user_id,
+                            sticker=broadcast_content,
+                            reply_markup=reply_markup
+                        )
+                        sent = True
+                    except Exception as e:
+                        if "blocked" in str(e).lower() or "chat not found" in str(e).lower():
+                            sent = None
+                        else:
+                            raise e
+
+                elif content_type == "animation":
+                    try:
+                        sent_msg = context.bot.send_animation(
+                            chat_id=user_id,
+                            animation=broadcast_content,
+                            caption=broadcast_message if broadcast_message else None,
+                            parse_mode='Markdown',
+                            reply_markup=reply_markup
+                        )
+                        sent = True
+                    except Exception as e:
+                        if "blocked" in str(e).lower() or "chat not found" in str(e).lower():
+                            sent = None
+                        else:
+                            raise e
+
+                elif content_type == "voice":
+                    try:
+                        sent_msg = context.bot.send_voice(
+                            chat_id=user_id,
+                            voice=broadcast_content,
+                            caption=broadcast_message if broadcast_message else None,
+                            parse_mode='Markdown',
+                            reply_markup=reply_markup
+                        )
+                        sent = True
+                    except Exception as e:
+                        if "blocked" in str(e).lower() or "chat not found" in str(e).lower():
+                            sent = None
+                        else:
+                            raise e
+
+                elif content_type == "audio":
+                    try:
+                        sent_msg = context.bot.send_audio(
+                            chat_id=user_id,
+                            audio=broadcast_content,
+                            caption=broadcast_message if broadcast_message else None,
+                            parse_mode='Markdown',
+                            reply_markup=reply_markup
+                        )
+                        sent = True
+                    except Exception as e:
+                        if "blocked" in str(e).lower() or "chat not found" in str(e).lower():
+                            sent = None
+                        else:
+                            raise e
+
+                else:  # text message
+                    sent = safe_send_message(context=context,
+                                           chat_id=user_id,
+                                           text=broadcast_message,
+                                           parse_mode='Markdown',
+                                           reply_markup=reply_markup)
 
                 if sent is None:
                     # User has blocked the bot
@@ -3969,6 +4121,17 @@ def cast_command(update: Update, context: CallbackContext):
                 failed_count += 1
 
         # Send summary to admin
+        content_description = {
+            "text": "Text Message",
+            "photo": "Photo with Caption",
+            "video": "Video with Caption", 
+            "document": "Document/File",
+            "sticker": "Sticker",
+            "animation": "GIF/Animation",
+            "voice": "Voice Message",
+            "audio": "Audio File"
+        }
+        
         summary_message = (
             f"📊 *Broadcast Summary*\n\n"
             f"📱 Total Users Found: {total_users}\n"
@@ -3976,7 +4139,9 @@ def cast_command(update: Update, context: CallbackContext):
             f"❌ Failed to Send: {failed_count}\n"
             f"🚫 Newly Blocked Users: {newly_blocked}\n\n"
             f"📈 Success Rate: {(sent_count/total_users*100) if total_users > 0 else 0:.1f}%\n\n"
-            f"💬 Broadcast Message:\n`{broadcast_message}`")
+            f"📤 Content Type: {content_description.get(content_type, 'Unknown')}\n"
+            f"🔘 Inline Buttons: {'Yes' if reply_markup else 'No'}\n\n"
+            f"💬 Message/Caption:\n`{broadcast_message if broadcast_message else 'No text content'}`")
 
         update.message.reply_text(summary_message, parse_mode='Markdown')
 
