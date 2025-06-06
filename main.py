@@ -1838,6 +1838,27 @@ def handle_aviator_round_id_input(update: Update, context: CallbackContext, roun
         aviator_sticker = update.message.reply_sticker(
             sticker="CAACAgEAAxkBAAEOpMhoQZoGuaWt7uRSTMj_Iqlok-VO_QACWgIAAqaQ2USiYhZ1luPyBDYE"
         )
+        
+        # Schedule sticker deletion after 2 minutes
+        import threading
+
+        def delete_aviator_sticker_after_delay():
+            try:
+                import time
+                time.sleep(120)  # Wait 2 minutes (120 seconds)
+                context.bot.delete_message(
+                    chat_id=user_id, message_id=aviator_sticker.message_id)
+                logger.info(
+                    f"Aviator sticker deleted after 2 minutes for user {user_id}"
+                )
+            except Exception as e:
+                logger.error(f"Error deleting aviator sticker after delay: {e}")
+
+        # Start the deletion timer in a separate thread
+        deletion_thread = threading.Thread(target=delete_aviator_sticker_after_delay)
+        deletion_thread.daemon = True  # Thread will exit when main program exits
+        deletion_thread.start()
+        
     except Exception as e:
         logger.error(f"Error sending aviator sticker: {e}")
     
