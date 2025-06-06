@@ -7,4 +7,6 @@ pillow>=8.0.0
 pymongo>=4.0.0
 python-telegram-bot==13.15
 requests>=2.25.0
-telegram
+pillow
+pymongo
+python-telegram-bot==13.15
