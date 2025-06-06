@@ -1,4 +1,4 @@
-modules = ["python-3.11"]
+modules = ["python-3.11", "python3"]
 run = "python setup_dependencies.py && python main.py"
 
 [nix]
