@@ -10,3 +10,6 @@ pytz
 certifi
 six
 tzlocal
+python-telegram-bot
+python-telegram-bot==13.15
+telegram
