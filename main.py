@@ -11,7 +11,7 @@ from PIL import Image
 from io import BytesIO
 from pymongo import MongoClient
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext, ConversationHandler, CallbackQueryHandler
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, ConversationHandler, CallbackQueryHandler
 
 # CONFIG - Using environment variables with fallbacks
 BOT_TOKEN = os.getenv('BOT_TOKEN',
@@ -4732,29 +4732,60 @@ def main():
     Main function to start the bot
     """
     try:
-        # Create application with conflict resolution
-        application = Application.builder().token(BOT_TOKEN).build()
+        # Create updater and dispatcher with conflict resolution
+        updater = Updater(BOT_TOKEN, use_context=True)
+        dp = updater.dispatcher
+
+        # Aggressive conflict resolution
+        try:
+            # Force delete webhook and clear updates
+            updater.bot.delete_webhook(drop_pending_updates=True)
+            logger.info("Webhook cleared with pending updates dropped")
+            
+            # Multiple attempts to clear updates
+            for attempt in range(3):
+                try:
+                    updates = updater.bot.get_updates(timeout=2, allowed_updates=[])
+                    if updates:
+                        last_update_id = updates[-1].update_id
+                        updater.bot.get_updates(offset=last_update_id + 1, timeout=1)
+                        logger.info(f"Attempt {attempt + 1}: Cleared {len(updates)} pending updates")
+                    else:
+                        logger.info(f"Attempt {attempt + 1}: No pending updates found")
+                        break
+                except Exception as inner_e:
+                    logger.warning(f"Attempt {attempt + 1} failed: {inner_e}")
+                    if attempt < 2:
+                        import time
+                        time.sleep(1)
+                        
+        except Exception as e:
+            logger.warning(f"Could not clear pending updates/webhooks: {e}")
+            
+        # Extended delay for cleanup
+        import time
+        time.sleep(3)
 
         # Initialize bot data
-        if 'pending_wallets' not in application.bot_data:
-            application.bot_data['pending_wallets'] = {}
-        if 'digits_message_id' not in application.bot_data:
-            application.bot_data['digits_message_id'] = {}
+        if 'pending_wallets' not in dp.bot_data:
+            dp.bot_data['pending_wallets'] = {}
+        if 'digits_message_id' not in dp.bot_data:
+            dp.bot_data['digits_message_id'] = {}
 
         # Conversation handler for update command with proper state management
         conv_handler = ConversationHandler(
             entry_points=[CommandHandler('update', update_cmd)],
             states={
                 MODE_SELECT:
-                [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_mode)],
+                [MessageHandler(Filters.text & ~Filters.command, handle_mode)],
                 SINGLE_UID: [
-                    MessageHandler(filters.TEXT & ~filters.COMMAND,
+                    MessageHandler(Filters.text & ~Filters.command,
                                    handle_single_uid),
                     CommandHandler('done', handle_single_uid)
                 ],
                 BULK_IMG: [
-                    MessageHandler(filters.PHOTO, handle_bulk_images),
-                    MessageHandler(filters.TEXT & ~filters.COMMAND,
+                    MessageHandler(Filters.photo, handle_bulk_images),
+                    MessageHandler(Filters.text & ~Filters.command,
                                    handle_bulk_images),
                     CommandHandler('done', handle_bulk_images)
                 ]
@@ -4775,22 +4806,22 @@ def main():
             per_message=False)
 
         # Add handlers
-        application.add_handler(CommandHandler("start", start))
-        application.add_handler(CommandHandler("claim", claim_command))
-        application.add_handler(CommandHandler("stats", stats))
-        application.add_handler(CommandHandler("verified", verified))
-        application.add_handler(CommandHandler("nonverified", nonverified))
-        application.add_handler(CommandHandler("all", all_uids))
-        application.add_handler(CommandHandler("dustbin", dustbin))
-        application.add_handler(CommandHandler("del", del_command))
-        application.add_handler(CommandHandler("done", done_command))
-        application.add_handler(CommandHandler("reject", reject_command))
-        application.add_handler(CommandHandler("newcode", newcode_command))
-        application.add_handler(CommandHandler("block", block_user_command))
-        application.add_handler(CommandHandler("unblock", block_user_command))
-        application.add_handler(CommandHandler("checkblocked", check_blocked_command))
-        application.add_handler(CommandHandler("restrict", restrict_command))
-        application.add_handler(CommandHandler("cast", cast_command))
+        dp.add_handler(CommandHandler("start", start))
+        dp.add_handler(CommandHandler("claim", claim_command))
+        dp.add_handler(CommandHandler("stats", stats))
+        dp.add_handler(CommandHandler("verified", verified))
+        dp.add_handler(CommandHandler("nonverified", nonverified))
+        dp.add_handler(CommandHandler("all", all_uids))
+        dp.add_handler(CommandHandler("dustbin", dustbin))
+        dp.add_handler(CommandHandler("del", del_command))
+        dp.add_handler(CommandHandler("done", done_command))
+        dp.add_handler(CommandHandler("reject", reject_command))
+        dp.add_handler(CommandHandler("newcode", newcode_command))
+        dp.add_handler(CommandHandler("block", block_user_command))
+        dp.add_handler(CommandHandler("unblock", block_user_command))
+        dp.add_handler(CommandHandler("checkblocked", check_blocked_command))
+        dp.add_handler(CommandHandler("restrict", restrict_command))
+        dp.add_handler(CommandHandler("cast", cast_command))
         dp.add_handler(
             CallbackQueryHandler(handle_screenshot_button,
                                  pattern="send_screenshot"))
@@ -4848,7 +4879,7 @@ def main():
             CallbackQueryHandler(handle_delete_all_data_no,
                                  pattern="delete_all_data_no"))
         dp.add_handler(conv_handler)
-        dp.add_handler(MessageHandler(filters.ALL, handle_all))
+        dp.add_handler(MessageHandler(Filters.all, handle_all))
 
         # Error handler with conflict detection
         def error_handler(update, context):

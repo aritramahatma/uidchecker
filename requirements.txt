@@ -9,7 +9,3 @@ pillow
 pymongo
 python-telegram-bot==20.7
 telegram
-pillow
-pymongo
-python-telegram-bot
-requests
