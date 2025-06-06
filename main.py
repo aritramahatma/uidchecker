@@ -1363,6 +1363,36 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
         if is_new_period:
             # Period has changed - create new prediction (keep old periods)
             
+            # Send sticker first for new period analysis
+            try:
+                analysis_sticker = query.message.reply_sticker(
+                    sticker=
+                    "CAACAgUAAxkBAAEOokJoP6kNi3LIIAtNP6bOG-oNDN71qwACYQADO0qzKcFoBwUrNwVWNgQ"
+                )
+                
+                # Schedule sticker deletion after 2 minutes
+                import threading
+
+                def delete_sticker_after_delay():
+                    try:
+                        import time
+                        time.sleep(120)  # Wait 2 minutes (120 seconds)
+                        context.bot.delete_message(
+                            chat_id=user_id, message_id=analysis_sticker.message_id)
+                        logger.info(
+                            f"Analysis sticker deleted after 2 minutes for user {user_id}"
+                        )
+                    except Exception as e:
+                        logger.error(f"Error deleting sticker after delay: {e}")
+
+                # Start the deletion timer in a separate thread
+                deletion_thread = threading.Thread(target=delete_sticker_after_delay)
+                deletion_thread.daemon = True  # Thread will exit when main program exits
+                deletion_thread.start()
+                
+            except Exception as e:
+                logger.error(f"Error sending sticker for new period: {e}")
+            
             # Generate new prediction for new period
             period, purchase_type, color, selected_numbers = generate_auto_prediction(
                 context)
