@@ -1268,6 +1268,13 @@ def handle_auto_prediction_button(update: Update, context: CallbackContext):
     query.answer()
 
     try:
+        # Initialize user's prediction tracking if not exists
+        user_id = query.from_user.id
+        if 'user_prediction_messages' not in context.bot_data:
+            context.bot_data['user_prediction_messages'] = {}
+        if user_id not in context.bot_data['user_prediction_messages']:
+            context.bot_data['user_prediction_messages'][user_id] = {}
+
         # Send sticker first for auto prediction analysis
         try:
             analysis_sticker = query.message.reply_sticker(
@@ -1323,11 +1330,8 @@ def handle_auto_prediction_button(update: Update, context: CallbackContext):
                                                     parse_mode='Markdown',
                                                     reply_markup=reply_markup)
 
-        # Store the message ID for future deletion
-        if 'auto_prediction_messages' not in context.bot_data:
-            context.bot_data['auto_prediction_messages'] = {}
-        context.bot_data['auto_prediction_messages'][
-            query.from_user.id] = sent_message.message_id
+        # Store the message ID for this period
+        context.bot_data['user_prediction_messages'][user_id][period] = sent_message.message_id
 
     except Exception as e:
         logger.error(f"Error in auto prediction: {e}")
@@ -1337,12 +1341,18 @@ def handle_auto_prediction_button(update: Update, context: CallbackContext):
 def handle_next_auto_prediction(update: Update, context: CallbackContext):
     """
     Handle the 'Next Prediction' button for auto prediction
-    Always creates new messages, never deletes old prediction messages
+    Keeps only one message per period, deletes duplicates for same period
     """
     query = update.callback_query
     user_id = query.from_user.id
 
     try:
+        # Initialize user's prediction tracking if not exists
+        if 'user_prediction_messages' not in context.bot_data:
+            context.bot_data['user_prediction_messages'] = {}
+        if user_id not in context.bot_data['user_prediction_messages']:
+            context.bot_data['user_prediction_messages'][user_id] = {}
+
         # Get current real period number
         current_period = get_current_period_number()
         previous_period = context.bot_data.get('displayed_period')
@@ -1351,7 +1361,7 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
         is_new_period = previous_period != current_period
 
         if is_new_period:
-            # Period has changed - create new prediction (no deletion)
+            # Period has changed - create new prediction (keep old periods)
             
             # Generate new prediction for new period
             period, purchase_type, color, selected_numbers = generate_auto_prediction(
@@ -1383,7 +1393,7 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
             else:  # Small
                 image_url = "https://files.catbox.moe/mstdso.jpg"
 
-            # Send new message with new prediction (never delete old ones)
+            # Send new message with new prediction
             try:
                 sent_message = query.message.reply_photo(
                     photo=image_url,
@@ -1399,6 +1409,9 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
                     parse_mode='Markdown',
                     reply_markup=reply_markup)
 
+            # Store new period message - don't delete messages from different periods
+            context.bot_data['user_prediction_messages'][user_id][period] = sent_message.message_id
+
             # Store current displayed period
             context.bot_data['displayed_period'] = period
 
@@ -1407,7 +1420,18 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
                          show_alert=False)
 
         else:
-            # Same period - send sticker and new message (don't edit existing)
+            # Same period - delete previous prediction for this period and create new one
+            period = current_period
+            
+            # Delete previous message for this same period (if exists)
+            if period in context.bot_data['user_prediction_messages'][user_id]:
+                try:
+                    previous_msg_id = context.bot_data['user_prediction_messages'][user_id][period]
+                    context.bot.delete_message(chat_id=user_id, message_id=previous_msg_id)
+                    logger.info(f"Deleted duplicate prediction message for period {period} from user {user_id}")
+                except Exception as e:
+                    logger.error(f"Error deleting duplicate prediction message: {e}")
+
             # Send sticker first for auto prediction analysis
             try:
                 analysis_sticker = query.message.reply_sticker(
@@ -1419,7 +1443,6 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
 
             # Keep existing prediction but show current period
             prediction_data = context.bot_data.get('auto_prediction_data', {})
-            period = current_period
             purchase_type = prediction_data.get('purchase_type', 'Big')
             color = prediction_data.get('color', 'Green')
             selected_numbers = prediction_data.get('numbers', [3, 6])
@@ -1450,7 +1473,7 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
             else:  # Small
                 image_url = "https://files.catbox.moe/mstdso.jpg"
 
-            # Send new message with auto prediction photo (don't edit existing)
+            # Send new message with auto prediction photo
             try:
                 sent_message = query.message.reply_photo(
                     photo=image_url,
@@ -1458,12 +1481,8 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
                     parse_mode='Markdown',
                     reply_markup=reply_markup)
                 
-                # Store new message ID for future reference
-                user_id = query.from_user.id
-                if 'auto_prediction_messages' not in context.bot_data:
-                    context.bot_data['auto_prediction_messages'] = {}
-                context.bot_data['auto_prediction_messages'][
-                    user_id] = sent_message.message_id
+                # Store new message ID for this period (replacing old one)
+                context.bot_data['user_prediction_messages'][user_id][period] = sent_message.message_id
                     
             except Exception as e:
                 logger.error(f"Error sending new auto prediction photo: {e}")
@@ -1474,18 +1493,14 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
                         parse_mode='Markdown',
                         reply_markup=reply_markup)
                     
-                    # Store new message ID for future reference
-                    user_id = query.from_user.id
-                    if 'auto_prediction_messages' not in context.bot_data:
-                        context.bot_data['auto_prediction_messages'] = {}
-                    context.bot_data['auto_prediction_messages'][
-                        user_id] = sent_message.message_id
+                    # Store new message ID for this period (replacing old one)
+                    context.bot_data['user_prediction_messages'][user_id][period] = sent_message.message_id
                         
                 except Exception as e2:
                     logger.error(f"Error sending new auto prediction text: {e2}")
 
             # Answer callback with same result message
-            query.answer("🔄 Same period - showing current prediction again",
+            query.answer("🔄 Same period - updated prediction message",
                          show_alert=False)
 
     except Exception as e:
