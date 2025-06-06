@@ -1,15 +1,12 @@
 
-pillow>=8.0.0
-pymongo
-requests
+python-telegram-bot==13.15
 pillow>=8.0.0
 pymongo>=4.0.0
 requests>=2.25.0
-pillow
-pymongo
-telegram
-python-telegram-bot==13.15
-pillow
-pymongo
-python-telegram-bot
-requests
+tornado==6.1
+APScheduler==3.6.3
+cachetools==4.2.2
+pytz
+certifi
+six
+tzlocal
