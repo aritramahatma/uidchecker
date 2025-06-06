@@ -4736,11 +4736,35 @@ def main():
         updater = Updater(BOT_TOKEN, use_context=True)
         dp = updater.dispatcher
 
-        # Clear any pending updates to prevent conflicts
+        # Aggressive conflict resolution
         try:
-            updater.bot.get_updates(offset=-1, timeout=1)
+            # Force delete webhook and clear updates
+            updater.bot.delete_webhook(drop_pending_updates=True)
+            logger.info("Webhook cleared with pending updates dropped")
+            
+            # Multiple attempts to clear updates
+            for attempt in range(3):
+                try:
+                    updates = updater.bot.get_updates(timeout=2, allowed_updates=[])
+                    if updates:
+                        last_update_id = updates[-1].update_id
+                        updater.bot.get_updates(offset=last_update_id + 1, timeout=1)
+                        logger.info(f"Attempt {attempt + 1}: Cleared {len(updates)} pending updates")
+                    else:
+                        logger.info(f"Attempt {attempt + 1}: No pending updates found")
+                        break
+                except Exception as inner_e:
+                    logger.warning(f"Attempt {attempt + 1} failed: {inner_e}")
+                    if attempt < 2:
+                        import time
+                        time.sleep(1)
+                        
         except Exception as e:
-            logger.warning(f"Could not clear pending updates: {e}")
+            logger.warning(f"Could not clear pending updates/webhooks: {e}")
+            
+        # Extended delay for cleanup
+        import time
+        time.sleep(3)
 
         # Initialize bot data
         if 'pending_wallets' not in dp.bot_data:
