@@ -1875,20 +1875,23 @@ def aviator_menu_handler(update: Update, context: CallbackContext):
 
 def mines_menu_handler(update: Update, context: CallbackContext):
     """
-    Handle the mines menu showing coming soon message
+    Handle the mines menu showing VIP predictions
     """
     query = update.callback_query
     query.answer()
 
-    # Mines coming soon message
+    # Mines Pro VIP message
     mines_menu_msg = (
-        "*💎 Mines Pro*\n\n"
-        "*🚧 Coming Soon! 🚧*\n\n"
-        "*We're working hard to bring you the best Mines predictions!*\n"
-        "*Stay tuned for amazing features and high-accuracy predictions.*")
+        "*💣 Mines Pro VIP Predictions*\n\n"
+        "*⚡️ AI-Powered Safe Tile Predictions*\n"
+        "*🎳 Advanced Pattern Analysis*\n"
+        "*💎 Premium Mines Strategies*\n\n"
+        "*⚠️ Recommended Bet Amount: Level 3*")
 
-    # Create keyboard with back button
+    # Create keyboard with Get Prediction and Back buttons
     keyboard = [[
+        InlineKeyboardButton("🎯 Get Prediction", callback_data="mines_get_prediction")
+    ], [
         InlineKeyboardButton("🔙 Back", callback_data="prediction_menu")
     ]]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -1909,6 +1912,82 @@ def mines_menu_handler(update: Update, context: CallbackContext):
                                        reply_markup=reply_markup)
         except Exception as e2:
             logger.error(f"Error sending mines menu message: {e2}")
+
+
+def handle_mines_get_prediction(update: Update, context: CallbackContext):
+    """
+    Handle the mines get prediction button - show instructions for 3-digit input
+    """
+    query = update.callback_query
+    query.answer()
+
+    # Instructions message for mines prediction
+    mines_instruction_msg = (
+        "*💣 Drop The Last 3 Digits Of The Round ID*\n"
+        "*🎯 Claim Your VIP Mines Tip – Instantly!*\n\n"
+        "*⚙️ Example: 2387554 ➡️ Just Send 554*")
+
+    # Create keyboard with back button
+    keyboard = [[
+        InlineKeyboardButton("🔙 Back", callback_data="mines_menu")
+    ]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Mark user as waiting for mines digits
+    if 'waiting_for_mines_digits' not in context.bot_data:
+        context.bot_data['waiting_for_mines_digits'] = set()
+    context.bot_data['waiting_for_mines_digits'].add(update.effective_user.id)
+
+    # Edit existing message with instructions
+    try:
+        query.edit_message_media(media=InputMediaPhoto(
+            media="https://files.catbox.moe/jpxz04.jpg",
+            caption=mines_instruction_msg,
+            parse_mode='Markdown'),
+                                 reply_markup=reply_markup)
+    except Exception as e:
+        logger.error(f"Error editing message in mines get prediction: {e}")
+        # Fallback to editing just caption if photo edit fails
+        try:
+            query.edit_message_caption(caption=mines_instruction_msg,
+                                       parse_mode='Markdown',
+                                       reply_markup=reply_markup)
+        except Exception as e2:
+            logger.error(f"Error editing caption in mines get prediction: {e2}")
+
+
+def generate_mines_prediction(digits):
+    """
+    Generate mines prediction based on 3-digit input
+    Returns safe tiles positions in a 5x5 grid
+    """
+    import random
+    
+    # Use digits as seed for consistent results
+    seed_value = int(digits)
+    random.seed(seed_value)
+    
+    # Generate 8-12 safe tiles out of 25 total positions
+    total_positions = 25
+    safe_count = random.randint(8, 12)
+    
+    # Generate safe positions (1-25)
+    all_positions = list(range(1, 26))
+    safe_positions = sorted(random.sample(all_positions, safe_count))
+    
+    # Format positions into grid representation
+    grid_display = []
+    for i in range(5):
+        row = []
+        for j in range(5):
+            pos = i * 5 + j + 1
+            if pos in safe_positions:
+                row.append("✅")
+            else:
+                row.append("💣")
+        grid_display.append(" ".join(row))
+    
+    return safe_positions, "\n".join(grid_display)
 
 
 def dragon_tiger_menu_handler(update: Update, context: CallbackContext):
@@ -4472,6 +4551,83 @@ def handle_all(update: Update, context: CallbackContext):
                             parse_mode='Markdown')
                     return
             
+            # Check if user is waiting for mines prediction digits (3 digits)
+            elif ('waiting_for_mines_digits' in context.bot_data
+                    and user_id in context.bot_data['waiting_for_mines_digits']):
+                
+                text = update.message.text.strip()
+                
+                # Check if it's exactly 3 digits
+                if re.match(r'^\d{3}$', text):
+                    # Remove user from waiting state
+                    context.bot_data['waiting_for_mines_digits'].discard(user_id)
+                    
+                    # Generate mines prediction
+                    safe_positions, grid_display = generate_mines_prediction(text)
+                    
+                    # Send mines prediction message
+                    mines_prediction_msg = (
+                        "*💣 VIP Mines Pro Prediction*\n\n"
+                        f"*🆔 Round Digits: {text}*\n"
+                        f"*✅ Safe Tiles: {len(safe_positions)}*\n"
+                        f"*💣 Bomb Tiles: {25 - len(safe_positions)}*\n\n"
+                        "*🎯 Safe Positions Grid:*\n"
+                        f"`{grid_display}`\n\n"
+                        f"*📍 Safe Positions: {', '.join(map(str, safe_positions))}*\n\n"
+                        "*⚠️ Recommended Bet Amount: Level 3*\n"
+                        "*🎮 Good Luck!*")
+
+                    # Create keyboard with back button
+                    keyboard = [[
+                        InlineKeyboardButton("🔙 Back", callback_data="mines_menu")
+                    ]]
+                    reply_markup = InlineKeyboardMarkup(keyboard)
+
+                    # Send photo with prediction
+                    try:
+                        update.message.reply_photo(
+                            photo="https://files.catbox.moe/jpxz04.jpg",
+                            caption=mines_prediction_msg,
+                            parse_mode='Markdown',
+                            reply_markup=reply_markup)
+                    except Exception as e:
+                        logger.error(f"Error sending mines prediction photo: {e}")
+                        # Fallback to text message if photo fails
+                        update.message.reply_text(mines_prediction_msg,
+                                                  parse_mode='Markdown',
+                                                  reply_markup=reply_markup)
+                    return
+                else:
+                    # Invalid input for mines prediction
+                    if 'mines_error_count' not in context.bot_data:
+                        context.bot_data['mines_error_count'] = {}
+                    
+                    if user_id not in context.bot_data['mines_error_count']:
+                        context.bot_data['mines_error_count'][user_id] = 0
+                    
+                    context.bot_data['mines_error_count'][user_id] += 1
+                    
+                    if context.bot_data['mines_error_count'][user_id] >= 3:
+                        # Clear waiting state after 3 failed attempts
+                        context.bot_data['waiting_for_mines_digits'].discard(user_id)
+                        context.bot_data['mines_error_count'][user_id] = 0
+                        
+                        update.message.reply_text(
+                            "*❌ Mines Prediction Cancelled*\n"
+                            "*🔄 Too many invalid attempts*\n\n"
+                            "*💣 Click 'Get Prediction' again to restart*",
+                            parse_mode='Markdown')
+                    else:
+                        attempts_left = 3 - context.bot_data['mines_error_count'][user_id]
+                        update.message.reply_text(
+                            "*❌ Invalid Round ID Format*\n"
+                            "*💣 For Mines Pro: Send exactly 3 digits only*\n"
+                            "*✅ Example: 554*\n"
+                            "*⚙️ From 2387554 ➡️ Send 554*\n\n"
+                            f"*⏰ Attempts left: {attempts_left}*",
+                            parse_mode='Markdown')
+                    return
+            
             # Check if user is waiting for 3 digits (manual prediction)
             elif ('waiting_for_digits' in context.bot_data
                     and user_id in context.bot_data['waiting_for_digits']):
@@ -5092,6 +5248,9 @@ def main():
         dp.add_handler(
             CallbackQueryHandler(dragon_tiger_menu_handler,
                                  pattern="dragon_tiger_menu"))
+        dp.add_handler(
+            CallbackQueryHandler(handle_mines_get_prediction,
+                                 pattern="mines_get_prediction"))
         dp.add_handler(
             CallbackQueryHandler(handle_aviator_signals_button,
                                  pattern="aviator_signals"))
