@@ -1337,7 +1337,7 @@ def handle_auto_prediction_button(update: Update, context: CallbackContext):
 def handle_next_auto_prediction(update: Update, context: CallbackContext):
     """
     Handle the 'Next Prediction' button for auto prediction
-    Shows same result if same period, deletes old message and shows new prediction if period changed
+    Always creates new messages, never deletes old prediction messages
     """
     query = update.callback_query
     user_id = query.from_user.id
@@ -1351,15 +1351,8 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
         is_new_period = previous_period != current_period
 
         if is_new_period:
-            # Period has changed - delete old message and create new one
-            try:
-                # Delete the old message
-                context.bot.delete_message(chat_id=user_id,
-                                           message_id=query.message.message_id)
-            except Exception as e:
-                logger.error(
-                    f"Error deleting old auto prediction message: {e}")
-
+            # Period has changed - create new prediction (no deletion)
+            
             # Generate new prediction for new period
             period, purchase_type, color, selected_numbers = generate_auto_prediction(
                 context)
@@ -1390,7 +1383,7 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
             else:  # Small
                 image_url = "https://files.catbox.moe/mstdso.jpg"
 
-            # Send new message with new prediction
+            # Send new message with new prediction (never delete old ones)
             try:
                 sent_message = query.message.reply_photo(
                     photo=image_url,
@@ -1405,12 +1398,6 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
                     auto_prediction_msg,
                     parse_mode='Markdown',
                     reply_markup=reply_markup)
-
-            # Update stored message ID
-            if 'auto_prediction_messages' not in context.bot_data:
-                context.bot_data['auto_prediction_messages'] = {}
-            context.bot_data['auto_prediction_messages'][
-                user_id] = sent_message.message_id
 
             # Store current displayed period
             context.bot_data['displayed_period'] = period
