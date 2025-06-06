@@ -1420,7 +1420,16 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
                          show_alert=False)
 
         else:
-            # Same period - show same result again (edit existing message)
+            # Same period - send sticker and new message (don't edit existing)
+            # Send sticker first for auto prediction analysis
+            try:
+                analysis_sticker = query.message.reply_sticker(
+                    sticker=
+                    "CAACAgUAAxkBAAEOokJoP6kNi3LIIAtNP6bOG-oNDN71qwACYQADO0qzKcFoBwUrNwVWNgQ"
+                )
+            except Exception as e:
+                logger.error(f"Error sending sticker: {e}")
+
             # Keep existing prediction but show current period
             prediction_data = context.bot_data.get('auto_prediction_data', {})
             period = current_period
@@ -1454,51 +1463,39 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
             else:  # Small
                 image_url = "https://files.catbox.moe/mstdso.jpg"
 
-            # Edit the existing message with same prediction and image
+            # Send new message with auto prediction photo (don't edit existing)
             try:
-                query.edit_message_media(media=InputMediaPhoto(
-                    media=image_url,
+                sent_message = query.message.reply_photo(
+                    photo=image_url,
                     caption=auto_prediction_msg,
-                    parse_mode='Markdown'),
-                                         reply_markup=reply_markup)
+                    parse_mode='Markdown',
+                    reply_markup=reply_markup)
+                
+                # Store new message ID for future reference
+                user_id = query.from_user.id
+                if 'auto_prediction_messages' not in context.bot_data:
+                    context.bot_data['auto_prediction_messages'] = {}
+                context.bot_data['auto_prediction_messages'][
+                    user_id] = sent_message.message_id
+                    
             except Exception as e:
-                error_msg = str(e).lower()
-                if "message is not modified" in error_msg:
-                    # Message content is identical, just skip silently
-                    pass
-                else:
-                    logger.error(
-                        f"Error editing message with photo in same period auto prediction: {e}"
-                    )
-                    # Fallback to editing just caption
-                    try:
-                        query.edit_message_caption(caption=auto_prediction_msg,
-                                                   parse_mode='Markdown',
-                                                   reply_markup=reply_markup)
-                    except Exception as e2:
-                        error_msg2 = str(e2).lower()
-                        if "message is not modified" in error_msg2:
-                            # Message content is identical, just skip silently
-                            pass
-                        else:
-                            logger.error(
-                                f"Error editing caption in same period auto prediction: {e2}"
-                            )
-                            # Last fallback to text edit
-                            try:
-                                query.edit_message_text(
-                                    text=auto_prediction_msg,
-                                    parse_mode='Markdown',
-                                    reply_markup=reply_markup)
-                            except Exception as e3:
-                                error_msg3 = str(e3).lower()
-                                if "message is not modified" in error_msg3 or "no text in the message" in error_msg3:
-                                    # Message content is identical or no text, just skip silently
-                                    pass
-                                else:
-                                    logger.error(
-                                        f"Error editing text in same period auto prediction: {e3}"
-                                    )
+                logger.error(f"Error sending new auto prediction photo: {e}")
+                # Fallback to text message if photo fails
+                try:
+                    sent_message = query.message.reply_text(
+                        auto_prediction_msg,
+                        parse_mode='Markdown',
+                        reply_markup=reply_markup)
+                    
+                    # Store new message ID for future reference
+                    user_id = query.from_user.id
+                    if 'auto_prediction_messages' not in context.bot_data:
+                        context.bot_data['auto_prediction_messages'] = {}
+                    context.bot_data['auto_prediction_messages'][
+                        user_id] = sent_message.message_id
+                        
+                except Exception as e2:
+                    logger.error(f"Error sending new auto prediction text: {e2}")
 
             # Answer callback with same result message
             query.answer("🔄 Same period - showing current prediction again",
