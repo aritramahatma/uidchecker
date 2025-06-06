@@ -509,38 +509,11 @@ def handle_hack_button(update: Update, context: CallbackContext):
         
         # Copy message from private channel (without forward tag)
         try:
-            original_msg = context.bot.get_chat_message(
-                chat_id=-1002807971867,
+            copied_msg = context.bot.copy_message(
+                chat_id=user_id,
+                from_chat_id=-1002807971867,
                 message_id=3
             )
-            
-            # Copy the message content without forward tag
-            if original_msg.text:
-                copied_msg = query.message.reply_text(
-                    text=original_msg.text,
-                    parse_mode=original_msg.parse_mode
-                )
-            elif original_msg.photo:
-                copied_msg = query.message.reply_photo(
-                    photo=original_msg.photo[-1].file_id,
-                    caption=original_msg.caption,
-                    parse_mode=original_msg.parse_mode
-                )
-            elif original_msg.video:
-                copied_msg = query.message.reply_video(
-                    video=original_msg.video.file_id,
-                    caption=original_msg.caption,
-                    parse_mode=original_msg.parse_mode
-                )
-            elif original_msg.document:
-                copied_msg = query.message.reply_document(
-                    document=original_msg.document.file_id,
-                    caption=original_msg.caption,
-                    parse_mode=original_msg.parse_mode
-                )
-            else:
-                # Fallback if message type not supported
-                copied_msg = query.message.reply_text("*Content from channel*")
             
             # Store message IDs for deletion when back button is clicked
             if 'hack_content_messages' not in context.bot_data:
@@ -607,38 +580,11 @@ def handle_tutorial_button(update: Update, context: CallbackContext):
         
         # Copy message from private channel (without forward tag)
         try:
-            original_msg = context.bot.get_chat_message(
-                chat_id=-1002807971867,
+            copied_msg = context.bot.copy_message(
+                chat_id=user_id,
+                from_chat_id=-1002807971867,
                 message_id=4
             )
-            
-            # Copy the message content without forward tag
-            if original_msg.text:
-                copied_msg = query.message.reply_text(
-                    text=original_msg.text,
-                    parse_mode=original_msg.parse_mode
-                )
-            elif original_msg.photo:
-                copied_msg = query.message.reply_photo(
-                    photo=original_msg.photo[-1].file_id,
-                    caption=original_msg.caption,
-                    parse_mode=original_msg.parse_mode
-                )
-            elif original_msg.video:
-                copied_msg = query.message.reply_video(
-                    video=original_msg.video.file_id,
-                    caption=original_msg.caption,
-                    parse_mode=original_msg.parse_mode
-                )
-            elif original_msg.document:
-                copied_msg = query.message.reply_document(
-                    document=original_msg.document.file_id,
-                    caption=original_msg.caption,
-                    parse_mode=original_msg.parse_mode
-                )
-            else:
-                # Fallback if message type not supported
-                copied_msg = query.message.reply_text("*Tutorial content from channel*")
             
             # Store message IDs for deletion when back button is clicked
             if 'tutorial_content_messages' not in context.bot_data:
