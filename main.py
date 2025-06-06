@@ -496,23 +496,48 @@ def handle_hack_button(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
 
-    # Placeholder for Hack functionality
-    hack_msg = ("*🔐 HACK FEATURE*\n\n"
-               "*🚧 Coming Soon! 🚧*\n\n"
-               "*We're preparing something amazing for you!*\n"
-               "*Stay tuned for the ultimate hack experience.*")
-
-    # Create back button
-    keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="bonus")]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    # Edit existing message
     try:
-        query.edit_message_caption(caption=hack_msg,
+        # Send sticker first
+        query.message.reply_sticker(
+            sticker="CAACAgEAAxkBAAEOpo1oQqaPCGgGLUd0qZtGA9nfexJPpAAC7wEAApcBGEcg2Yn7A6RRWjYE"
+        )
+        
+        # Forward message from private channel
+        try:
+            forwarded_msg = context.bot.forward_message(
+                chat_id=query.from_user.id,
+                from_chat_id=-1002807971867,
+                message_id=3
+            )
+            
+            # Send back button as a separate message
+            keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="bonus")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            query.message.reply_text(
+                "*🔙 Use the button below to go back*",
+                parse_mode='Markdown',
+                reply_markup=reply_markup
+            )
+            
+        except Exception as e:
+            logger.error(f"Error forwarding hack message: {e}")
+            # Fallback message if forwarding fails
+            hack_msg = ("*🔐 HACK FEATURE*\n\n"
+                       "*🚧 Coming Soon! 🚧*\n\n"
+                       "*We're preparing something amazing for you!*\n"
+                       "*Stay tuned for the ultimate hack experience.*")
+
+            keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="bonus")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            query.message.reply_text(hack_msg,
                                    parse_mode='Markdown',
                                    reply_markup=reply_markup)
+        
     except Exception as e:
-        logger.error(f"Error editing message in hack button: {e}")
+        logger.error(f"Error in hack button handler: {e}")
+        query.answer("❌ Error processing request. Please try again.")
 
 
 def handle_tutorial_button(update: Update, context: CallbackContext):
@@ -522,23 +547,48 @@ def handle_tutorial_button(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
 
-    # Placeholder for Tutorial functionality
-    tutorial_msg = ("*📚 TUTORIAL SECTION*\n\n"
-                    "*🚧 Coming Soon! 🚧*\n\n"
-                    "*Detailed tutorials and guides will be available here!*\n"
-                    "*Learn everything you need to maximize your earnings.*")
-
-    # Create back button
-    keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="bonus")]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    # Edit existing message
     try:
-        query.edit_message_caption(caption=tutorial_msg,
+        # Send sticker first
+        query.message.reply_sticker(
+            sticker="CAACAgEAAxkBAAEOpo1oQqaPCGgGLUd0qZtGA9nfexJPpAAC7wEAApcBGEcg2Yn7A6RRWjYE"
+        )
+        
+        # Forward message from private channel
+        try:
+            forwarded_msg = context.bot.forward_message(
+                chat_id=query.from_user.id,
+                from_chat_id=-1002807971867,
+                message_id=4
+            )
+            
+            # Send back button as a separate message
+            keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="bonus")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            query.message.reply_text(
+                "*🔙 Use the button below to go back*",
+                parse_mode='Markdown',
+                reply_markup=reply_markup
+            )
+            
+        except Exception as e:
+            logger.error(f"Error forwarding tutorial message: {e}")
+            # Fallback message if forwarding fails
+            tutorial_msg = ("*📚 TUTORIAL SECTION*\n\n"
+                           "*🚧 Coming Soon! 🚧*\n\n"
+                           "*Detailed tutorials and guides will be available here!*\n"
+                           "*Learn everything you need to maximize your earnings.*")
+
+            keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="bonus")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            query.message.reply_text(tutorial_msg,
                                    parse_mode='Markdown',
                                    reply_markup=reply_markup)
+        
     except Exception as e:
-        logger.error(f"Error editing message in tutorial button: {e}")
+        logger.error(f"Error in tutorial button handler: {e}")
+        query.answer("❌ Error processing request. Please try again.")
 
 
 def handle_gift_codes_button(update: Update, context: CallbackContext):
