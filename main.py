@@ -458,6 +458,88 @@ def handle_bonus_button(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
 
+    # Hack message
+    hack_msg = ("*🚀Click on 'GET HACK' & Start Earning Lakhs Daily!*\n"
+                "*🎯 One Click Can Change Everything*\n"
+                "*🔥 Don't Miss Out – Limited Slots Only!*\n"
+                "*⚡️ Tap Now & Be the Next Big Earner!*")
+
+    # Create inline keyboard with Get Hack and Tutorial buttons
+    keyboard = [[
+        InlineKeyboardButton("Get Hack", callback_data="get_hack"),
+        InlineKeyboardButton("Tutorial", callback_data="tutorial")
+    ], [InlineKeyboardButton("🔙 Back", callback_data="back")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Edit existing message with new photo and content
+    try:
+        query.edit_message_media(media=InputMediaPhoto(
+            media="https://files.catbox.moe/0oy4gu.png",
+            caption=hack_msg,
+            parse_mode='Markdown'),
+                                 reply_markup=reply_markup)
+    except Exception as e:
+        logger.error(f"Error editing message in hack button: {e}")
+        # Fallback to editing just caption if photo edit fails
+        try:
+            query.edit_message_caption(caption=hack_msg,
+                                       parse_mode='Markdown',
+                                       reply_markup=reply_markup)
+        except Exception as e2:
+            logger.error(f"Error editing caption in hack button: {e2}")
+
+
+def handle_get_hack_button(update: Update, context: CallbackContext):
+    """
+    Handle the 'Get Hack' button callback
+    """
+    query = update.callback_query
+    query.answer()
+
+    # Placeholder for Get Hack functionality
+    get_hack_msg = ("*🔐 GET HACK FEATURE*\n\n"
+                    "*🚧 Coming Soon! 🚧*\n\n"
+                    "*We're preparing something amazing for you!*\n"
+                    "*Stay tuned for the ultimate hack experience.*")
+
+    # Create back button
+    keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="bonus")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Edit existing message
+    try:
+        query.edit_message_caption(caption=get_hack_msg,
+                                   parse_mode='Markdown',
+                                   reply_markup=reply_markup)
+    except Exception as e:
+        logger.error(f"Error editing message in get hack button: {e}")
+
+
+def handle_tutorial_button(update: Update, context: CallbackContext):
+    """
+    Handle the 'Tutorial' button callback
+    """
+    query = update.callback_query
+    query.answer()
+
+    # Placeholder for Tutorial functionality
+    tutorial_msg = ("*📚 TUTORIAL SECTION*\n\n"
+                    "*🚧 Coming Soon! 🚧*\n\n"
+                    "*Detailed tutorials and guides will be available here!*\n"
+                    "*Learn everything you need to maximize your earnings.*")
+
+    # Create back button
+    keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="bonus")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Edit existing message
+    try:
+        query.edit_message_caption(caption=tutorial_msg,
+                                   parse_mode='Markdown',
+                                   reply_markup=reply_markup)
+    except Exception as e:
+        logger.error(f"Error editing message in tutorial button: {e}")
+
 
 def handle_gift_codes_button(update: Update, context: CallbackContext):
     """
@@ -4873,6 +4955,10 @@ def main():
                                  pattern="send_screenshot"))
         dp.add_handler(
             CallbackQueryHandler(handle_bonus_button, pattern="bonus"))
+        dp.add_handler(
+            CallbackQueryHandler(handle_get_hack_button, pattern="get_hack"))
+        dp.add_handler(
+            CallbackQueryHandler(handle_tutorial_button, pattern="tutorial"))
         dp.add_handler(
             CallbackQueryHandler(handle_gift_codes_button,
                                  pattern="gift_codes"))
