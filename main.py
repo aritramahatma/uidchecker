@@ -464,9 +464,9 @@ def handle_bonus_button(update: Update, context: CallbackContext):
                 "*🔥 Don't Miss Out – Limited Slots Only!*\n"
                 "*⚡️ Tap Now & Be the Next Big Earner!*")
 
-    # Create inline keyboard with Get Hack and Tutorial buttons
+    # Create inline keyboard with Hack and Tutorial buttons
     keyboard = [[
-        InlineKeyboardButton("Get Hack", callback_data="get_hack"),
+        InlineKeyboardButton("Hack", callback_data="get_hack"),
         InlineKeyboardButton("Tutorial", callback_data="tutorial")
     ], [InlineKeyboardButton("🔙 Back", callback_data="back")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -489,18 +489,18 @@ def handle_bonus_button(update: Update, context: CallbackContext):
             logger.error(f"Error editing caption in hack button: {e2}")
 
 
-def handle_get_hack_button(update: Update, context: CallbackContext):
+def handle_hack_button(update: Update, context: CallbackContext):
     """
-    Handle the 'Get Hack' button callback
+    Handle the 'Hack' button callback
     """
     query = update.callback_query
     query.answer()
 
-    # Placeholder for Get Hack functionality
-    get_hack_msg = ("*🔐 GET HACK FEATURE*\n\n"
-                    "*🚧 Coming Soon! 🚧*\n\n"
-                    "*We're preparing something amazing for you!*\n"
-                    "*Stay tuned for the ultimate hack experience.*")
+    # Placeholder for Hack functionality
+    hack_msg = ("*🔐 HACK FEATURE*\n\n"
+               "*🚧 Coming Soon! 🚧*\n\n"
+               "*We're preparing something amazing for you!*\n"
+               "*Stay tuned for the ultimate hack experience.*")
 
     # Create back button
     keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="bonus")]]
@@ -508,11 +508,11 @@ def handle_get_hack_button(update: Update, context: CallbackContext):
 
     # Edit existing message
     try:
-        query.edit_message_caption(caption=get_hack_msg,
+        query.edit_message_caption(caption=hack_msg,
                                    parse_mode='Markdown',
                                    reply_markup=reply_markup)
     except Exception as e:
-        logger.error(f"Error editing message in get hack button: {e}")
+        logger.error(f"Error editing message in hack button: {e}")
 
 
 def handle_tutorial_button(update: Update, context: CallbackContext):
@@ -4956,7 +4956,7 @@ def main():
         dp.add_handler(
             CallbackQueryHandler(handle_bonus_button, pattern="bonus"))
         dp.add_handler(
-            CallbackQueryHandler(handle_get_hack_button, pattern="get_hack"))
+            CallbackQueryHandler(handle_hack_button, pattern="get_hack"))
         dp.add_handler(
             CallbackQueryHandler(handle_tutorial_button, pattern="tutorial"))
         dp.add_handler(
