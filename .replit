@@ -6,7 +6,7 @@ channel = "stable-24_05"
 packages = ["freetype", "lcms2", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "tcl", "tk", "zlib"]
 
 [workflows]
-runButton = "Start Telegram Bot"
+runButton = "Project"
 
 [[workflows.workflow]]
 name = "Project"
@@ -16,6 +16,10 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "workflow.run"
 args = "Telegram Bot"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Telegram Bot Clean"
 
 [[workflows.workflow]]
 name = "Telegram Bot"
@@ -68,6 +72,14 @@ args = "pip install -r requirements.txt"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python main.py"
+
+[[workflows.workflow]]
+name = "Telegram Bot Clean"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pip install --no-deps python-telegram-bot==13.15 tornado==6.1 APScheduler==3.6.3 cachetools==4.2.2 pytz certifi six tzlocal && python main.py"
 
 [deployment]
 run = ["sh", "-c", "npm start"]
