@@ -453,47 +453,10 @@ Focus ONLY on whether the image has been digitally modified/edited, not on wheth
 
 def handle_bonus_button(update: Update, context: CallbackContext):
     """
-    Handle the 'Bonus' button callback
+    Handle the 'Hack' button callback (formerly Bonus)
     """
     query = update.callback_query
     query.answer()
-
-    # Create bonus message in bold mode
-    bonus_msg = ("*😱 OMG! Highest Ever — TRIPLE Deposit Bonus Offer 🛍*\n\n"
-                 "*⚡️ Register Now & Claim Your Bonus:*\n\n"
-                 "*♙ Deposit ₹100 ⮕ Get ₹28 Bonus*\n"
-                 "*♙ Deposit ₹300 ⮕ Get ₹48 Bonus*\n"
-                 "*♙Deposit ₹500 ⮕ Get ₹108 Bonus*\n"
-                 "*♙ Deposit ₹1000 ⮕ Get ₹188 Bonus*\n"
-                 "*♙ Deposit ₹5000 ⮕ Get ₹488 Bonus*\n\n"
-                 "*💎 PLUS — Daily Gift Codes Worth ₹50!*\n"
-                 "*🎳 ₹20 + ₹20 + ₹10 — Every Day for All Users*\n\n"
-                 "*⏳ Limited-Time Offer — Grab It Before It's Gone!*")
-
-    # Create inline keyboard with Register Here and Back buttons
-    keyboard = [[
-        InlineKeyboardButton(
-            "Register Here",
-            url="https://www.jalwa.fun/#/register?invitationCode=66385106362")
-    ], [InlineKeyboardButton("🔙 Back", callback_data="back")]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    # Edit existing message with new photo and content
-    try:
-        query.edit_message_media(media=InputMediaPhoto(
-            media="https://files.catbox.moe/iaooec.webp",
-            caption=bonus_msg,
-            parse_mode='Markdown'),
-                                 reply_markup=reply_markup)
-    except Exception as e:
-        logger.error(f"Error editing message in bonus button: {e}")
-        # Fallback to editing just caption if photo edit fails
-        try:
-            query.edit_message_caption(caption=bonus_msg,
-                                       parse_mode='Markdown',
-                                       reply_markup=reply_markup)
-        except Exception as e2:
-            logger.error(f"Error editing caption in bonus button: {e2}")
 
 
 def handle_gift_codes_button(update: Update, context: CallbackContext):
@@ -945,7 +908,7 @@ def handle_back_button(update: Update, context: CallbackContext):
         InlineKeyboardButton("Gift Codes", callback_data="gift_codes")
     ],
                 [
-                    InlineKeyboardButton("Bonus", callback_data="bonus"),
+                    InlineKeyboardButton("Hack", callback_data="bonus"),
                     InlineKeyboardButton("Support", callback_data="support")
                 ]]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -2646,7 +2609,7 @@ def handle_wallet(update: Update, context: CallbackContext):
                 InlineKeyboardButton("Gift Codes", callback_data="gift_codes")
             ],
                         [
-                            InlineKeyboardButton("Bonus",
+                            InlineKeyboardButton("Hack",
                                                  callback_data="bonus"),
                             InlineKeyboardButton("Support",
                                                  callback_data="support")
