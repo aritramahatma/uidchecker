@@ -1938,22 +1938,22 @@ def handle_mines_get_prediction(update: Update, context: CallbackContext):
         context.bot_data['waiting_for_mines_digits'] = set()
     context.bot_data['waiting_for_mines_digits'].add(update.effective_user.id)
 
-    # Edit existing message with instructions
+    # Send new text message with instructions
     try:
-        query.edit_message_media(media=InputMediaPhoto(
-            media="https://files.catbox.moe/jpxz04.jpg",
-            caption=mines_instruction_msg,
-            parse_mode='Markdown'),
-                                 reply_markup=reply_markup)
+        query.message.reply_text(text=mines_instruction_msg,
+                                parse_mode='Markdown',
+                                reply_markup=reply_markup)
+        # Answer the callback query
+        query.answer()
     except Exception as e:
-        logger.error(f"Error editing message in mines get prediction: {e}")
-        # Fallback to editing just caption if photo edit fails
+        logger.error(f"Error sending mines instruction message: {e}")
+        # Fallback to editing existing message
         try:
-            query.edit_message_caption(caption=mines_instruction_msg,
-                                       parse_mode='Markdown',
-                                       reply_markup=reply_markup)
+            query.edit_message_text(text=mines_instruction_msg,
+                                   parse_mode='Markdown',
+                                   reply_markup=reply_markup)
         except Exception as e2:
-            logger.error(f"Error editing caption in mines get prediction: {e2}")
+            logger.error(f"Error editing message in mines get prediction: {e2}")
 
 
 def generate_mines_prediction(digits):
@@ -4599,13 +4599,19 @@ def handle_all(update: Update, context: CallbackContext):
                     ]]
                     reply_markup = InlineKeyboardMarkup(keyboard)
 
-                    # Send text message with prediction
+                    # Send photo message with prediction
                     try:
+                        update.message.reply_photo(
+                            photo="https://files.catbox.moe/hewqgj.jpg",
+                            caption=mines_prediction_msg,
+                            parse_mode='Markdown',
+                            reply_markup=reply_markup)
+                    except Exception as e:
+                        logger.error(f"Error sending mines prediction photo: {e}")
+                        # Fallback to text message if photo fails
                         update.message.reply_text(mines_prediction_msg,
                                                   parse_mode='Markdown',
                                                   reply_markup=reply_markup)
-                    except Exception as e:
-                        logger.error(f"Error sending mines prediction message: {e}")
                     return
                 else:
                     # Invalid input for mines prediction
