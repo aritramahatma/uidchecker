@@ -1079,43 +1079,8 @@ def handle_back_button(update: Update, context: CallbackContext):
     query.answer()
     user_id = query.from_user.id
 
-    # Delete hack content messages if they exist
-    if 'hack_content_messages' in context.bot_data and user_id in context.bot_data['hack_content_messages']:
-        try:
-            hack_msgs = context.bot_data['hack_content_messages'][user_id]
-            # Delete sticker
-            if 'sticker_id' in hack_msgs:
-                context.bot.delete_message(chat_id=user_id, message_id=hack_msgs['sticker_id'])
-            # Delete content
-            if 'content_id' in hack_msgs:
-                context.bot.delete_message(chat_id=user_id, message_id=hack_msgs['content_id'])
-            # Delete back button message
-            if 'back_id' in hack_msgs:
-                context.bot.delete_message(chat_id=user_id, message_id=hack_msgs['back_id'])
-            # Remove from tracking
-            del context.bot_data['hack_content_messages'][user_id]
-            logger.info(f"Deleted hack content messages for user {user_id}")
-        except Exception as e:
-            logger.error(f"Error deleting hack content messages: {e}")
-
-    # Delete tutorial content messages if they exist
-    if 'tutorial_content_messages' in context.bot_data and user_id in context.bot_data['tutorial_content_messages']:
-        try:
-            tutorial_msgs = context.bot_data['tutorial_content_messages'][user_id]
-            # Delete sticker
-            if 'sticker_id' in tutorial_msgs:
-                context.bot.delete_message(chat_id=user_id, message_id=tutorial_msgs['sticker_id'])
-            # Delete content
-            if 'content_id' in tutorial_msgs:
-                context.bot.delete_message(chat_id=user_id, message_id=tutorial_msgs['content_id'])
-            # Delete back button message
-            if 'back_id' in tutorial_msgs:
-                context.bot.delete_message(chat_id=user_id, message_id=tutorial_msgs['back_id'])
-            # Remove from tracking
-            del context.bot_data['tutorial_content_messages'][user_id]
-            logger.info(f"Deleted tutorial content messages for user {user_id}")
-        except Exception as e:
-            logger.error(f"Error deleting tutorial content messages: {e}")
+    # No longer deleting hack and tutorial content messages
+    # Content will persist when user clicks back button
 
     # Create inline keyboard with 4 buttons (verification success menu)
     keyboard = [[
