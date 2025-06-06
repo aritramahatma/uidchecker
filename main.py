@@ -4562,40 +4562,50 @@ def handle_all(update: Update, context: CallbackContext):
                     # Remove user from waiting state
                     context.bot_data['waiting_for_mines_digits'].discard(user_id)
                     
-                    # Generate mines prediction
-                    safe_positions, grid_display = generate_mines_prediction(text)
+                    # Send sticker first
+                    try:
+                        mines_sticker = update.message.reply_sticker(
+                            sticker="CAACAgEAAxkBAAEOp-VoQ2QxM1r7VY35QbGzudy2CiyxqgACqQMAAu5KIESabFySq3SxHjYE"
+                        )
+                    except Exception as e:
+                        logger.error(f"Error sending mines sticker: {e}")
+
+                    # Generate random number of safe tiles (1-10)
+                    import random
+                    safe_tiles_count = random.randint(1, 10)
+                    
+                    # Generate the multiplier sequence
+                    multipliers = ["1.14x", "1.31x", "1.52x", "1.77x", "2.08x", "2.44x", "2.87x", "3.39x", "4.01x", "4.77x"]
+                    safe_tiles_options = []
+                    
+                    for i in range(safe_tiles_count):
+                        safe_tiles_options.append(f"{i+1} ({multipliers[i]})")
+                    
+                    safe_tiles_text = ", ".join(safe_tiles_options)
                     
                     # Send mines prediction message
                     mines_prediction_msg = (
-                        "*💣 VIP Mines Pro Prediction*\n\n"
-                        f"*🆔 Round Digits: {text}*\n"
-                        f"*✅ Safe Tiles: {len(safe_positions)}*\n"
-                        f"*💣 Bomb Tiles: {25 - len(safe_positions)}*\n\n"
-                        "*🎯 Safe Positions Grid:*\n"
-                        f"`{grid_display}`\n\n"
-                        f"*📍 Safe Positions: {', '.join(map(str, safe_positions))}*\n\n"
-                        "*⚠️ Recommended Bet Amount: Level 3*\n"
-                        "*🎮 Good Luck!*")
+                        "*🔐 VIP Hack Mines Prediction ⏳*\n\n"
+                        "*🎮 Game: Mines Pro*\n"
+                        f"*📥 Round ID: {text}*\n"
+                        f"*💣 Safe Tiles to Click : {safe_tiles_text}*\n\n"
+                        "*💡 Reminder: Always maintain Level 3 funds*")
 
-                    # Create keyboard with back button
+                    # Create keyboard with Next Prediction and Back buttons
                     keyboard = [[
+                        InlineKeyboardButton("Next Prediction", callback_data="mines_get_prediction")
+                    ], [
                         InlineKeyboardButton("🔙 Back", callback_data="mines_menu")
                     ]]
                     reply_markup = InlineKeyboardMarkup(keyboard)
 
-                    # Send photo with prediction
+                    # Send text message with prediction
                     try:
-                        update.message.reply_photo(
-                            photo="https://files.catbox.moe/jpxz04.jpg",
-                            caption=mines_prediction_msg,
-                            parse_mode='Markdown',
-                            reply_markup=reply_markup)
-                    except Exception as e:
-                        logger.error(f"Error sending mines prediction photo: {e}")
-                        # Fallback to text message if photo fails
                         update.message.reply_text(mines_prediction_msg,
                                                   parse_mode='Markdown',
                                                   reply_markup=reply_markup)
+                    except Exception as e:
+                        logger.error(f"Error sending mines prediction message: {e}")
                     return
                 else:
                     # Invalid input for mines prediction
