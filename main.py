@@ -1938,11 +1938,16 @@ def handle_mines_get_prediction(update: Update, context: CallbackContext):
         context.bot_data['waiting_for_mines_digits'] = set()
     context.bot_data['waiting_for_mines_digits'].add(update.effective_user.id)
 
-    # Send new text message with instructions
+    # Send new text message with instructions and store message ID for deletion
     try:
-        query.message.reply_text(text=mines_instruction_msg,
-                                parse_mode='Markdown',
-                                reply_markup=reply_markup)
+        instruction_message = query.message.reply_text(text=mines_instruction_msg,
+                                                      parse_mode='Markdown',
+                                                      reply_markup=reply_markup)
+        # Store the instruction message ID for later deletion
+        if 'mines_instruction_messages' not in context.bot_data:
+            context.bot_data['mines_instruction_messages'] = {}
+        context.bot_data['mines_instruction_messages'][update.effective_user.id] = instruction_message.message_id
+        
         # Answer the callback query
         query.answer()
     except Exception as e:
@@ -4561,6 +4566,18 @@ def handle_all(update: Update, context: CallbackContext):
                 if re.match(r'^\d{3}$', text):
                     # Remove user from waiting state
                     context.bot_data['waiting_for_mines_digits'].discard(user_id)
+                    
+                    # Delete the instruction message if it exists
+                    if ('mines_instruction_messages' in context.bot_data and 
+                        user_id in context.bot_data['mines_instruction_messages']):
+                        try:
+                            context.bot.delete_message(
+                                chat_id=update.effective_chat.id,
+                                message_id=context.bot_data['mines_instruction_messages'][user_id]
+                            )
+                            del context.bot_data['mines_instruction_messages'][user_id]
+                        except Exception as e:
+                            logger.error(f"Error deleting mines instruction message: {e}")
                     
                     # Send sticker first
                     try:
