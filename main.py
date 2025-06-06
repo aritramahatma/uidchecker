@@ -519,7 +519,18 @@ def handle_hack_button(update: Update, context: CallbackContext):
                 'content_id': copied_msg.message_id
             }
             
-            # No back button needed for hack content
+            # Send back button as a separate message
+            keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="bonus")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            back_msg = query.message.reply_text(
+                "*🔙 Use the button below to go back*",
+                parse_mode='Markdown',
+                reply_markup=reply_markup
+            )
+            
+            # Store back button message ID too
+            context.bot_data['hack_content_messages'][user_id]['back_id'] = back_msg.message_id
             
         except Exception as e:
             logger.error(f"Error copying hack message: {e}")
