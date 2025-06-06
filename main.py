@@ -1274,6 +1274,12 @@ def handle_auto_prediction_button(update: Update, context: CallbackContext):
             context.bot_data['user_prediction_messages'] = {}
         if user_id not in context.bot_data['user_prediction_messages']:
             context.bot_data['user_prediction_messages'][user_id] = {}
+        
+        # Initialize user's sticker tracking if not exists
+        if 'user_prediction_stickers' not in context.bot_data:
+            context.bot_data['user_prediction_stickers'] = {}
+        if user_id not in context.bot_data['user_prediction_stickers']:
+            context.bot_data['user_prediction_stickers'][user_id] = {}
 
         # Send sticker first for auto prediction analysis
         try:
@@ -1281,6 +1287,11 @@ def handle_auto_prediction_button(update: Update, context: CallbackContext):
                 sticker=
                 "CAACAgUAAxkBAAEOokJoP6kNi3LIIAtNP6bOG-oNDN71qwACYQADO0qzKcFoBwUrNwVWNgQ"
             )
+            
+            # Store the sticker message ID for this period
+            period = generate_auto_prediction(context)[0]  # Get period first
+            context.bot_data['user_prediction_stickers'][user_id][period] = analysis_sticker.message_id
+            
         except Exception as e:
             logger.error(f"Error sending sticker: {e}")
 
@@ -1352,6 +1363,12 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
             context.bot_data['user_prediction_messages'] = {}
         if user_id not in context.bot_data['user_prediction_messages']:
             context.bot_data['user_prediction_messages'][user_id] = {}
+            
+        # Initialize user's sticker tracking if not exists
+        if 'user_prediction_stickers' not in context.bot_data:
+            context.bot_data['user_prediction_stickers'] = {}
+        if user_id not in context.bot_data['user_prediction_stickers']:
+            context.bot_data['user_prediction_stickers'][user_id] = {}
 
         # Get current real period number
         current_period = get_current_period_number()
@@ -1369,6 +1386,9 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
                     sticker=
                     "CAACAgUAAxkBAAEOokJoP6kNi3LIIAtNP6bOG-oNDN71qwACYQADO0qzKcFoBwUrNwVWNgQ"
                 )
+                
+                # Store new period sticker - don't delete stickers from different periods
+                context.bot_data['user_prediction_stickers'][user_id][current_period] = analysis_sticker.message_id
                 
                 # Schedule sticker deletion after 2 minutes
                 import threading
@@ -1462,12 +1482,25 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
                 except Exception as e:
                     logger.error(f"Error deleting duplicate prediction message: {e}")
 
+            # Delete previous sticker for this same period (if exists)
+            if period in context.bot_data['user_prediction_stickers'][user_id]:
+                try:
+                    previous_sticker_id = context.bot_data['user_prediction_stickers'][user_id][period]
+                    context.bot.delete_message(chat_id=user_id, message_id=previous_sticker_id)
+                    logger.info(f"Deleted duplicate prediction sticker for period {period} from user {user_id}")
+                except Exception as e:
+                    logger.error(f"Error deleting duplicate prediction sticker: {e}")
+
             # Send sticker first for auto prediction analysis
             try:
                 analysis_sticker = query.message.reply_sticker(
                     sticker=
                     "CAACAgUAAxkBAAEOokJoP6kNi3LIIAtNP6bOG-oNDN71qwACYQADO0qzKcFoBwUrNwVWNgQ"
                 )
+                
+                # Store new sticker ID for this period (replacing old one)
+                context.bot_data['user_prediction_stickers'][user_id][period] = analysis_sticker.message_id
+                
             except Exception as e:
                 logger.error(f"Error sending sticker: {e}")
 
