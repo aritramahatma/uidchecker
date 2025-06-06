@@ -12,6 +12,10 @@ from io import BytesIO
 from pymongo import MongoClient
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, ConversationHandler, CallbackQueryHandler
+from utils.error_handler import (
+    handle_telegram_errors, handle_database_errors, handle_api_errors,
+    global_error_handler, safe_reply, safe_edit_message, safe_send_photo
+)
 
 # CONFIG - Using environment variables with fallbacks
 BOT_TOKEN = os.getenv('BOT_TOKEN',
@@ -1213,6 +1217,8 @@ def handle_back_button(update: Update, context: CallbackContext):
 # BOT COMMAND HANDLERS
 
 
+@handle_telegram_errors
+@handle_database_errors
 def start(update: Update, context: CallbackContext):
     """
     Welcome message for new users with image and buttons
@@ -1273,18 +1279,12 @@ def start(update: Update, context: CallbackContext):
                 ]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # Send photo with caption and buttons
-    try:
-        update.message.reply_photo(photo="https://files.catbox.moe/7zg38j.jpg",
-                                   caption=msg,
-                                   parse_mode='Markdown',
-                                   reply_markup=reply_markup)
-    except Exception as e:
-        logger.error(f"Error sending photo in start command: {e}")
-        # Fallback to text message if photo fails
-        update.message.reply_text(msg,
-                                  parse_mode='Markdown',
-                                  reply_markup=reply_markup)
+    # Send photo with caption and buttons using safe function
+    safe_send_photo(update, 
+                   photo="https://files.catbox.moe/7zg38j.jpg",
+                   caption=msg,
+                   parse_mode='Markdown',
+                   reply_markup=reply_markup)
 
 
 def handle_prediction_button(update: Update, context: CallbackContext):
@@ -5196,17 +5196,8 @@ def main():
         dp.add_handler(conv_handler)
         dp.add_handler(MessageHandler(Filters.all, handle_all))
 
-        # Error handler with conflict detection
-        def error_handler(update, context):
-            error_msg = str(context.error)
-            if "Conflict" in error_msg and "getUpdates" in error_msg:
-                logger.error(
-                    "Bot conflict detected - another instance may be running")
-                logger.error("Please stop all other bot instances and restart")
-            else:
-                logger.error(f"Update {update} caused error {context.error}")
-
-        dp.add_error_handler(error_handler)
+        # Add global error handler
+        dp.add_error_handler(global_error_handler)
 
         # Start bot
         logger.info("Starting UID Verification Bot...")

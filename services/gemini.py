@@ -1,4 +1,3 @@
-
 """
 Gemini AI service for OCR and image analysis
 """
@@ -12,42 +11,115 @@ logger = logging.getLogger(__name__)
 
 
 def gemini_ocr(image_bytes):
-    """Process image using Gemini OCR to extract text"""
-    try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
-        img_base64 = base64.b64encode(image_bytes).decode('utf-8')
+    """
+    Process image using Gemini OCR to extract text with comprehensive error handling
+    """
+    max_retries = 2
+    retry_count = 0
 
-        data = {
-            "contents": [{
-                "parts": [{
-                    "text":
-                    "Extract all text from this image, especially focusing on UIDs and balance amounts:"
-                }, {
-                    "inline_data": {
-                        "mime_type": "image/jpeg",
-                        "data": img_base64
-                    }
+    while retry_count < max_retries:
+        try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+            img_base64 = base64.b64encode(image_bytes).decode('utf-8')
+
+            data = {
+                "contents": [{
+                    "parts": [{
+                        "text":
+                        "Extract all text from this image, especially focusing on UIDs and balance amounts:"
+                    }, {
+                        "inline_data": {
+                            "mime_type": "image/jpeg",
+                            "data": img_base64
+                        }
+                    }]
                 }]
-            }]
-        }
+            }
 
-        response = requests.post(url, json=data, timeout=30)
+            response = requests.post(url, json=data, timeout=30)
 
-        if response.ok:
-            try:
-                result = response.json()
-                return result['candidates'][0]['content']['parts'][0]['text']
-            except (KeyError, IndexError) as e:
-                logger.error(f"Error parsing Gemini response: {e}")
-                return ''
-        else:
-            logger.error(
-                f"Gemini API error: {response.status_code} - {response.text}")
-            return ''
+            if response.status_code == 200:
+                try:
+                    result = response.json()
+                    text = result['candidates'][0]['content']['parts'][0]['text']
+                    return text if text else ''
+                except (KeyError, IndexError) as e:
+                    logger.error(f"Error parsing Gemini response: {e}")
+                    logger.error(f"Response content: {response.text}")
+                    return ''
+            elif response.status_code == 429:
+                # Rate limit exceeded
+                retry_count += 1
+                if retry_count < max_retries:
+                    logger.warning(f"Gemini API rate limited, retrying (attempt {retry_count}/{max_retries})")
+                    import time
+                    time.sleep(5)
+                    continue
+                else:
+                    logger.error("Gemini API rate limit exceeded after retries")
+                    raise APIQuotaError("Gemini API rate limit exceeded")
+            elif response.status_code in [500, 502, 503, 504]:
+                # Server errors - retry
+                retry_count += 1
+                if retry_count < max_retries:
+                    logger.warning(f"Gemini API server error {response.status_code}, retrying (attempt {retry_count}/{max_retries})")
+                    import time
+                    time.sleep(3)
+                    continue
+                else:
+                    logger.error(f"Gemini API server error after retries: {response.status_code}")
+                    raise APIServiceError("Gemini API service unavailable")
+            elif response.status_code == 401:
+                logger.error("Gemini API authentication failed")
+                raise APIAuthError("Gemini API authentication failed")
+            else:
+                logger.error(f"Gemini API error: {response.status_code} - {response.text}")
+                raise APIError(f"Gemini API error: {response.status_code}")
 
-    except Exception as e:
-        logger.error(f"Error in gemini_ocr: {e}")
-        return ''
+        except requests.exceptions.Timeout:
+            retry_count += 1
+            if retry_count < max_retries:
+                logger.warning(f"Gemini API timeout, retrying (attempt {retry_count}/{max_retries})")
+                continue
+            else:
+                logger.error("Gemini API timeout after retries")
+                raise APIServiceError("Gemini API timeout")
+        except requests.exceptions.ConnectionError as e:
+            retry_count += 1
+            if retry_count < max_retries:
+                logger.warning(f"Gemini API connection error, retrying (attempt {retry_count}/{max_retries}): {e}")
+                import time
+                time.sleep(2)
+                continue
+            else:
+                logger.error(f"Gemini API connection error after retries: {e}")
+                raise APIServiceError("Gemini API connection failed")
+        except Exception as e:
+            logger.error(f"Unexpected error in gemini_ocr: {e}")
+            raise APIError(f"Gemini OCR failed: {e}")
+
+    return ''
+
+
+# Import custom exceptions
+class APIError(Exception):
+    """Base exception for API-related errors"""
+    pass
+
+
+class APIServiceError(APIError):
+    """Raised when external API service is unavailable"""
+    pass
+
+
+class APIQuotaError(APIError):
+    """Raised when API quota is exceeded"""
+    pass
+
+
+class APIAuthError(APIError):
+    """Raised when API authentication fails"""
+    pass
 
 
 def detect_fake_screenshot(image_bytes):

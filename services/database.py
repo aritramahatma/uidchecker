@@ -28,56 +28,98 @@ except Exception as e:
 
 
 def ensure_db_connection():
-    """Ensure database connection is active"""
-    try:
-        client.admin.command('ping')
-        return True
-    except Exception as e:
-        logger.error(f"Database connection lost: {e}")
-        return False
+    """Ensure database connection is active with retry logic"""
+    max_retries = 3
+    retry_count = 0
+    
+    while retry_count < max_retries:
+        try:
+            client.admin.command('ping')
+            return True
+        except Exception as e:
+            retry_count += 1
+            logger.warning(f"Database ping failed (attempt {retry_count}/{max_retries}): {e}")
+            
+            if retry_count < max_retries:
+                import time
+                time.sleep(2 ** retry_count)  # Exponential backoff
+            else:
+                logger.error(f"Database connection failed after {max_retries} attempts: {e}")
+                return False
+    
+    return False
 
 
 def update_user_stats(user_id, action):
-    """Update user statistics in database"""
-    try:
-        # Get or create user stats document
-        user_doc = user_stats_col.find_one({'user_id': user_id})
+    """Update user statistics in database with comprehensive error handling"""
+    max_retries = 3
+    retry_count = 0
+    
+    while retry_count < max_retries:
+        try:
+            if not ensure_db_connection():
+                raise DatabaseConnectionError("Database connection unavailable")
+            
+            # Get or create user stats document
+            user_doc = user_stats_col.find_one({'user_id': user_id})
 
-        if not user_doc:
-            # New user - create document
-            user_stats_col.insert_one({
-                'user_id': user_id,
-                'first_seen': datetime.now(),
-                'last_seen': datetime.now(),
-                'is_blocked': False,
-                'actions': [action]
-            })
-
-            # Update global stats for new user
-            global_stats = user_stats_col.find_one({'_id': 'global_stats'})
-            if not global_stats:
+            if not user_doc:
+                # New user - create document
                 user_stats_col.insert_one({
-                    '_id': 'global_stats',
-                    'total_users': 1,
-                    'blocked_users': 0
+                    'user_id': user_id,
+                    'first_seen': datetime.now(),
+                    'last_seen': datetime.now(),
+                    'is_blocked': False,
+                    'actions': [action]
                 })
+
+                # Update global stats for new user
+                global_stats = user_stats_col.find_one({'_id': 'global_stats'})
+                if not global_stats:
+                    user_stats_col.insert_one({
+                        '_id': 'global_stats',
+                        'total_users': 1,
+                        'blocked_users': 0
+                    })
+                else:
+                    user_stats_col.update_one({'_id': 'global_stats'},
+                                              {'$inc': {
+                                                  'total_users': 1
+                                              }})
             else:
-                user_stats_col.update_one({'_id': 'global_stats'},
-                                          {'$inc': {
-                                              'total_users': 1
-                                          }})
-        else:
-            # Update existing user
-            user_stats_col.update_one({'user_id': user_id}, {
-                '$set': {
-                    'last_seen': datetime.now()
-                },
-                '$push': {
-                    'actions': action
-                }
-            })
-    except Exception as e:
-        logger.error(f"Error updating user stats: {e}")
+                # Update existing user
+                user_stats_col.update_one({'user_id': user_id}, {
+                    '$set': {
+                        'last_seen': datetime.now()
+                    },
+                    '$push': {
+                        'actions': action
+                    }
+                })
+            
+            # Success - break out of retry loop
+            break
+            
+        except Exception as e:
+            retry_count += 1
+            error_msg = str(e).lower()
+            
+            if any(keyword in error_msg for keyword in [
+                "connection", "timeout", "network", "unreachable"
+            ]) and retry_count < max_retries:
+                logger.warning(f"Database operation failed (attempt {retry_count}/{max_retries}), retrying: {e}")
+                import time
+                time.sleep(2 ** retry_count)  # Exponential backoff
+                continue
+            else:
+                logger.error(f"Error updating user stats after {retry_count} attempts: {e}")
+                break
+
+
+# Import custom exceptions
+class DatabaseConnectionError(Exception):
+    """Raised when database connection fails"""
+    pass
 
 
 def get_user_activity_stats():
