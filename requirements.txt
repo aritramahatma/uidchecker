@@ -3,3 +3,8 @@ python-telegram-bot==13.15
 pillow
 pymongo
 requests
+pillow
+pymongo
+python-telegram-bot==13.15
+requests
+telegram
