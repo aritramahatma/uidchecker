@@ -12,10 +12,10 @@ from io import BytesIO
 from pymongo import MongoClient
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, ConversationHandler, CallbackQueryHandler
-from utils.error_handler import (
-    handle_telegram_errors, handle_database_errors, handle_api_errors,
-    global_error_handler, safe_reply, safe_edit_message, safe_send_photo
-)
+from utils.error_handler import (handle_telegram_errors,
+                                 handle_database_errors, handle_api_errors,
+                                 global_error_handler, safe_reply,
+                                 safe_edit_message, safe_send_photo)
 
 # CONFIG - Using environment variables with fallbacks
 BOT_TOKEN = os.getenv('BOT_TOKEN',
@@ -504,17 +504,16 @@ def handle_hack_button(update: Update, context: CallbackContext):
     try:
         # Send new sticker first
         sticker_msg = query.message.reply_sticker(
-            sticker="CAACAgQAAxkBAAEOn6RoPTKiSte1vk8IStJRTBsfRYRdCwAC4xgAAoo2OVGWcfjhDFS9nTYE"
+            sticker=
+            "CAACAgQAAxkBAAEOn6RoPTKiSte1vk8IStJRTBsfRYRdCwAC4xgAAoo2OVGWcfjhDFS9nTYE"
         )
-        
+
         # Copy message from private channel (without forward tag)
         try:
-            copied_msg = context.bot.copy_message(
-                chat_id=user_id,
-                from_chat_id=-1002807971867,
-                message_id=3
-            )
-            
+            copied_msg = context.bot.copy_message(chat_id=user_id,
+                                                  from_chat_id=-1002807971867,
+                                                  message_id=3)
+
             # Store message IDs for deletion when back button is clicked
             if 'hack_content_messages' not in context.bot_data:
                 context.bot_data['hack_content_messages'] = {}
@@ -522,35 +521,39 @@ def handle_hack_button(update: Update, context: CallbackContext):
                 'sticker_id': sticker_msg.message_id,
                 'content_id': copied_msg.message_id
             }
-            
+
             # Send back button as a separate message
-            keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="bonus")]]
+            keyboard = [[
+                InlineKeyboardButton("🔙 Back", callback_data="bonus")
+            ]]
             reply_markup = InlineKeyboardMarkup(keyboard)
-            
+
             back_msg = query.message.reply_text(
                 "*🔙 Use the button below to go back*",
                 parse_mode='Markdown',
-                reply_markup=reply_markup
-            )
-            
+                reply_markup=reply_markup)
+
             # Store back button message ID too
-            context.bot_data['hack_content_messages'][user_id]['back_id'] = back_msg.message_id
-            
+            context.bot_data['hack_content_messages'][user_id][
+                'back_id'] = back_msg.message_id
+
         except Exception as e:
             logger.error(f"Error copying hack message: {e}")
             # Fallback message if copying fails
             hack_msg = ("*🔐 HACK FEATURE*\n\n"
-                       "*🚧 Coming Soon! 🚧*\n\n"
-                       "*We're preparing something amazing for you!*\n"
-                       "*Stay tuned for the ultimate hack experience.*")
+                        "*🚧 Coming Soon! 🚧*\n\n"
+                        "*We're preparing something amazing for you!*\n"
+                        "*Stay tuned for the ultimate hack experience.*")
 
-            keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="bonus")]]
+            keyboard = [[
+                InlineKeyboardButton("🔙 Back", callback_data="bonus")
+            ]]
             reply_markup = InlineKeyboardMarkup(keyboard)
-            
+
             fallback_msg = query.message.reply_text(hack_msg,
-                                   parse_mode='Markdown',
-                                   reply_markup=reply_markup)
-            
+                                                    parse_mode='Markdown',
+                                                    reply_markup=reply_markup)
+
             # Store fallback message IDs
             if 'hack_content_messages' not in context.bot_data:
                 context.bot_data['hack_content_messages'] = {}
@@ -558,7 +561,7 @@ def handle_hack_button(update: Update, context: CallbackContext):
                 'sticker_id': sticker_msg.message_id,
                 'content_id': fallback_msg.message_id
             }
-        
+
     except Exception as e:
         logger.error(f"Error in hack button handler: {e}")
         query.answer("❌ Error processing request. Please try again.")
@@ -575,17 +578,16 @@ def handle_tutorial_button(update: Update, context: CallbackContext):
     try:
         # Send tutorial sticker first (before tutorial content)
         tutorial_sticker_msg = query.message.reply_sticker(
-            sticker="CAACAgEAAxkBAAEOpqFoQqwdTg5-JT1Eyz6nLYyN2T7sCwACFQMAAv5NoUaoZTouVeYQODYE"
+            sticker=
+            "CAACAgEAAxkBAAEOpqFoQqwdTg5-JT1Eyz6nLYyN2T7sCwACFQMAAv5NoUaoZTouVeYQODYE"
         )
-        
+
         # Copy message from private channel (without forward tag)
         try:
-            copied_msg = context.bot.copy_message(
-                chat_id=user_id,
-                from_chat_id=-1002807971867,
-                message_id=4
-            )
-            
+            copied_msg = context.bot.copy_message(chat_id=user_id,
+                                                  from_chat_id=-1002807971867,
+                                                  message_id=4)
+
             # Store message IDs for deletion when back button is clicked
             if 'tutorial_content_messages' not in context.bot_data:
                 context.bot_data['tutorial_content_messages'] = {}
@@ -593,35 +595,40 @@ def handle_tutorial_button(update: Update, context: CallbackContext):
                 'sticker_id': tutorial_sticker_msg.message_id,
                 'content_id': copied_msg.message_id
             }
-            
+
             # Send back button as a separate message
-            keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="bonus")]]
+            keyboard = [[
+                InlineKeyboardButton("🔙 Back", callback_data="bonus")
+            ]]
             reply_markup = InlineKeyboardMarkup(keyboard)
-            
+
             back_msg = query.message.reply_text(
                 "*🔙 Use the button below to go back*",
                 parse_mode='Markdown',
-                reply_markup=reply_markup
-            )
-            
+                reply_markup=reply_markup)
+
             # Store back button message ID too
-            context.bot_data['tutorial_content_messages'][user_id]['back_id'] = back_msg.message_id
-            
+            context.bot_data['tutorial_content_messages'][user_id][
+                'back_id'] = back_msg.message_id
+
         except Exception as e:
             logger.error(f"Error copying tutorial message: {e}")
             # Fallback message if copying fails
-            tutorial_msg = ("*📚 TUTORIAL SECTION*\n\n"
-                           "*🚧 Coming Soon! 🚧*\n\n"
-                           "*Detailed tutorials and guides will be available here!*\n"
-                           "*Learn everything you need to maximize your earnings.*")
+            tutorial_msg = (
+                "*📚 TUTORIAL SECTION*\n\n"
+                "*🚧 Coming Soon! 🚧*\n\n"
+                "*Detailed tutorials and guides will be available here!*\n"
+                "*Learn everything you need to maximize your earnings.*")
 
-            keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="bonus")]]
+            keyboard = [[
+                InlineKeyboardButton("🔙 Back", callback_data="bonus")
+            ]]
             reply_markup = InlineKeyboardMarkup(keyboard)
-            
+
             fallback_msg = query.message.reply_text(tutorial_msg,
-                                   parse_mode='Markdown',
-                                   reply_markup=reply_markup)
-            
+                                                    parse_mode='Markdown',
+                                                    reply_markup=reply_markup)
+
             # Store fallback message IDs
             if 'tutorial_content_messages' not in context.bot_data:
                 context.bot_data['tutorial_content_messages'] = {}
@@ -629,7 +636,7 @@ def handle_tutorial_button(update: Update, context: CallbackContext):
                 'sticker_id': tutorial_sticker_msg.message_id,
                 'content_id': fallback_msg.message_id
             }
-        
+
     except Exception as e:
         logger.error(f"Error in tutorial button handler: {e}")
         query.answer("❌ Error processing request. Please try again.")
@@ -1191,11 +1198,11 @@ def start(update: Update, context: CallbackContext):
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     # Send photo with caption and buttons using safe function
-    safe_send_photo(update, 
-                   photo="https://files.catbox.moe/7zg38j.jpg",
-                   caption=msg,
-                   parse_mode='Markdown',
-                   reply_markup=reply_markup)
+    safe_send_photo(update,
+                    photo="https://files.catbox.moe/7zg38j.jpg",
+                    caption=msg,
+                    parse_mode='Markdown',
+                    reply_markup=reply_markup)
 
 
 def handle_prediction_button(update: Update, context: CallbackContext):
@@ -1413,7 +1420,7 @@ def handle_auto_prediction_button(update: Update, context: CallbackContext):
             context.bot_data['user_prediction_messages'] = {}
         if user_id not in context.bot_data['user_prediction_messages']:
             context.bot_data['user_prediction_messages'][user_id] = {}
-        
+
         # Initialize user's sticker tracking if not exists
         if 'user_prediction_stickers' not in context.bot_data:
             context.bot_data['user_prediction_stickers'] = {}
@@ -1426,11 +1433,12 @@ def handle_auto_prediction_button(update: Update, context: CallbackContext):
                 sticker=
                 "CAACAgUAAxkBAAEOokJoP6kNi3LIIAtNP6bOG-oNDN71qwACYQADO0qzKcFoBwUrNwVWNgQ"
             )
-            
+
             # Store the sticker message ID for this period
             period = generate_auto_prediction(context)[0]  # Get period first
-            context.bot_data['user_prediction_stickers'][user_id][period] = analysis_sticker.message_id
-            
+            context.bot_data['user_prediction_stickers'][user_id][
+                period] = analysis_sticker.message_id
+
         except Exception as e:
             logger.error(f"Error sending sticker: {e}")
 
@@ -1481,7 +1489,8 @@ def handle_auto_prediction_button(update: Update, context: CallbackContext):
                                                     reply_markup=reply_markup)
 
         # Store the message ID for this period
-        context.bot_data['user_prediction_messages'][user_id][period] = sent_message.message_id
+        context.bot_data['user_prediction_messages'][user_id][
+            period] = sent_message.message_id
 
     except Exception as e:
         logger.error(f"Error in auto prediction: {e}")
@@ -1502,7 +1511,7 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
             context.bot_data['user_prediction_messages'] = {}
         if user_id not in context.bot_data['user_prediction_messages']:
             context.bot_data['user_prediction_messages'][user_id] = {}
-            
+
         # Initialize user's sticker tracking if not exists
         if 'user_prediction_stickers' not in context.bot_data:
             context.bot_data['user_prediction_stickers'] = {}
@@ -1518,17 +1527,18 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
 
         if is_new_period:
             # Period has changed - create new prediction (keep old periods)
-            
+
             # Send sticker first for new period analysis
             try:
                 analysis_sticker = query.message.reply_sticker(
                     sticker=
                     "CAACAgUAAxkBAAEOokJoP6kNi3LIIAtNP6bOG-oNDN71qwACYQADO0qzKcFoBwUrNwVWNgQ"
                 )
-                
+
                 # Store new period sticker - don't delete stickers from different periods
-                context.bot_data['user_prediction_stickers'][user_id][current_period] = analysis_sticker.message_id
-                
+                context.bot_data['user_prediction_stickers'][user_id][
+                    current_period] = analysis_sticker.message_id
+
                 # Schedule sticker deletion after 2 minutes
                 import threading
 
@@ -1537,21 +1547,24 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
                         import time
                         time.sleep(120)  # Wait 2 minutes (120 seconds)
                         context.bot.delete_message(
-                            chat_id=user_id, message_id=analysis_sticker.message_id)
+                            chat_id=user_id,
+                            message_id=analysis_sticker.message_id)
                         logger.info(
                             f"Analysis sticker deleted after 2 minutes for user {user_id}"
                         )
                     except Exception as e:
-                        logger.error(f"Error deleting sticker after delay: {e}")
+                        logger.error(
+                            f"Error deleting sticker after delay: {e}")
 
                 # Start the deletion timer in a separate thread
-                deletion_thread = threading.Thread(target=delete_sticker_after_delay)
+                deletion_thread = threading.Thread(
+                    target=delete_sticker_after_delay)
                 deletion_thread.daemon = True  # Thread will exit when main program exits
                 deletion_thread.start()
-                
+
             except Exception as e:
                 logger.error(f"Error sending sticker for new period: {e}")
-            
+
             # Generate new prediction for new period
             period, purchase_type, color, selected_numbers = generate_auto_prediction(
                 context)
@@ -1599,7 +1612,8 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
                     reply_markup=reply_markup)
 
             # Store new period message - don't delete messages from different periods
-            context.bot_data['user_prediction_messages'][user_id][period] = sent_message.message_id
+            context.bot_data['user_prediction_messages'][user_id][
+                period] = sent_message.message_id
 
             # Store current displayed period
             context.bot_data['displayed_period'] = period
@@ -1611,24 +1625,34 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
         else:
             # Same period - delete previous prediction for this period and create new one
             period = current_period
-            
+
             # Delete previous message for this same period (if exists)
             if period in context.bot_data['user_prediction_messages'][user_id]:
                 try:
-                    previous_msg_id = context.bot_data['user_prediction_messages'][user_id][period]
-                    context.bot.delete_message(chat_id=user_id, message_id=previous_msg_id)
-                    logger.info(f"Deleted duplicate prediction message for period {period} from user {user_id}")
+                    previous_msg_id = context.bot_data[
+                        'user_prediction_messages'][user_id][period]
+                    context.bot.delete_message(chat_id=user_id,
+                                               message_id=previous_msg_id)
+                    logger.info(
+                        f"Deleted duplicate prediction message for period {period} from user {user_id}"
+                    )
                 except Exception as e:
-                    logger.error(f"Error deleting duplicate prediction message: {e}")
+                    logger.error(
+                        f"Error deleting duplicate prediction message: {e}")
 
             # Delete previous sticker for this same period (if exists)
             if period in context.bot_data['user_prediction_stickers'][user_id]:
                 try:
-                    previous_sticker_id = context.bot_data['user_prediction_stickers'][user_id][period]
-                    context.bot.delete_message(chat_id=user_id, message_id=previous_sticker_id)
-                    logger.info(f"Deleted duplicate prediction sticker for period {period} from user {user_id}")
+                    previous_sticker_id = context.bot_data[
+                        'user_prediction_stickers'][user_id][period]
+                    context.bot.delete_message(chat_id=user_id,
+                                               message_id=previous_sticker_id)
+                    logger.info(
+                        f"Deleted duplicate prediction sticker for period {period} from user {user_id}"
+                    )
                 except Exception as e:
-                    logger.error(f"Error deleting duplicate prediction sticker: {e}")
+                    logger.error(
+                        f"Error deleting duplicate prediction sticker: {e}")
 
             # Send sticker first for auto prediction analysis
             try:
@@ -1636,10 +1660,11 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
                     sticker=
                     "CAACAgUAAxkBAAEOokJoP6kNi3LIIAtNP6bOG-oNDN71qwACYQADO0qzKcFoBwUrNwVWNgQ"
                 )
-                
+
                 # Store new sticker ID for this period (replacing old one)
-                context.bot_data['user_prediction_stickers'][user_id][period] = analysis_sticker.message_id
-                
+                context.bot_data['user_prediction_stickers'][user_id][
+                    period] = analysis_sticker.message_id
+
             except Exception as e:
                 logger.error(f"Error sending sticker: {e}")
 
@@ -1682,10 +1707,11 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
                     caption=auto_prediction_msg,
                     parse_mode='Markdown',
                     reply_markup=reply_markup)
-                
+
                 # Store new message ID for this period (replacing old one)
-                context.bot_data['user_prediction_messages'][user_id][period] = sent_message.message_id
-                    
+                context.bot_data['user_prediction_messages'][user_id][
+                    period] = sent_message.message_id
+
             except Exception as e:
                 logger.error(f"Error sending new auto prediction photo: {e}")
                 # Fallback to text message if photo fails
@@ -1694,12 +1720,14 @@ def handle_next_auto_prediction(update: Update, context: CallbackContext):
                         auto_prediction_msg,
                         parse_mode='Markdown',
                         reply_markup=reply_markup)
-                    
+
                     # Store new message ID for this period (replacing old one)
-                    context.bot_data['user_prediction_messages'][user_id][period] = sent_message.message_id
-                        
+                    context.bot_data['user_prediction_messages'][user_id][
+                        period] = sent_message.message_id
+
                 except Exception as e2:
-                    logger.error(f"Error sending new auto prediction text: {e2}")
+                    logger.error(
+                        f"Error sending new auto prediction text: {e2}")
 
             # Answer callback with same result message
             query.answer("🔄 Same period - updated prediction message",
@@ -1858,7 +1886,7 @@ def aviator_menu_handler(update: Update, context: CallbackContext):
     # Edit existing message with aviator image and content
     try:
         query.edit_message_media(media=InputMediaPhoto(
-            media="https://files.catbox.moe/etovfv.webp",
+            media="https://files.catbox.moe/h751el.png",
             caption=aviator_menu_msg,
             parse_mode='Markdown'),
                                  reply_markup=reply_markup)
@@ -1881,19 +1909,17 @@ def mines_menu_handler(update: Update, context: CallbackContext):
     query.answer()
 
     # Mines Pro VIP message
-    mines_menu_msg = (
-        "*💣 Mines Pro VIP Predictions*\n\n"
-        "*⚡️ AI-Powered Safe Tile Predictions*\n"
-        "*🎳 Advanced Pattern Analysis*\n"
-        "*💎 Premium Mines Strategies*\n\n"
-        "*⚠️ Recommended Bet Amount: Level 3*")
+    mines_menu_msg = ("*💣 Mines Pro VIP Predictions*\n\n"
+                      "*⚡️ AI-Powered Safe Tile Predictions*\n"
+                      "*🎳 Advanced Pattern Analysis*\n"
+                      "*💎 Premium Mines Strategies*\n\n"
+                      "*⚠️ Recommended Bet Amount: Level 3*")
 
     # Create keyboard with Get Prediction and Back buttons
     keyboard = [[
-        InlineKeyboardButton("🎯 Get Prediction", callback_data="mines_get_prediction")
-    ], [
-        InlineKeyboardButton("🔙 Back", callback_data="prediction_menu")
-    ]]
+        InlineKeyboardButton("🎯 Get Prediction",
+                             callback_data="mines_get_prediction")
+    ], [InlineKeyboardButton("🔙 Back", callback_data="prediction_menu")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     # Edit existing message with mines image and content
@@ -1922,15 +1948,12 @@ def handle_mines_get_prediction(update: Update, context: CallbackContext):
     query.answer()
 
     # Instructions message for mines prediction
-    mines_instruction_msg = (
-        "*💣 Drop The Last 3 Digits Of The Round ID*\n"
-        "*🎯 Claim Your VIP Mines Tip – Instantly!*\n\n"
-        "*⚙️ Example: 2387554 ➡️ Just Send 554*")
+    mines_instruction_msg = ("*💣 Drop The Last 3 Digits Of The Round ID*\n"
+                             "*🎯 Claim Your VIP Mines Tip – Instantly!*\n\n"
+                             "*⚙️ Example: 2387554 ➡️ Just Send 554*")
 
     # Create keyboard with back button
-    keyboard = [[
-        InlineKeyboardButton("🔙 Back", callback_data="mines_menu")
-    ]]
+    keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="mines_menu")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     # Mark user as waiting for mines digits
@@ -1940,14 +1963,16 @@ def handle_mines_get_prediction(update: Update, context: CallbackContext):
 
     # Send new text message with instructions and store message ID for deletion
     try:
-        instruction_message = query.message.reply_text(text=mines_instruction_msg,
-                                                      parse_mode='Markdown',
-                                                      reply_markup=reply_markup)
+        instruction_message = query.message.reply_text(
+            text=mines_instruction_msg,
+            parse_mode='Markdown',
+            reply_markup=reply_markup)
         # Store the instruction message ID for later deletion
         if 'mines_instruction_messages' not in context.bot_data:
             context.bot_data['mines_instruction_messages'] = {}
-        context.bot_data['mines_instruction_messages'][update.effective_user.id] = instruction_message.message_id
-        
+        context.bot_data['mines_instruction_messages'][
+            update.effective_user.id] = instruction_message.message_id
+
         # Answer the callback query
         query.answer()
     except Exception as e:
@@ -1955,13 +1980,15 @@ def handle_mines_get_prediction(update: Update, context: CallbackContext):
         # Fallback to editing existing message
         try:
             query.edit_message_text(text=mines_instruction_msg,
-                                   parse_mode='Markdown',
-                                   reply_markup=reply_markup)
+                                    parse_mode='Markdown',
+                                    reply_markup=reply_markup)
         except Exception as e2:
-            logger.error(f"Error editing message in mines get prediction: {e2}")
+            logger.error(
+                f"Error editing message in mines get prediction: {e2}")
 
 
-def handle_dragon_tiger_get_prediction(update: Update, context: CallbackContext):
+def handle_dragon_tiger_get_prediction(update: Update,
+                                       context: CallbackContext):
     """
     Handle the dragon tiger get prediction button - show instructions for 3-digit input
     """
@@ -1983,18 +2010,21 @@ def handle_dragon_tiger_get_prediction(update: Update, context: CallbackContext)
     # Mark user as waiting for dragon tiger digits
     if 'waiting_for_dragon_tiger_digits' not in context.bot_data:
         context.bot_data['waiting_for_dragon_tiger_digits'] = set()
-    context.bot_data['waiting_for_dragon_tiger_digits'].add(update.effective_user.id)
+    context.bot_data['waiting_for_dragon_tiger_digits'].add(
+        update.effective_user.id)
 
     # Send new text message with instructions and store message ID for deletion
     try:
-        instruction_message = query.message.reply_text(text=dragon_tiger_instruction_msg,
-                                                      parse_mode='Markdown',
-                                                      reply_markup=reply_markup)
+        instruction_message = query.message.reply_text(
+            text=dragon_tiger_instruction_msg,
+            parse_mode='Markdown',
+            reply_markup=reply_markup)
         # Store the instruction message ID for later deletion
         if 'dragon_tiger_instruction_messages' not in context.bot_data:
             context.bot_data['dragon_tiger_instruction_messages'] = {}
-        context.bot_data['dragon_tiger_instruction_messages'][update.effective_user.id] = instruction_message.message_id
-        
+        context.bot_data['dragon_tiger_instruction_messages'][
+            update.effective_user.id] = instruction_message.message_id
+
         # Answer the callback query
         query.answer()
     except Exception as e:
@@ -2002,10 +2032,11 @@ def handle_dragon_tiger_get_prediction(update: Update, context: CallbackContext)
         # Fallback to editing existing message
         try:
             query.edit_message_text(text=dragon_tiger_instruction_msg,
-                                   parse_mode='Markdown',
-                                   reply_markup=reply_markup)
+                                    parse_mode='Markdown',
+                                    reply_markup=reply_markup)
         except Exception as e2:
-            logger.error(f"Error editing message in dragon tiger get prediction: {e2}")
+            logger.error(
+                f"Error editing message in dragon tiger get prediction: {e2}")
 
 
 def generate_dragon_tiger_prediction(digits):
@@ -2014,14 +2045,14 @@ def generate_dragon_tiger_prediction(digits):
     Returns Dragon, Tiger, or Tie (with 10% chance for Tie)
     """
     import random
-    
+
     # Use digits as seed for consistent results
     seed_value = int(digits)
     random.seed(seed_value)
-    
+
     # Generate random number 1-100 for prediction
     prediction_value = random.randint(1, 100)
-    
+
     # 10% chance for Tie, 45% each for Dragon and Tiger
     if prediction_value <= 10:
         return "TIE"
@@ -2037,19 +2068,19 @@ def generate_mines_prediction(digits):
     Returns safe tiles positions in a 5x5 grid
     """
     import random
-    
+
     # Use digits as seed for consistent results
     seed_value = int(digits)
     random.seed(seed_value)
-    
+
     # Generate 8-12 safe tiles out of 25 total positions
     total_positions = 25
     safe_count = random.randint(8, 12)
-    
+
     # Generate safe positions (1-25)
     all_positions = list(range(1, 26))
     safe_positions = sorted(random.sample(all_positions, safe_count))
-    
+
     # Format positions into grid representation
     grid_display = []
     for i in range(5):
@@ -2061,7 +2092,7 @@ def generate_mines_prediction(digits):
             else:
                 row.append("💣")
         grid_display.append(" ".join(row))
-    
+
     return safe_positions, "\n".join(grid_display)
 
 
@@ -2073,25 +2104,23 @@ def dragon_tiger_menu_handler(update: Update, context: CallbackContext):
     query.answer()
 
     # Dragon Tiger VIP message
-    dragon_tiger_menu_msg = (
-        "*🐉 Dragon Tiger VIP Predictions*\n\n"
-        "*⚡️ AI-Powered Card Predictions*\n"
-        "*🎯 Advanced Pattern Analysis*\n"
-        "*🃏 Premium Dragon Tiger Strategies*\n\n"
-        "*⚠️ Recommended Bet Amount: Level 3*")
+    dragon_tiger_menu_msg = ("*🐉 Dragon Tiger VIP Predictions*\n\n"
+                             "*⚡️ AI-Powered Card Predictions*\n"
+                             "*🎯 Advanced Pattern Analysis*\n"
+                             "*🃏 Premium Dragon Tiger Strategies*\n\n"
+                             "*⚠️ Recommended Bet Amount: Level 3*")
 
     # Create keyboard with Get Prediction and Back buttons
     keyboard = [[
-        InlineKeyboardButton("🎯 Get Prediction", callback_data="dragon_tiger_get_prediction")
-    ], [
-        InlineKeyboardButton("🔙 Back", callback_data="prediction_menu")
-    ]]
+        InlineKeyboardButton("🎯 Get Prediction",
+                             callback_data="dragon_tiger_get_prediction")
+    ], [InlineKeyboardButton("🔙 Back", callback_data="prediction_menu")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     # Edit existing message with dragon tiger image and content
     try:
         query.edit_message_media(media=InputMediaPhoto(
-            media="https://files.catbox.moe/djdubx.webp",
+            media="https://files.catbox.moe/lkpgbi.png",
             caption=dragon_tiger_menu_msg,
             parse_mode='Markdown'),
                                  reply_markup=reply_markup)
@@ -2122,17 +2151,16 @@ def handle_aviator_signals_button(update: Update, context: CallbackContext):
     try:
         user_doc = user_stats_col.find_one({'user_id': user_id})
         if user_doc and user_doc.get('is_blocked', False):
-            query.edit_message_text("🚫 You have been blocked from using this bot.")
+            query.edit_message_text(
+                "🚫 You have been blocked from using this bot.")
             return
     except Exception as e:
         logger.error(f"Error checking blocked status in aviator signals: {e}")
 
     # Show instruction message for round ID input
-    instruction_msg = (
-        "*🚀 Drop The Last 3 Digits Of The Round ID*\n"
-        "*🎯 Claim Your VIP Aviator Tip – Instantly!*\n\n"
-        "*⚙️ Example: 6456123 ➡️ Just Send 123*"
-    )
+    instruction_msg = ("*🚀 Drop The Last 3 Digits Of The Round ID*\n"
+                       "*🎯 Claim Your VIP Aviator Tip – Instantly!*\n\n"
+                       "*⚙️ Example: 6456123 ➡️ Just Send 123*")
 
     # Create keyboard with back button only
     keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="aviator_menu")]]
@@ -2145,18 +2173,19 @@ def handle_aviator_signals_button(update: Update, context: CallbackContext):
 
     # Send instruction message and store its ID for later deletion
     try:
-        instruction_message = query.message.reply_text(instruction_msg,
-                                                      parse_mode='Markdown',
-                                                      reply_markup=reply_markup)
-        
+        instruction_message = query.message.reply_text(
+            instruction_msg, parse_mode='Markdown', reply_markup=reply_markup)
+
         # Store instruction message ID for deletion when prediction arrives
         if 'aviator_instruction_messages' not in context.bot_data:
             context.bot_data['aviator_instruction_messages'] = {}
-        context.bot_data['aviator_instruction_messages'][user_id] = instruction_message.message_id
-        
+        context.bot_data['aviator_instruction_messages'][
+            user_id] = instruction_message.message_id
+
     except Exception as e:
         logger.error(f"Error sending aviator signals instruction message: {e}")
-        query.answer("❌ Error showing instructions. Please try again.", show_alert=True)
+        query.answer("❌ Error showing instructions. Please try again.",
+                     show_alert=True)
 
 
 def generate_aviator_prediction(round_id):
@@ -2164,17 +2193,17 @@ def generate_aviator_prediction(round_id):
     Generate aviator prediction based on round ID with range 1.0x to 3.0x
     """
     import random
-    
+
     # Generate multipliers from 1.0x to 3.0x with 0.2x increments
     # 1.0x, 1.2x, 1.4x, 1.6x, 1.8x, 2.0x, 2.2x, 2.4x, 2.6x, 2.8x, 3.0x
     multipliers = []
     for i in range(11):  # 0 to 10
         multiplier = 1.0 + (i * 0.2)
         multipliers.append(f"{multiplier:.1f}x")
-    
+
     # Weighted probability distribution for more realistic aviator game
     rand = random.random()
-    
+
     if rand < 0.35:  # 35% - Lower multipliers (1.0x-1.8x)
         low_multipliers = ["1.0x", "1.2x", "1.4x", "1.6x", "1.8x"]
         return random.choice(low_multipliers)
@@ -2186,18 +2215,20 @@ def generate_aviator_prediction(round_id):
         return random.choice(high_multipliers)
 
 
-def handle_aviator_round_id_input(update: Update, context: CallbackContext, round_id):
+def handle_aviator_round_id_input(update: Update, context: CallbackContext,
+                                  round_id):
     """
     Handle user's round ID input and generate prediction
     """
     user_id = update.message.from_user.id
-    
+
     # Send sticker first before prediction
     try:
         aviator_sticker = update.message.reply_sticker(
-            sticker="CAACAgEAAxkBAAEOpMhoQZoGuaWt7uRSTMj_Iqlok-VO_QACWgIAAqaQ2USiYhZ1luPyBDYE"
+            sticker=
+            "CAACAgEAAxkBAAEOpMhoQZoGuaWt7uRSTMj_Iqlok-VO_QACWgIAAqaQ2USiYhZ1luPyBDYE"
         )
-        
+
         # Schedule sticker deletion after 2 minutes
         import threading
 
@@ -2211,78 +2242,81 @@ def handle_aviator_round_id_input(update: Update, context: CallbackContext, roun
                     f"Aviator sticker deleted after 2 minutes for user {user_id}"
                 )
             except Exception as e:
-                logger.error(f"Error deleting aviator sticker after delay: {e}")
+                logger.error(
+                    f"Error deleting aviator sticker after delay: {e}")
 
         # Start the deletion timer in a separate thread
-        deletion_thread = threading.Thread(target=delete_aviator_sticker_after_delay)
+        deletion_thread = threading.Thread(
+            target=delete_aviator_sticker_after_delay)
         deletion_thread.daemon = True  # Thread will exit when main program exits
         deletion_thread.start()
-        
+
     except Exception as e:
         logger.error(f"Error sending aviator sticker: {e}")
-    
+
     # Generate prediction based on round ID
     prediction_multiplier = generate_aviator_prediction(round_id)
-    
+
     # Create prediction message
-    prediction_msg = (
-        "*🔐 VIP Hack Aviator Prediction ⏳*\n\n"
-        "*🎮 Game: Aviator*\n"
-        f"*📥 Period Number: {round_id}*\n"
-        f"*💸 Cash Out Target: {prediction_multiplier}*\n\n"
-        "*💡 Reminder: Always maintain Level 3 funds*"
-    )
-    
+    prediction_msg = ("*🔐 VIP Hack Aviator Prediction ⏳*\n\n"
+                      "*🎮 Game: Aviator*\n"
+                      f"*📥 Period Number: {round_id}*\n"
+                      f"*💸 Cash Out Target: {prediction_multiplier}*\n\n"
+                      "*💡 Reminder: Always maintain Level 3 funds*")
+
     # Create keyboard with Next Prediction and Back buttons
     keyboard = [[
-        InlineKeyboardButton("Next Prediction", callback_data="aviator_signals")
+        InlineKeyboardButton("Next Prediction",
+                             callback_data="aviator_signals")
     ], [InlineKeyboardButton("🔙 Back", callback_data="aviator_menu")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    
+
     # Remove user from waiting state and clear error count
-    if 'aviator_waiting_round_id' in context.bot_data and user_id in context.bot_data['aviator_waiting_round_id']:
+    if 'aviator_waiting_round_id' in context.bot_data and user_id in context.bot_data[
+            'aviator_waiting_round_id']:
         context.bot_data['aviator_waiting_round_id'].remove(user_id)
-    
+
     # Clear error count on successful prediction
-    if 'aviator_error_count' in context.bot_data and user_id in context.bot_data['aviator_error_count']:
+    if 'aviator_error_count' in context.bot_data and user_id in context.bot_data[
+            'aviator_error_count']:
         context.bot_data['aviator_error_count'][user_id] = 0
-    
+
     # Delete the instruction message when user provides round ID
-    if 'aviator_instruction_messages' in context.bot_data and user_id in context.bot_data['aviator_instruction_messages']:
+    if 'aviator_instruction_messages' in context.bot_data and user_id in context.bot_data[
+            'aviator_instruction_messages']:
         try:
             context.bot.delete_message(
                 chat_id=user_id,
-                message_id=context.bot_data['aviator_instruction_messages'][user_id]
-            )
+                message_id=context.bot_data['aviator_instruction_messages']
+                [user_id])
             # Remove from tracking after deletion
             del context.bot_data['aviator_instruction_messages'][user_id]
         except Exception as e:
             logger.error(f"Error deleting aviator instruction message: {e}")
-    
+
     # Keep all prediction results - don't delete them
     if 'aviator_prediction_messages' not in context.bot_data:
         context.bot_data['aviator_prediction_messages'] = {}
-    
+
     # Send new prediction with image
     try:
         sent_message = update.message.reply_photo(
             photo="https://files.catbox.moe/nvrvwg.png",
             caption=prediction_msg,
             parse_mode='Markdown',
-            reply_markup=reply_markup
-        )
+            reply_markup=reply_markup)
         # Store new message ID
-        context.bot_data['aviator_prediction_messages'][user_id] = sent_message.message_id
+        context.bot_data['aviator_prediction_messages'][
+            user_id] = sent_message.message_id
     except Exception as e:
         logger.error(f"Error sending aviator prediction with photo: {e}")
         # Fallback to text message
         try:
-            sent_message = update.message.reply_text(
-                prediction_msg,
-                parse_mode='Markdown',
-                reply_markup=reply_markup
-            )
-            context.bot_data['aviator_prediction_messages'][user_id] = sent_message.message_id
+            sent_message = update.message.reply_text(prediction_msg,
+                                                     parse_mode='Markdown',
+                                                     reply_markup=reply_markup)
+            context.bot_data['aviator_prediction_messages'][
+                user_id] = sent_message.message_id
         except Exception as e2:
             logger.error(f"Error sending aviator prediction text: {e2}")
 
@@ -2571,7 +2605,8 @@ def check_uid(update, context, uid, user_id, username):
                                 "*🔴 Your UID is already submitted and waiting for admin approval.*\n"
                                 "*⏰ Please wait for verification. No need to submit again.*"
                             )
-                            update.message.reply_text(approval_message, parse_mode='Markdown')
+                            update.message.reply_text(approval_message,
+                                                      parse_mode='Markdown')
                             return
                     elif verified_by_tg_id and verified_by_tg_id != user_id and is_verified:
                         # Different user trying to verify UID that's already verified by another user
@@ -2597,16 +2632,19 @@ def check_uid(update, context, uid, user_id, username):
                         return
                     else:
                         # UID exists but no verified_by_tg_id field or not verified yet - update it
-                        uids_col.update_one({'uid': uid}, {
-                            '$set': {
-                                'user_id': user_id,
-                                'username': username,
-                                'verified': True,
-                                'verified_by': user_id,
-                                'verified_by_tg_id': user_id,  # Save Telegram ID
-                                'last_checked': update.message.date
-                            }
-                        })
+                        uids_col.update_one(
+                            {'uid': uid},
+                            {
+                                '$set': {
+                                    'user_id': user_id,
+                                    'username': username,
+                                    'verified': True,
+                                    'verified_by': user_id,
+                                    'verified_by_tg_id':
+                                    user_id,  # Save Telegram ID
+                                    'last_checked': update.message.date
+                                }
+                            })
                         update.message.reply_text(
                             f"*✅ UID {uid} Verified*\n"
                             f"*📸 Please Send Your Wallet Screenshot For Balance Verification.*\n"
@@ -2622,8 +2660,10 @@ def check_uid(update, context, uid, user_id, username):
                     # UID not found in database in restriction mode
                     # Check if user already submitted this UID before
                     existing_submission = uids_col.find_one({
-                        'uid': uid,
-                        'verified_by_tg_id': user_id
+                        'uid':
+                        uid,
+                        'verified_by_tg_id':
+                        user_id
                     })
 
                     if existing_submission:
@@ -2695,7 +2735,8 @@ def check_uid(update, context, uid, user_id, username):
                                 'username': username,
                                 'verified': True,
                                 'verified_by': user_id,
-                                'verified_by_tg_id': user_id,  # Save Telegram ID
+                                'verified_by_tg_id':
+                                user_id,  # Save Telegram ID
                                 'last_checked': update.message.date
                             }
                         },
@@ -2723,7 +2764,8 @@ def check_uid(update, context, uid, user_id, username):
                                 'verified': False,
                                 'fully_verified': False,
                                 'verified_by': user_id,
-                                'verified_by_tg_id': user_id,  # Save Telegram ID
+                                'verified_by_tg_id':
+                                user_id,  # Save Telegram ID
                                 'added_date': update.message.date
                             }
                         },
@@ -3168,7 +3210,8 @@ def handle_single_uid(update: Update, context: CallbackContext):
                     'fully_verified': False,
                     'admin_added': True,
                     'verified_by': ADMIN_UID,  # Admin added this UID
-                    'verified_by_tg_id': None,  # Admin added - no specific user TG ID
+                    'verified_by_tg_id':
+                    None,  # Admin added - no specific user TG ID
                     'added_date': update.message.date
                 }
             },
@@ -3244,7 +3287,8 @@ def handle_bulk_images(update: Update, context: CallbackContext):
                             'admin_added': True,
                             'bulk_added': True,
                             'verified_by': ADMIN_UID,  # Admin added this UID
-                            'verified_by_tg_id': None,  # Admin added - no specific user TG ID
+                            'verified_by_tg_id':
+                            None,  # Admin added - no specific user TG ID
                             'added_date': update.message.date
                         }
                     },
@@ -4245,15 +4289,16 @@ def cast_command(update: Update, context: CallbackContext):
     # Check if the command is a reply to another message
     if update.message.reply_to_message:
         replied_msg = update.message.reply_to_message
-        
+
         # Handle different message types
         if replied_msg.photo:
             content_type = "photo"
-            broadcast_content = replied_msg.photo[-1].file_id  # Get highest resolution
+            broadcast_content = replied_msg.photo[
+                -1].file_id  # Get highest resolution
             broadcast_message = replied_msg.caption or ""
             reply_markup = replied_msg.reply_markup
         elif replied_msg.video:
-            content_type = "video" 
+            content_type = "video"
             broadcast_content = replied_msg.video.file_id
             broadcast_message = replied_msg.caption or ""
             reply_markup = replied_msg.reply_markup
@@ -4370,13 +4415,14 @@ def cast_command(update: Update, context: CallbackContext):
                         sent_msg = context.bot.send_photo(
                             chat_id=user_id,
                             photo=broadcast_content,
-                            caption=broadcast_message if broadcast_message else None,
+                            caption=broadcast_message
+                            if broadcast_message else None,
                             parse_mode='Markdown',
-                            reply_markup=reply_markup
-                        )
+                            reply_markup=reply_markup)
                         sent = True
                     except Exception as e:
-                        if "blocked" in str(e).lower() or "chat not found" in str(e).lower():
+                        if "blocked" in str(e).lower(
+                        ) or "chat not found" in str(e).lower():
                             sent = None
                         else:
                             raise e
@@ -4386,13 +4432,14 @@ def cast_command(update: Update, context: CallbackContext):
                         sent_msg = context.bot.send_video(
                             chat_id=user_id,
                             video=broadcast_content,
-                            caption=broadcast_message if broadcast_message else None,
+                            caption=broadcast_message
+                            if broadcast_message else None,
                             parse_mode='Markdown',
-                            reply_markup=reply_markup
-                        )
+                            reply_markup=reply_markup)
                         sent = True
                     except Exception as e:
-                        if "blocked" in str(e).lower() or "chat not found" in str(e).lower():
+                        if "blocked" in str(e).lower(
+                        ) or "chat not found" in str(e).lower():
                             sent = None
                         else:
                             raise e
@@ -4402,13 +4449,14 @@ def cast_command(update: Update, context: CallbackContext):
                         sent_msg = context.bot.send_document(
                             chat_id=user_id,
                             document=broadcast_content,
-                            caption=broadcast_message if broadcast_message else None,
+                            caption=broadcast_message
+                            if broadcast_message else None,
                             parse_mode='Markdown',
-                            reply_markup=reply_markup
-                        )
+                            reply_markup=reply_markup)
                         sent = True
                     except Exception as e:
-                        if "blocked" in str(e).lower() or "chat not found" in str(e).lower():
+                        if "blocked" in str(e).lower(
+                        ) or "chat not found" in str(e).lower():
                             sent = None
                         else:
                             raise e
@@ -4418,11 +4466,11 @@ def cast_command(update: Update, context: CallbackContext):
                         sent_msg = context.bot.send_sticker(
                             chat_id=user_id,
                             sticker=broadcast_content,
-                            reply_markup=reply_markup
-                        )
+                            reply_markup=reply_markup)
                         sent = True
                     except Exception as e:
-                        if "blocked" in str(e).lower() or "chat not found" in str(e).lower():
+                        if "blocked" in str(e).lower(
+                        ) or "chat not found" in str(e).lower():
                             sent = None
                         else:
                             raise e
@@ -4432,13 +4480,14 @@ def cast_command(update: Update, context: CallbackContext):
                         sent_msg = context.bot.send_animation(
                             chat_id=user_id,
                             animation=broadcast_content,
-                            caption=broadcast_message if broadcast_message else None,
+                            caption=broadcast_message
+                            if broadcast_message else None,
                             parse_mode='Markdown',
-                            reply_markup=reply_markup
-                        )
+                            reply_markup=reply_markup)
                         sent = True
                     except Exception as e:
-                        if "blocked" in str(e).lower() or "chat not found" in str(e).lower():
+                        if "blocked" in str(e).lower(
+                        ) or "chat not found" in str(e).lower():
                             sent = None
                         else:
                             raise e
@@ -4448,13 +4497,14 @@ def cast_command(update: Update, context: CallbackContext):
                         sent_msg = context.bot.send_voice(
                             chat_id=user_id,
                             voice=broadcast_content,
-                            caption=broadcast_message if broadcast_message else None,
+                            caption=broadcast_message
+                            if broadcast_message else None,
                             parse_mode='Markdown',
-                            reply_markup=reply_markup
-                        )
+                            reply_markup=reply_markup)
                         sent = True
                     except Exception as e:
-                        if "blocked" in str(e).lower() or "chat not found" in str(e).lower():
+                        if "blocked" in str(e).lower(
+                        ) or "chat not found" in str(e).lower():
                             sent = None
                         else:
                             raise e
@@ -4464,23 +4514,24 @@ def cast_command(update: Update, context: CallbackContext):
                         sent_msg = context.bot.send_audio(
                             chat_id=user_id,
                             audio=broadcast_content,
-                            caption=broadcast_message if broadcast_message else None,
+                            caption=broadcast_message
+                            if broadcast_message else None,
                             parse_mode='Markdown',
-                            reply_markup=reply_markup
-                        )
+                            reply_markup=reply_markup)
                         sent = True
                     except Exception as e:
-                        if "blocked" in str(e).lower() or "chat not found" in str(e).lower():
+                        if "blocked" in str(e).lower(
+                        ) or "chat not found" in str(e).lower():
                             sent = None
                         else:
                             raise e
 
                 else:  # text message
                     sent = safe_send_message(context=context,
-                                           chat_id=user_id,
-                                           text=broadcast_message,
-                                           parse_mode='Markdown',
-                                           reply_markup=reply_markup)
+                                             chat_id=user_id,
+                                             text=broadcast_message,
+                                             parse_mode='Markdown',
+                                             reply_markup=reply_markup)
 
                 if sent is None:
                     # User has blocked the bot
@@ -4503,14 +4554,14 @@ def cast_command(update: Update, context: CallbackContext):
         content_description = {
             "text": "Text Message",
             "photo": "Photo with Caption",
-            "video": "Video with Caption", 
+            "video": "Video with Caption",
             "document": "Document/File",
             "sticker": "Sticker",
             "animation": "GIF/Animation",
             "voice": "Voice Message",
             "audio": "Audio File"
         }
-        
+
         summary_message = (
             f"📊 *Broadcast Summary*\n\n"
             f"📱 Total Users Found: {total_users}\n"
@@ -4520,7 +4571,8 @@ def cast_command(update: Update, context: CallbackContext):
             f"📈 Success Rate: {(sent_count/total_users*100) if total_users > 0 else 0:.1f}%\n\n"
             f"📤 Content Type: {content_description.get(content_type, 'Unknown')}\n"
             f"🔘 Inline Buttons: {'Yes' if reply_markup else 'No'}\n\n"
-            f"💬 Message/Caption:\n`{broadcast_message if broadcast_message else 'No text content'}`")
+            f"💬 Message/Caption:\n`{broadcast_message if broadcast_message else 'No text content'}`"
+        )
 
         update.message.reply_text(summary_message, parse_mode='Markdown')
 
@@ -4589,11 +4641,11 @@ def handle_all(update: Update, context: CallbackContext):
     try:
         if update.message.text:
             # Check if user is waiting for aviator round ID (3 digits)
-            if ('aviator_waiting_round_id' in context.bot_data
-                    and user_id in context.bot_data['aviator_waiting_round_id']):
-                
+            if ('aviator_waiting_round_id' in context.bot_data and user_id
+                    in context.bot_data['aviator_waiting_round_id']):
+
                 text = update.message.text.strip()
-                
+
                 # Check if it's exactly 3 digits
                 if re.match(r'^\d{3}$', text):
                     handle_aviator_round_id_input(update, context, text)
@@ -4602,24 +4654,26 @@ def handle_all(update: Update, context: CallbackContext):
                     # Invalid input for aviator - give specific error and clear the waiting state after 3 attempts
                     if 'aviator_error_count' not in context.bot_data:
                         context.bot_data['aviator_error_count'] = {}
-                    
+
                     if user_id not in context.bot_data['aviator_error_count']:
                         context.bot_data['aviator_error_count'][user_id] = 0
-                    
+
                     context.bot_data['aviator_error_count'][user_id] += 1
-                    
+
                     if context.bot_data['aviator_error_count'][user_id] >= 3:
                         # Clear waiting state after 3 failed attempts
-                        context.bot_data['aviator_waiting_round_id'].remove(user_id)
+                        context.bot_data['aviator_waiting_round_id'].remove(
+                            user_id)
                         context.bot_data['aviator_error_count'][user_id] = 0
-                        
+
                         update.message.reply_text(
                             "*❌ Aviator Signals Cancelled*\n"
                             "*🔄 Too many invalid attempts*\n\n"
                             "*🚀 Click 'Get Signals' again to restart*",
                             parse_mode='Markdown')
                     else:
-                        attempts_left = 3 - context.bot_data['aviator_error_count'][user_id]
+                        attempts_left = 3 - context.bot_data[
+                            'aviator_error_count'][user_id]
                         update.message.reply_text(
                             "*❌ Invalid Aviator Round ID*\n"
                             "*🎮 For Aviator Game: Send exactly 3 digits only*\n"
@@ -4628,34 +4682,40 @@ def handle_all(update: Update, context: CallbackContext):
                             f"*⏰ Attempts left: {attempts_left}*",
                             parse_mode='Markdown')
                     return
-            
+
             # Check if user is waiting for mines prediction digits (3 digits)
             elif ('waiting_for_mines_digits' in context.bot_data
-                    and user_id in context.bot_data['waiting_for_mines_digits']):
-                
+                  and user_id in context.bot_data['waiting_for_mines_digits']):
+
                 text = update.message.text.strip()
-                
+
                 # Check if it's exactly 3 digits
                 if re.match(r'^\d{3}$', text):
                     # Remove user from waiting state
-                    context.bot_data['waiting_for_mines_digits'].discard(user_id)
-                    
+                    context.bot_data['waiting_for_mines_digits'].discard(
+                        user_id)
+
                     # Delete the instruction message if it exists
-                    if ('mines_instruction_messages' in context.bot_data and 
-                        user_id in context.bot_data['mines_instruction_messages']):
+                    if ('mines_instruction_messages' in context.bot_data
+                            and user_id
+                            in context.bot_data['mines_instruction_messages']):
                         try:
                             context.bot.delete_message(
                                 chat_id=update.effective_chat.id,
-                                message_id=context.bot_data['mines_instruction_messages'][user_id]
-                            )
-                            del context.bot_data['mines_instruction_messages'][user_id]
+                                message_id=context.bot_data[
+                                    'mines_instruction_messages'][user_id])
+                            del context.bot_data['mines_instruction_messages'][
+                                user_id]
                         except Exception as e:
-                            logger.error(f"Error deleting mines instruction message: {e}")
-                    
+                            logger.error(
+                                f"Error deleting mines instruction message: {e}"
+                            )
+
                     # Send sticker first
                     try:
                         mines_sticker = update.message.reply_sticker(
-                            sticker="CAACAgEAAxkBAAEOp-VoQ2QxM1r7VY35QbGzudy2CiyxqgACqQMAAu5KIESabFySq3SxHjYE"
+                            sticker=
+                            "CAACAgEAAxkBAAEOp-VoQ2QxM1r7VY35QbGzudy2CiyxqgACqQMAAu5KIESabFySq3SxHjYE"
                         )
                     except Exception as e:
                         logger.error(f"Error sending mines sticker: {e}")
@@ -4663,16 +4723,19 @@ def handle_all(update: Update, context: CallbackContext):
                     # Generate random number of safe tiles (1-10)
                     import random
                     safe_tiles_count = random.randint(1, 10)
-                    
+
                     # Generate the multiplier sequence
-                    multipliers = ["1.14x", "1.31x", "1.52x", "1.77x", "2.08x", "2.44x", "2.87x", "3.39x", "4.01x", "4.77x"]
+                    multipliers = [
+                        "1.14x", "1.31x", "1.52x", "1.77x", "2.08x", "2.44x",
+                        "2.87x", "3.39x", "4.01x", "4.77x"
+                    ]
                     safe_tiles_options = []
-                    
+
                     for i in range(safe_tiles_count):
                         safe_tiles_options.append(f"{i+1} ({multipliers[i]})")
-                    
+
                     safe_tiles_text = ", ".join(safe_tiles_options)
-                    
+
                     # Send mines prediction message
                     mines_prediction_msg = (
                         "*🔐 VIP Hack Mines Prediction ⏳*\n\n"
@@ -4683,10 +4746,14 @@ def handle_all(update: Update, context: CallbackContext):
 
                     # Create keyboard with Next Prediction and Back buttons
                     keyboard = [[
-                        InlineKeyboardButton("Next Prediction", callback_data="mines_get_prediction")
-                    ], [
-                        InlineKeyboardButton("🔙 Back", callback_data="mines_menu")
-                    ]]
+                        InlineKeyboardButton(
+                            "Next Prediction",
+                            callback_data="mines_get_prediction")
+                    ],
+                                [
+                                    InlineKeyboardButton(
+                                        "🔙 Back", callback_data="mines_menu")
+                                ]]
                     reply_markup = InlineKeyboardMarkup(keyboard)
 
                     # Send photo message with prediction
@@ -4697,7 +4764,8 @@ def handle_all(update: Update, context: CallbackContext):
                             parse_mode='Markdown',
                             reply_markup=reply_markup)
                     except Exception as e:
-                        logger.error(f"Error sending mines prediction photo: {e}")
+                        logger.error(
+                            f"Error sending mines prediction photo: {e}")
                         # Fallback to text message if photo fails
                         update.message.reply_text(mines_prediction_msg,
                                                   parse_mode='Markdown',
@@ -4707,24 +4775,26 @@ def handle_all(update: Update, context: CallbackContext):
                     # Invalid input for mines prediction
                     if 'mines_error_count' not in context.bot_data:
                         context.bot_data['mines_error_count'] = {}
-                    
+
                     if user_id not in context.bot_data['mines_error_count']:
                         context.bot_data['mines_error_count'][user_id] = 0
-                    
+
                     context.bot_data['mines_error_count'][user_id] += 1
-                    
+
                     if context.bot_data['mines_error_count'][user_id] >= 3:
                         # Clear waiting state after 3 failed attempts
-                        context.bot_data['waiting_for_mines_digits'].discard(user_id)
+                        context.bot_data['waiting_for_mines_digits'].discard(
+                            user_id)
                         context.bot_data['mines_error_count'][user_id] = 0
-                        
+
                         update.message.reply_text(
                             "*❌ Mines Prediction Cancelled*\n"
                             "*🔄 Too many invalid attempts*\n\n"
                             "*💣 Click 'Get Prediction' again to restart*",
                             parse_mode='Markdown')
                     else:
-                        attempts_left = 3 - context.bot_data['mines_error_count'][user_id]
+                        attempts_left = 3 - context.bot_data[
+                            'mines_error_count'][user_id]
                         update.message.reply_text(
                             "*❌ Invalid Round ID Format*\n"
                             "*💣 For Mines Pro: Send exactly 3 digits only*\n"
@@ -4733,41 +4803,50 @@ def handle_all(update: Update, context: CallbackContext):
                             f"*⏰ Attempts left: {attempts_left}*",
                             parse_mode='Markdown')
                     return
-            
+
             # Check if user is waiting for dragon tiger prediction digits (3 digits)
             elif ('waiting_for_dragon_tiger_digits' in context.bot_data
-                    and user_id in context.bot_data['waiting_for_dragon_tiger_digits']):
-                
+                  and user_id
+                  in context.bot_data['waiting_for_dragon_tiger_digits']):
+
                 text = update.message.text.strip()
-                
+
                 # Check if it's exactly 3 digits
                 if re.match(r'^\d{3}$', text):
                     # Remove user from waiting state
-                    context.bot_data['waiting_for_dragon_tiger_digits'].discard(user_id)
-                    
+                    context.bot_data[
+                        'waiting_for_dragon_tiger_digits'].discard(user_id)
+
                     # Delete the instruction message if it exists
-                    if ('dragon_tiger_instruction_messages' in context.bot_data and 
-                        user_id in context.bot_data['dragon_tiger_instruction_messages']):
+                    if ('dragon_tiger_instruction_messages' in context.bot_data
+                            and user_id in context.
+                            bot_data['dragon_tiger_instruction_messages']):
                         try:
                             context.bot.delete_message(
                                 chat_id=update.effective_chat.id,
-                                message_id=context.bot_data['dragon_tiger_instruction_messages'][user_id]
-                            )
-                            del context.bot_data['dragon_tiger_instruction_messages'][user_id]
+                                message_id=context.
+                                bot_data['dragon_tiger_instruction_messages']
+                                [user_id])
+                            del context.bot_data[
+                                'dragon_tiger_instruction_messages'][user_id]
                         except Exception as e:
-                            logger.error(f"Error deleting dragon tiger instruction message: {e}")
-                    
+                            logger.error(
+                                f"Error deleting dragon tiger instruction message: {e}"
+                            )
+
                     # Send sticker first
                     try:
                         dragon_tiger_sticker = update.message.reply_sticker(
-                            sticker="CAACAgEAAxkBAAEOp-VoQ2QxM1r7VY35QbGzudy2CiyxqgACqQMAAu5KIESabFySq3SxHjYE"
+                            sticker=
+                            "CAACAgIAAxkBAAEOqHZoQ9CBPA9ILA5DPhqhHgoGO3cpTAACNBsAAma0iEl5g0LbYQABMkI2BA"
                         )
                     except Exception as e:
-                        logger.error(f"Error sending dragon tiger sticker: {e}")
+                        logger.error(
+                            f"Error sending dragon tiger sticker: {e}")
 
                     # Generate dragon tiger prediction
                     prediction_result = generate_dragon_tiger_prediction(text)
-                    
+
                     # Send dragon tiger prediction message
                     dragon_tiger_prediction_msg = (
                         "*🔐 VIP Hack Dragon Tiger Prediction ⏳*\n\n"
@@ -4778,10 +4857,15 @@ def handle_all(update: Update, context: CallbackContext):
 
                     # Create keyboard with Next Prediction and Back buttons
                     keyboard = [[
-                        InlineKeyboardButton("Next Prediction", callback_data="dragon_tiger_get_prediction")
-                    ], [
-                        InlineKeyboardButton("🔙 Back", callback_data="dragon_tiger_menu")
-                    ]]
+                        InlineKeyboardButton(
+                            "Next Prediction",
+                            callback_data="dragon_tiger_get_prediction")
+                    ],
+                                [
+                                    InlineKeyboardButton(
+                                        "🔙 Back",
+                                        callback_data="dragon_tiger_menu")
+                                ]]
                     reply_markup = InlineKeyboardMarkup(keyboard)
 
                     # Send photo message with prediction
@@ -4792,7 +4876,9 @@ def handle_all(update: Update, context: CallbackContext):
                             parse_mode='Markdown',
                             reply_markup=reply_markup)
                     except Exception as e:
-                        logger.error(f"Error sending dragon tiger prediction photo: {e}")
+                        logger.error(
+                            f"Error sending dragon tiger prediction photo: {e}"
+                        )
                         # Fallback to text message if photo fails
                         update.message.reply_text(dragon_tiger_prediction_msg,
                                                   parse_mode='Markdown',
@@ -4802,24 +4888,30 @@ def handle_all(update: Update, context: CallbackContext):
                     # Invalid input for dragon tiger prediction
                     if 'dragon_tiger_error_count' not in context.bot_data:
                         context.bot_data['dragon_tiger_error_count'] = {}
-                    
-                    if user_id not in context.bot_data['dragon_tiger_error_count']:
-                        context.bot_data['dragon_tiger_error_count'][user_id] = 0
-                    
+
+                    if user_id not in context.bot_data[
+                            'dragon_tiger_error_count']:
+                        context.bot_data['dragon_tiger_error_count'][
+                            user_id] = 0
+
                     context.bot_data['dragon_tiger_error_count'][user_id] += 1
-                    
-                    if context.bot_data['dragon_tiger_error_count'][user_id] >= 3:
+
+                    if context.bot_data['dragon_tiger_error_count'][
+                            user_id] >= 3:
                         # Clear waiting state after 3 failed attempts
-                        context.bot_data['waiting_for_dragon_tiger_digits'].discard(user_id)
-                        context.bot_data['dragon_tiger_error_count'][user_id] = 0
-                        
+                        context.bot_data[
+                            'waiting_for_dragon_tiger_digits'].discard(user_id)
+                        context.bot_data['dragon_tiger_error_count'][
+                            user_id] = 0
+
                         update.message.reply_text(
                             "*❌ Dragon Tiger Prediction Cancelled*\n"
                             "*🔄 Too many invalid attempts*\n\n"
                             "*🐉 Click 'Get Prediction' again to restart*",
                             parse_mode='Markdown')
                     else:
-                        attempts_left = 3 - context.bot_data['dragon_tiger_error_count'][user_id]
+                        attempts_left = 3 - context.bot_data[
+                            'dragon_tiger_error_count'][user_id]
                         update.message.reply_text(
                             "*❌ Invalid Round ID Format*\n"
                             "*🐉 For Dragon Tiger: Send exactly 3 digits only*\n"
@@ -4828,10 +4920,10 @@ def handle_all(update: Update, context: CallbackContext):
                             f"*⏰ Attempts left: {attempts_left}*",
                             parse_mode='Markdown')
                     return
-            
+
             # Check if user is waiting for 3 digits (manual prediction)
             elif ('waiting_for_digits' in context.bot_data
-                    and user_id in context.bot_data['waiting_for_digits']):
+                  and user_id in context.bot_data['waiting_for_digits']):
 
                 text = update.message.text.strip()
 
@@ -4839,9 +4931,10 @@ def handle_all(update: Update, context: CallbackContext):
                 if re.match(r'^\d{3}$', text):
                     # Remove user from waiting state and clear error count
                     context.bot_data['waiting_for_digits'].discard(user_id)
-                    
+
                     # Clear error count on successful prediction
-                    if 'wingo_error_count' in context.bot_data and user_id in context.bot_data['wingo_error_count']:
+                    if 'wingo_error_count' in context.bot_data and user_id in context.bot_data[
+                            'wingo_error_count']:
                         context.bot_data['wingo_error_count'][user_id] = 0
 
                     # Send sticker first
@@ -4924,24 +5017,25 @@ def handle_all(update: Update, context: CallbackContext):
                     # Invalid input for manual Wingo prediction - give specific error and clear state after 3 attempts
                     if 'wingo_error_count' not in context.bot_data:
                         context.bot_data['wingo_error_count'] = {}
-                    
+
                     if user_id not in context.bot_data['wingo_error_count']:
                         context.bot_data['wingo_error_count'][user_id] = 0
-                    
+
                     context.bot_data['wingo_error_count'][user_id] += 1
-                    
+
                     if context.bot_data['wingo_error_count'][user_id] >= 3:
                         # Clear waiting state after 3 failed attempts
                         context.bot_data['waiting_for_digits'].discard(user_id)
                         context.bot_data['wingo_error_count'][user_id] = 0
-                        
+
                         update.message.reply_text(
                             "*❌ Wingo Manual Prediction Cancelled*\n"
                             "*🔄 Too many invalid attempts*\n\n"
                             "*🚀 Click 'Manual Prediction' again to restart*",
                             parse_mode='Markdown')
                     else:
-                        attempts_left = 3 - context.bot_data['wingo_error_count'][user_id]
+                        attempts_left = 3 - context.bot_data[
+                            'wingo_error_count'][user_id]
                         update.message.reply_text(
                             "*❌ Invalid Wingo Period Number*\n"
                             "*🎮 For Wingo Game: Send exactly 3 digits only*\n"
@@ -5075,19 +5169,19 @@ def handle_delete_all_data_yes(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
 
-    query.edit_message_text(
-        text="⏳ *Executing database deletion...*",
-        parse_mode='Markdown')
-    
+    query.edit_message_text(text="⏳ *Executing database deletion...*",
+                            parse_mode='Markdown')
+
     # Create a mock update object for execute_database_deletion
     class MockUpdate:
+
         def __init__(self, user):
             self.message = self
             self.from_user = user
-            
+
         def reply_text(self, text, parse_mode=None):
             query.edit_message_text(text=text, parse_mode=parse_mode)
-    
+
     mock_update = MockUpdate(query.from_user)
     execute_database_deletion(mock_update, context)
 
@@ -5165,12 +5259,14 @@ def handle_delete_all_data_no(update: Update, context: CallbackContext):
     """
     query = update.callback_query
     query.answer("✅ Deletion cancelled")
-    
+
     # Clear captcha data if exists
     user_id = query.from_user.id
-    if 'delete_captcha' in context.bot_data and user_id in context.bot_data['delete_captcha']:
+    if 'delete_captcha' in context.bot_data and user_id in context.bot_data[
+            'delete_captcha']:
         del context.bot_data['delete_captcha'][user_id]
-    if 'waiting_for_delete_captcha' in context.bot_data and user_id in context.bot_data['waiting_for_delete_captcha']:
+    if 'waiting_for_delete_captcha' in context.bot_data and user_id in context.bot_data[
+            'waiting_for_delete_captcha']:
         context.bot_data['waiting_for_delete_captcha'].remove(user_id)
 
     try:
@@ -5320,27 +5416,32 @@ def main():
             # Force delete webhook and clear updates
             updater.bot.delete_webhook(drop_pending_updates=True)
             logger.info("Webhook cleared with pending updates dropped")
-            
+
             # Multiple attempts to clear updates
             for attempt in range(3):
                 try:
-                    updates = updater.bot.get_updates(timeout=2, allowed_updates=[])
+                    updates = updater.bot.get_updates(timeout=2,
+                                                      allowed_updates=[])
                     if updates:
                         last_update_id = updates[-1].update_id
-                        updater.bot.get_updates(offset=last_update_id + 1, timeout=1)
-                        logger.info(f"Attempt {attempt + 1}: Cleared {len(updates)} pending updates")
+                        updater.bot.get_updates(offset=last_update_id + 1,
+                                                timeout=1)
+                        logger.info(
+                            f"Attempt {attempt + 1}: Cleared {len(updates)} pending updates"
+                        )
                     else:
-                        logger.info(f"Attempt {attempt + 1}: No pending updates found")
+                        logger.info(
+                            f"Attempt {attempt + 1}: No pending updates found")
                         break
                 except Exception as inner_e:
                     logger.warning(f"Attempt {attempt + 1} failed: {inner_e}")
                     if attempt < 2:
                         import time
                         time.sleep(1)
-                        
+
         except Exception as e:
             logger.warning(f"Could not clear pending updates/webhooks: {e}")
-            
+
         # Extended delay for cleanup
         import time
         time.sleep(3)
