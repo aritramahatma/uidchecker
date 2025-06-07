@@ -4729,12 +4729,9 @@ def handle_all(update: Update, context: CallbackContext):
                         "1.14x", "1.31x", "1.52x", "1.77x", "2.08x", "2.44x",
                         "2.87x", "3.39x", "4.01x", "4.77x"
                     ]
-                    safe_tiles_options = []
-
-                    for i in range(safe_tiles_count):
-                        safe_tiles_options.append(f"{i+1} ({multipliers[i]})")
-
-                    safe_tiles_text = ", ".join(safe_tiles_options)
+                    
+                    # Show only the final count and its multiplier
+                    safe_tiles_text = f"{safe_tiles_count} ({multipliers[safe_tiles_count-1]})"
 
                     # Send mines prediction message
                     mines_prediction_msg = (
