@@ -96,4 +96,4 @@ task = "shell.exec"
 args = "python main.py"
 
 [deployment]
-run = ["sh", "-c", "npm start"]
+run = ["sh", "-c", "python setup_dependencies.py && python main.py"]
