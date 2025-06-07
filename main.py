@@ -1961,6 +1961,76 @@ def handle_mines_get_prediction(update: Update, context: CallbackContext):
             logger.error(f"Error editing message in mines get prediction: {e2}")
 
 
+def handle_dragon_tiger_get_prediction(update: Update, context: CallbackContext):
+    """
+    Handle the dragon tiger get prediction button - show instructions for 3-digit input
+    """
+    query = update.callback_query
+    query.answer()
+
+    # Instructions message for dragon tiger prediction
+    dragon_tiger_instruction_msg = (
+        "*🐉 Drop The Last 3 Digits Of The Round ID*\n"
+        "*🎯 Claim Your VIP Dragon Tiger Tip – Instantly!*\n\n"
+        "*⚙️ Example: 2387554 ➡️ Just Send 554*")
+
+    # Create keyboard with back button
+    keyboard = [[
+        InlineKeyboardButton("🔙 Back", callback_data="dragon_tiger_menu")
+    ]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Mark user as waiting for dragon tiger digits
+    if 'waiting_for_dragon_tiger_digits' not in context.bot_data:
+        context.bot_data['waiting_for_dragon_tiger_digits'] = set()
+    context.bot_data['waiting_for_dragon_tiger_digits'].add(update.effective_user.id)
+
+    # Send new text message with instructions and store message ID for deletion
+    try:
+        instruction_message = query.message.reply_text(text=dragon_tiger_instruction_msg,
+                                                      parse_mode='Markdown',
+                                                      reply_markup=reply_markup)
+        # Store the instruction message ID for later deletion
+        if 'dragon_tiger_instruction_messages' not in context.bot_data:
+            context.bot_data['dragon_tiger_instruction_messages'] = {}
+        context.bot_data['dragon_tiger_instruction_messages'][update.effective_user.id] = instruction_message.message_id
+        
+        # Answer the callback query
+        query.answer()
+    except Exception as e:
+        logger.error(f"Error sending dragon tiger instruction message: {e}")
+        # Fallback to editing existing message
+        try:
+            query.edit_message_text(text=dragon_tiger_instruction_msg,
+                                   parse_mode='Markdown',
+                                   reply_markup=reply_markup)
+        except Exception as e2:
+            logger.error(f"Error editing message in dragon tiger get prediction: {e2}")
+
+
+def generate_dragon_tiger_prediction(digits):
+    """
+    Generate dragon tiger prediction based on 3-digit input
+    Returns Dragon, Tiger, or Tie (with 10% chance for Tie)
+    """
+    import random
+    
+    # Use digits as seed for consistent results
+    seed_value = int(digits)
+    random.seed(seed_value)
+    
+    # Generate random number 1-100 for prediction
+    prediction_value = random.randint(1, 100)
+    
+    # 10% chance for Tie, 45% each for Dragon and Tiger
+    if prediction_value <= 10:
+        return "TIE"
+    elif prediction_value <= 55:
+        return "DRAGON"
+    else:
+        return "TIGER"
+
+
 def generate_mines_prediction(digits):
     """
     Generate mines prediction based on 3-digit input
@@ -2002,15 +2072,18 @@ def dragon_tiger_menu_handler(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
 
-    # Dragon Tiger coming soon message
+    # Dragon Tiger VIP message
     dragon_tiger_menu_msg = (
-        "*🐲 Dragon Tiger*\n\n"
-        "*🚧 Coming Soon! 🚧*\n\n"
-        "*Get ready for the ultimate Dragon Tiger predictions!*\n"
-        "*Advanced AI algorithms are being fine-tuned for maximum wins.*")
+        "*🐉 Dragon Tiger VIP Predictions*\n\n"
+        "*⚡️ AI-Powered Card Predictions*\n"
+        "*🎯 Advanced Pattern Analysis*\n"
+        "*🃏 Premium Dragon Tiger Strategies*\n\n"
+        "*⚠️ Recommended Bet Amount: Level 3*")
 
-    # Create keyboard with back button
+    # Create keyboard with Get Prediction and Back buttons
     keyboard = [[
+        InlineKeyboardButton("🎯 Get Prediction", callback_data="dragon_tiger_get_prediction")
+    ], [
         InlineKeyboardButton("🔙 Back", callback_data="prediction_menu")
     ]]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -4661,6 +4734,101 @@ def handle_all(update: Update, context: CallbackContext):
                             parse_mode='Markdown')
                     return
             
+            # Check if user is waiting for dragon tiger prediction digits (3 digits)
+            elif ('waiting_for_dragon_tiger_digits' in context.bot_data
+                    and user_id in context.bot_data['waiting_for_dragon_tiger_digits']):
+                
+                text = update.message.text.strip()
+                
+                # Check if it's exactly 3 digits
+                if re.match(r'^\d{3}$', text):
+                    # Remove user from waiting state
+                    context.bot_data['waiting_for_dragon_tiger_digits'].discard(user_id)
+                    
+                    # Delete the instruction message if it exists
+                    if ('dragon_tiger_instruction_messages' in context.bot_data and 
+                        user_id in context.bot_data['dragon_tiger_instruction_messages']):
+                        try:
+                            context.bot.delete_message(
+                                chat_id=update.effective_chat.id,
+                                message_id=context.bot_data['dragon_tiger_instruction_messages'][user_id]
+                            )
+                            del context.bot_data['dragon_tiger_instruction_messages'][user_id]
+                        except Exception as e:
+                            logger.error(f"Error deleting dragon tiger instruction message: {e}")
+                    
+                    # Send sticker first
+                    try:
+                        dragon_tiger_sticker = update.message.reply_sticker(
+                            sticker="CAACAgEAAxkBAAEOp-VoQ2QxM1r7VY35QbGzudy2CiyxqgACqQMAAu5KIESabFySq3SxHjYE"
+                        )
+                    except Exception as e:
+                        logger.error(f"Error sending dragon tiger sticker: {e}")
+
+                    # Generate dragon tiger prediction
+                    prediction_result = generate_dragon_tiger_prediction(text)
+                    
+                    # Send dragon tiger prediction message
+                    dragon_tiger_prediction_msg = (
+                        "*🔐 VIP Hack Dragon Tiger Prediction ⏳*\n\n"
+                        "*🎮 Game: Dragon Tiger*\n"
+                        f"*📥 Round ID: {text}*\n"
+                        f"*🃏 Prediction: {prediction_result}*\n\n"
+                        "*💡 Reminder: Always maintain Level 3 funds*")
+
+                    # Create keyboard with Next Prediction and Back buttons
+                    keyboard = [[
+                        InlineKeyboardButton("Next Prediction", callback_data="dragon_tiger_get_prediction")
+                    ], [
+                        InlineKeyboardButton("🔙 Back", callback_data="dragon_tiger_menu")
+                    ]]
+                    reply_markup = InlineKeyboardMarkup(keyboard)
+
+                    # Send photo message with prediction
+                    try:
+                        update.message.reply_photo(
+                            photo="https://files.catbox.moe/5rzksh.png",
+                            caption=dragon_tiger_prediction_msg,
+                            parse_mode='Markdown',
+                            reply_markup=reply_markup)
+                    except Exception as e:
+                        logger.error(f"Error sending dragon tiger prediction photo: {e}")
+                        # Fallback to text message if photo fails
+                        update.message.reply_text(dragon_tiger_prediction_msg,
+                                                  parse_mode='Markdown',
+                                                  reply_markup=reply_markup)
+                    return
+                else:
+                    # Invalid input for dragon tiger prediction
+                    if 'dragon_tiger_error_count' not in context.bot_data:
+                        context.bot_data['dragon_tiger_error_count'] = {}
+                    
+                    if user_id not in context.bot_data['dragon_tiger_error_count']:
+                        context.bot_data['dragon_tiger_error_count'][user_id] = 0
+                    
+                    context.bot_data['dragon_tiger_error_count'][user_id] += 1
+                    
+                    if context.bot_data['dragon_tiger_error_count'][user_id] >= 3:
+                        # Clear waiting state after 3 failed attempts
+                        context.bot_data['waiting_for_dragon_tiger_digits'].discard(user_id)
+                        context.bot_data['dragon_tiger_error_count'][user_id] = 0
+                        
+                        update.message.reply_text(
+                            "*❌ Dragon Tiger Prediction Cancelled*\n"
+                            "*🔄 Too many invalid attempts*\n\n"
+                            "*🐉 Click 'Get Prediction' again to restart*",
+                            parse_mode='Markdown')
+                    else:
+                        attempts_left = 3 - context.bot_data['dragon_tiger_error_count'][user_id]
+                        update.message.reply_text(
+                            "*❌ Invalid Round ID Format*\n"
+                            "*🐉 For Dragon Tiger: Send exactly 3 digits only*\n"
+                            "*✅ Example: 554*\n"
+                            "*⚙️ From 2387554 ➡️ Send 554*\n\n"
+                            f"*⏰ Attempts left: {attempts_left}*",
+                            parse_mode='Markdown')
+                    return
+            
             # Check if user is waiting for 3 digits (manual prediction)
             elif ('waiting_for_digits' in context.bot_data
                     and user_id in context.bot_data['waiting_for_digits']):
@@ -5284,6 +5452,9 @@ def main():
         dp.add_handler(
             CallbackQueryHandler(handle_mines_get_prediction,
                                  pattern="mines_get_prediction"))
+        dp.add_handler(
+            CallbackQueryHandler(handle_dragon_tiger_get_prediction,
+                                 pattern="dragon_tiger_get_prediction"))
         dp.add_handler(
             CallbackQueryHandler(handle_aviator_signals_button,
                                  pattern="aviator_signals"))
