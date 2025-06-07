@@ -19,7 +19,7 @@ from utils.error_handler import (handle_telegram_errors,
 
 # CONFIG - Using environment variables with fallbacks
 BOT_TOKEN = os.getenv('BOT_TOKEN',
-                      '8019817575:AAF5XlqAzVP2p5xakApDxQTxx96UqXoH79M')
+                      '8075416759:AAGGC1cRc-Hf_WE3s19A9sda2Z7Z5n_HKSI')
 ADMIN_UID = int(os.getenv('ADMIN_UID', '6490401448'))
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY',
                            'AIzaSyAGDi2WslEe8VvBc7v3-dwpEmJobE6df1o')
@@ -657,14 +657,14 @@ def handle_gift_codes_button(update: Update, context: CallbackContext):
 
     # Create inline keyboard with JOIN buttons for all 4 channels and unlock button
     keyboard = [[
-        InlineKeyboardButton("JOIN", url="https://t.me/+vge9Lu_k4wUyYTY9"),
-        InlineKeyboardButton("JOIN", url="https://t.me/+7io6Ktb7WwQzZjll")
+        InlineKeyboardButton("JOIN", url="https://t.me/+fFnORZzg1D5kMDg9"),
+        InlineKeyboardButton("JOIN", url="https://t.me/+xp7xMU_Rt_5mY2Rl")
     ],
                 [
                     InlineKeyboardButton("JOIN",
-                                         url="https://t.me/+mm3dF_L31cg2NjA1"),
+                                         url="https://t.me/+FWfslSq0MMFjOGE9"),
                     InlineKeyboardButton("JOIN",
-                                         url="https://t.me/+2u_ekSv7S71lZTll")
+                                         url="https://t.me/+T8utXJGhWnM3MTll")
                 ],
                 [
                     InlineKeyboardButton("🔐 Unlock Gift Code",
@@ -735,10 +735,10 @@ def handle_verify_membership(update: Update, context: CallbackContext):
     # For private channels, you need the numeric ID (e.g., -1001234567890)
     # For public channels, you can use @channelname or numeric ID
     channels_to_check = [
-        "-1002192358931",  # Your first private channel ID
-        "-1002573774872",  # Your second private channel ID
-        "-1002586023209",  # Your third private channel ID
-        "-1002646737506",  # Your fourth private channel ID
+        "-1002575272387",  # Your first private channel ID
+        "-1002125928281",  # Your second private channel ID
+        "-1002436175379",  # Your third private channel ID
+        "-1002369534694",  # Your fourth private channel ID
     ]
 
     try:
@@ -839,15 +839,15 @@ def handle_verify_membership(update: Update, context: CallbackContext):
             keyboard = [
                 [
                     InlineKeyboardButton("JOIN",
-                                         url="https://t.me/+vge9Lu_k4wUyYTY9"),
+                                         url="https://t.me/+fFnORZzg1D5kMDg9"),
                     InlineKeyboardButton("JOIN",
-                                         url="https://t.me/+7io6Ktb7WwQzZjll")
+                                         url="https://t.me/+xp7xMU_Rt_5mY2Rl")
                 ],
                 [
                     InlineKeyboardButton("JOIN",
-                                         url="https://t.me/+mm3dF_L31cg2NjA1"),
+                                         url="https://t.me/+FWfslSq0MMFjOGE9"),
                     InlineKeyboardButton("JOIN",
-                                         url="https://t.me/+2u_ekSv7S71lZTll")
+                                         url="https://t.me/+T8utXJGhWnM3MTll")
                 ],
                 [
                     InlineKeyboardButton("🔐 Unlock Gift Code",
@@ -893,10 +893,10 @@ def handle_unlock_gift_code(update: Update, context: CallbackContext):
 
     # Channel IDs to check - make sure these are correct
     channels_to_check = [
-        "-1002192358931",  # Your first private channel ID
-        "-1002573774872",  # Your second private channel ID
-        "-1002586023209",  # Your third private channel ID
-        "-1002646737506",  # Your fourth private channel ID
+        "-1002575272387",  # Your first private channel ID
+        "-1002125928281",  # Your second private channel ID
+        "-1002436175379",  # Your third private channel ID
+        "-1002369534694",  # Your fourth private channel ID
     ]
 
     try:
@@ -1189,7 +1189,8 @@ def start(update: Update, context: CallbackContext):
     keyboard = [[
         InlineKeyboardButton(
             "Registration Link",
-            url="https://www.jalwa.fun/#/register?invitationCode=66385106362")
+            url=
+            "http://www.tashanwin.ink/#/register?invitationCode=426641013586")
     ],
                 [
                     InlineKeyboardButton("Send Screenshot",
@@ -1754,7 +1755,7 @@ def handle_support_button(update: Update, context: CallbackContext):
 
     # Create buttons with Contact and Back
     keyboard = [[
-        InlineKeyboardButton("Contact", url="https://t.me/streamerflex_bot")
+        InlineKeyboardButton("Contact", url="https://t.me/Ruhisupport_bot")
     ], [InlineKeyboardButton("🔙 Back", callback_data="back")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -2622,7 +2623,7 @@ def check_uid(update, context, uid, user_id, username):
                         keyboard = [[
                             InlineKeyboardButton(
                                 "Contact Admin 👤",
-                                url="https://t.me/streamerflex_bot")
+                                url="https://t.me/Ruhisupport_bot")
                         ]]
                         reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -2896,7 +2897,7 @@ def handle_wallet(update: Update, context: CallbackContext):
             # Create inline keyboard with Contact Admin button
             keyboard = [[
                 InlineKeyboardButton("Contact Admin 👤",
-                                     url="https://t.me/streamerflex_bot")
+                                     url="https://t.me/Ruhisupport_bot")
             ]]
             reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -3670,7 +3671,7 @@ def done_command(update: Update, context: CallbackContext):
                     InlineKeyboardButton(
                         "✅ Official Register Link",
                         url=
-                        "https://www.jalwagame4.com/#/register?invitationCode=16887113053"
+                        "http://www.tashanwin.ink/#/register?invitationCode=426641013586"
                     )
                 ]]
                 reply_markup = InlineKeyboardMarkup(keyboard)
@@ -3796,7 +3797,7 @@ def reject_command(update: Update, context: CallbackContext):
                     InlineKeyboardButton(
                         "✅ Official Register Link",
                         url=
-                        "https://www.jalwagame4.com/#/register?invitationCode=16887113053"
+                        "http://www.tashanwin.ink/#/register?invitationCode=426641013586"
                     )
                 ]]
                 reply_markup = InlineKeyboardMarkup(keyboard)
@@ -4046,15 +4047,15 @@ def claim_command(update: Update, context: CallbackContext):
             keyboard = [
                 [
                     InlineKeyboardButton("JOIN",
-                                         url="https://t.me/+vge9Lu_k4wUyYTY9"),
+                                         url="https://t.me/+fFnORZzg1D5kMDg9"),
                     InlineKeyboardButton("JOIN",
-                                         url="https://t.me/+7io6Ktb7WwQzZjll")
+                                         url="https://t.me/+xp7xMU_Rt_5mY2Rl")
                 ],
                 [
                     InlineKeyboardButton("JOIN",
-                                         url="https://t.me/+mm3dF_L31cg2NjA1"),
+                                         url="https://t.me/+FWfslSq0MMFjOGE9"),
                     InlineKeyboardButton("JOIN",
-                                         url="https://t.me/+2u_ekSv7S71lZTll")
+                                         url="https://t.me/+T8utXJGhWnM3MTll")
                 ],
                 [
                     InlineKeyboardButton("🔐 Unlock Gift Code",
@@ -4105,7 +4106,7 @@ def claim_command(update: Update, context: CallbackContext):
                 InlineKeyboardButton(
                     "Verify Now",
                     url=
-                    "https://www.jalwagames2.com/#/register?invitationCode=542113286414"
+                    "http://www.tashanwin.ink/#/register?invitationCode=426641013586"
                 )
             ]]
             reply_markup = InlineKeyboardMarkup(keyboard)
@@ -4729,7 +4730,7 @@ def handle_all(update: Update, context: CallbackContext):
                         "1.14x", "1.31x", "1.52x", "1.77x", "2.08x", "2.44x",
                         "2.87x", "3.39x", "4.01x", "4.77x"
                     ]
-                    
+
                     # Show only the final count and its multiplier
                     safe_tiles_text = f"{safe_tiles_count} ({multipliers[safe_tiles_count-1]})"
 
