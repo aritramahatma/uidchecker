@@ -1761,7 +1761,7 @@ def handle_support_button(update: Update, context: CallbackContext):
     # Edit existing message with new photo and content
     try:
         query.edit_message_media(media=InputMediaPhoto(
-            media="https://files.catbox.moe/vata3j.webp",
+            media="https://files.catbox.moe/pybvi1.png",
             caption=support_msg,
             parse_mode='Markdown'),
                                  reply_markup=reply_markup)
