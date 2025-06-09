@@ -19,8 +19,7 @@ from utils.error_handler import (handle_telegram_errors,
 from config import is_admin, ADMIN_UIDS, ADMIN_UID
 
 # CONFIG - Using environment variables with fallbacks
-BOT_TOKEN = os.getenv('BOT_TOKEN',
-                      '8075416759:AAGGC1cRc-Hf_WE3s19A9sda2Z7Z5n_HKSI')
+BOT_TOKEN = os.getenv('BOT_TOKEN','')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY',
                            'AIzaSyAGDi2WslEe8VvBc7v3-dwpEmJobE6df1o')
 # Updated MongoDB URL as requested
