@@ -5405,50 +5405,68 @@ def main():
     Main function to start the bot
     """
     try:
-        # Create updater and dispatcher with conflict resolution
-        updater = Updater(BOT_TOKEN, use_context=True)
-        dp = updater.dispatcher
+        # Validate required environment variables
+        if not BOT_TOKEN or BOT_TOKEN == 'YOUR_BOT_TOKEN':
+            logger.error("BOT_TOKEN not properly configured!")
+            print("❌ Error: BOT_TOKEN not found in environment variables.")
+            print("🔧 Please add your bot token to Replit Secrets:")
+            print("   1. Click on 'Secrets' in the left sidebar")
+            print("   2. Add key: BOT_TOKEN")
+            print("   3. Add your bot token as the value")
+            return
 
-        # Aggressive conflict resolution
+        if not GEMINI_API_KEY or GEMINI_API_KEY == 'YOUR_GEMINI_KEY':
+            logger.warning("GEMINI_API_KEY not configured - OCR features will not work")
+
+        logger.info("Starting Telegram Bot initialization...")
+        
+        # Create updater and dispatcher with proper error handling
         try:
-            # Force delete webhook and clear updates
-            updater.bot.delete_webhook(drop_pending_updates=True)
-            logger.info("Webhook cleared with pending updates dropped")
-
-            # Multiple attempts to clear updates
-            for attempt in range(3):
-                try:
-                    updates = updater.bot.get_updates(timeout=2,
-                                                      allowed_updates=[])
-                    if updates:
-                        last_update_id = updates[-1].update_id
-                        updater.bot.get_updates(offset=last_update_id + 1,
-                                                timeout=1)
-                        logger.info(
-                            f"Attempt {attempt + 1}: Cleared {len(updates)} pending updates"
-                        )
-                    else:
-                        logger.info(
-                            f"Attempt {attempt + 1}: No pending updates found")
-                        break
-                except Exception as inner_e:
-                    logger.warning(f"Attempt {attempt + 1} failed: {inner_e}")
-                    if attempt < 2:
-                        import time
-                        time.sleep(1)
-
+            updater = Updater(BOT_TOKEN, use_context=True)
+            dp = updater.dispatcher
+            logger.info("Bot instance created successfully")
         except Exception as e:
-            logger.warning(f"Could not clear pending updates/webhooks: {e}")
+            logger.error(f"Failed to create bot instance: {e}")
+            print(f"❌ Failed to create bot: {e}")
+            print("🔧 Check if your BOT_TOKEN is valid")
+            return
 
-        # Extended delay for cleanup
-        import time
-        time.sleep(3)
+        # Test bot connection
+        try:
+            bot_info = updater.bot.get_me()
+            logger.info(f"Bot connected successfully: @{bot_info.username}")
+            print(f"✅ Bot connected: @{bot_info.username}")
+        except Exception as e:
+            logger.error(f"Failed to connect to Telegram: {e}")
+            print(f"❌ Connection failed: {e}")
+            print("🔧 Check your internet connection and bot token")
+            return
+
+        # Clear any existing webhooks (important for Replit)
+        try:
+            updater.bot.delete_webhook(drop_pending_updates=True)
+            logger.info("Webhooks cleared successfully")
+        except Exception as e:
+            logger.warning(f"Could not clear webhooks: {e}")
+
+        # Test database connection
+        try:
+            client.admin.command('ping')
+            logger.info("Database connection verified")
+            print("✅ Database connected successfully")
+        except Exception as e:
+            logger.error(f"Database connection failed: {e}")
+            print(f"❌ Database connection failed: {e}")
+            print("🔧 Check MongoDB connection string")
+            return
 
         # Initialize bot data
         if 'pending_wallets' not in dp.bot_data:
             dp.bot_data['pending_wallets'] = {}
         if 'digits_message_id' not in dp.bot_data:
             dp.bot_data['digits_message_id'] = {}
+        
+        logger.info("Initializing bot data structures...")
 
         # Conversation handler for update command with proper state management
         conv_handler = ConversationHandler(
@@ -5483,104 +5501,113 @@ def main():
             per_user=True,
             per_message=False)
 
-        # Add handlers
-        dp.add_handler(CommandHandler("start", start))
-        dp.add_handler(CommandHandler("claim", claim_command))
-        dp.add_handler(CommandHandler("stats", stats))
-        dp.add_handler(CommandHandler("verified", verified))
-        dp.add_handler(CommandHandler("nonverified", nonverified))
-        dp.add_handler(CommandHandler("all", all_uids))
-        dp.add_handler(CommandHandler("dustbin", dustbin))
-        dp.add_handler(CommandHandler("del", del_command))
-        dp.add_handler(CommandHandler("done", done_command))
-        dp.add_handler(CommandHandler("reject", reject_command))
-        dp.add_handler(CommandHandler("newcode", newcode_command))
-        dp.add_handler(CommandHandler("block", block_user_command))
-        dp.add_handler(CommandHandler("unblock", block_user_command))
-        dp.add_handler(CommandHandler("checkblocked", check_blocked_command))
-        dp.add_handler(CommandHandler("restrict", restrict_command))
-        dp.add_handler(CommandHandler("cast", cast_command))
-        dp.add_handler(
-            CallbackQueryHandler(handle_screenshot_button,
-                                 pattern="send_screenshot"))
-        dp.add_handler(
-            CallbackQueryHandler(handle_bonus_button, pattern="bonus"))
-        dp.add_handler(
-            CallbackQueryHandler(handle_hack_button, pattern="get_hack"))
-        dp.add_handler(
-            CallbackQueryHandler(handle_tutorial_button, pattern="tutorial"))
-        dp.add_handler(
-            CallbackQueryHandler(handle_gift_codes_button,
-                                 pattern="gift_codes"))
-        dp.add_handler(
-            CallbackQueryHandler(handle_verify_membership,
-                                 pattern="verify_membership"))
-        dp.add_handler(
-            CallbackQueryHandler(handle_unlock_gift_code,
-                                 pattern="unlock_gift_code"))
-        dp.add_handler(CallbackQueryHandler(handle_back_button,
-                                            pattern="back"))
-        # Add handler for prediction button
-        dp.add_handler(
-            CallbackQueryHandler(handle_prediction_button,
-                                 pattern="prediction"))
-        dp.add_handler(
-            CallbackQueryHandler(handle_manual_prediction_button,
-                                 pattern="manual_prediction"))
-        dp.add_handler(
-            CallbackQueryHandler(handle_auto_prediction_button,
-                                 pattern="auto_prediction"))
-        dp.add_handler(
-            CallbackQueryHandler(handle_next_auto_prediction,
-                                 pattern="next_auto_prediction"))
-        dp.add_handler(
-            CallbackQueryHandler(handle_support_button, pattern="support"))
-        # Add the three missing callback query handlers
-        dp.add_handler(
-            CallbackQueryHandler(prediction_menu_handler,
-                                 pattern="prediction_menu"))
-        dp.add_handler(
-            CallbackQueryHandler(wingo_menu_handler, pattern="wingo_menu"))
-        dp.add_handler(
-            CallbackQueryHandler(aviator_menu_handler, pattern="aviator_menu"))
-        dp.add_handler(
-            CallbackQueryHandler(mines_menu_handler, pattern="mines_menu"))
-        dp.add_handler(
-            CallbackQueryHandler(dragon_tiger_menu_handler,
-                                 pattern="dragon_tiger_menu"))
-        dp.add_handler(
-            CallbackQueryHandler(handle_mines_get_prediction,
-                                 pattern="mines_get_prediction"))
-        dp.add_handler(
-            CallbackQueryHandler(handle_dragon_tiger_get_prediction,
-                                 pattern="dragon_tiger_get_prediction"))
-        dp.add_handler(
-            CallbackQueryHandler(handle_aviator_signals_button,
-                                 pattern="aviator_signals"))
-        dp.add_handler(
-            CallbackQueryHandler(handle_confirm_delete_all_data,
-                                 pattern="confirm_delete_all_data"))
-        dp.add_handler(
-            CallbackQueryHandler(handle_delete_all_data_yes,
-                                 pattern="delete_all_data_yes"))
-        dp.add_handler(
-            CallbackQueryHandler(handle_delete_all_data_no,
-                                 pattern="delete_all_data_no"))
-        dp.add_handler(conv_handler)
-        dp.add_handler(MessageHandler(Filters.all, handle_all))
+        # Add all handlers with error checking
+        try:
+            logger.info("Registering command handlers...")
+            
+            # Command handlers
+            dp.add_handler(CommandHandler("start", start))
+            dp.add_handler(CommandHandler("claim", claim_command))
+            dp.add_handler(CommandHandler("stats", stats))
+            dp.add_handler(CommandHandler("verified", verified))
+            dp.add_handler(CommandHandler("nonverified", nonverified))
+            dp.add_handler(CommandHandler("all", all_uids))
+            dp.add_handler(CommandHandler("dustbin", dustbin))
+            dp.add_handler(CommandHandler("del", del_command))
+            dp.add_handler(CommandHandler("done", done_command))
+            dp.add_handler(CommandHandler("reject", reject_command))
+            dp.add_handler(CommandHandler("newcode", newcode_command))
+            dp.add_handler(CommandHandler("block", block_user_command))
+            dp.add_handler(CommandHandler("unblock", block_user_command))
+            dp.add_handler(CommandHandler("checkblocked", check_blocked_command))
+            dp.add_handler(CommandHandler("restrict", restrict_command))
+            dp.add_handler(CommandHandler("cast", cast_command))
+            
+            logger.info("Registering callback handlers...")
+            
+            # Callback handlers
+            dp.add_handler(CallbackQueryHandler(handle_screenshot_button, pattern="send_screenshot"))
+            dp.add_handler(CallbackQueryHandler(handle_bonus_button, pattern="bonus"))
+            dp.add_handler(CallbackQueryHandler(handle_hack_button, pattern="get_hack"))
+            dp.add_handler(CallbackQueryHandler(handle_tutorial_button, pattern="tutorial"))
+            dp.add_handler(CallbackQueryHandler(handle_gift_codes_button, pattern="gift_codes"))
+            dp.add_handler(CallbackQueryHandler(handle_verify_membership, pattern="verify_membership"))
+            dp.add_handler(CallbackQueryHandler(handle_unlock_gift_code, pattern="unlock_gift_code"))
+            dp.add_handler(CallbackQueryHandler(handle_back_button, pattern="back"))
+            dp.add_handler(CallbackQueryHandler(handle_prediction_button, pattern="prediction"))
+            dp.add_handler(CallbackQueryHandler(handle_manual_prediction_button, pattern="manual_prediction"))
+            dp.add_handler(CallbackQueryHandler(handle_auto_prediction_button, pattern="auto_prediction"))
+            dp.add_handler(CallbackQueryHandler(handle_next_auto_prediction, pattern="next_auto_prediction"))
+            dp.add_handler(CallbackQueryHandler(handle_support_button, pattern="support"))
+            dp.add_handler(CallbackQueryHandler(prediction_menu_handler, pattern="prediction_menu"))
+            dp.add_handler(CallbackQueryHandler(wingo_menu_handler, pattern="wingo_menu"))
+            dp.add_handler(CallbackQueryHandler(aviator_menu_handler, pattern="aviator_menu"))
+            dp.add_handler(CallbackQueryHandler(mines_menu_handler, pattern="mines_menu"))
+            dp.add_handler(CallbackQueryHandler(dragon_tiger_menu_handler, pattern="dragon_tiger_menu"))
+            dp.add_handler(CallbackQueryHandler(handle_mines_get_prediction, pattern="mines_get_prediction"))
+            dp.add_handler(CallbackQueryHandler(handle_dragon_tiger_get_prediction, pattern="dragon_tiger_get_prediction"))
+            dp.add_handler(CallbackQueryHandler(handle_aviator_signals_button, pattern="aviator_signals"))
+            dp.add_handler(CallbackQueryHandler(handle_confirm_delete_all_data, pattern="confirm_delete_all_data"))
+            dp.add_handler(CallbackQueryHandler(handle_delete_all_data_yes, pattern="delete_all_data_yes"))
+            dp.add_handler(CallbackQueryHandler(handle_delete_all_data_no, pattern="delete_all_data_no"))
+            
+            logger.info("Registering conversation and message handlers...")
+            
+            # Conversation and message handlers
+            dp.add_handler(conv_handler)
+            dp.add_handler(MessageHandler(Filters.all, handle_all))
 
-        # Add global error handler
-        dp.add_error_handler(global_error_handler)
+            # Add global error handler
+            dp.add_error_handler(global_error_handler)
+            
+            logger.info("All handlers registered successfully")
 
-        # Start bot
-        logger.info("Starting UID Verification Bot...")
-        updater.start_polling(drop_pending_updates=True)
-        logger.info("Bot is running! Press Ctrl+C to stop.")
-        updater.idle()
+        except Exception as e:
+            logger.error(f"Error registering handlers: {e}")
+            print(f"❌ Failed to register handlers: {e}")
+            return
 
-        # Graceful shutdown
-        logger.info("Bot stopped gracefully")
-        updater.stop()
+        # Start bot with proper error handling
+        try:
+            logger.info("Starting UID Verification Bot...")
+            print("🚀 Starting bot...")
+            
+            # Start polling with optimized settings for Replit
+            updater.start_polling(
+                drop_pending_updates=True,
+                clean=True,
+                bootstrap_retries=3,
+                read_latency=2.0,
+                timeout=30
+            )
+            
+            logger.info("Bot started successfully! Waiting for messages...")
+            print("✅ Bot is running successfully!")
+            print("🤖 Bot is ready to receive messages")
+            print("📱 Send /start to the bot to test it")
+            print("🛑 Press Ctrl+C to stop the bot")
+            
+            # Keep the bot running
+            updater.idle()
+
+        except KeyboardInterrupt:
+            logger.info("Bot shutdown requested by user")
+            print("\n🛑 Bot shutdown requested...")
+        except Exception as e:
+            logger.error(f"Error starting bot: {e}")
+            print(f"❌ Error starting bot: {e}")
+            return
+        finally:
+            # Graceful shutdown
+            try:
+                logger.info("Shutting down bot gracefully...")
+                print("🔄 Shutting down bot...")
+                updater.stop()
+                logger.info("Bot stopped successfully")
+                print("✅ Bot stopped successfully")
+            except Exception as e:
+                logger.error(f"Error during shutdown: {e}")
+                print(f"⚠️ Warning during shutdown: {e}")
 
     except Exception as e:
         logger.error(f"Error starting bot: {e}")
@@ -5588,4 +5615,29 @@ def main():
 
 
 if __name__ == '__main__':
+    # Quick dependency check before starting
+    try:
+        from telegram import Update
+        from telegram.ext import Updater
+        print("✅ Telegram imports successful")
+    except ImportError as e:
+        print(f"❌ Telegram import error: {e}")
+        print("🔧 Replit Environment Fix:")
+        print("1. Click 'Shell' tab")
+        print("2. Run: pip install python-telegram-bot==13.15 --force-reinstall")
+        print("3. Then run the bot again")
+        sys.exit(1)
+    
+    # Check MongoDB connection
+    try:
+        from pymongo import MongoClient
+        test_client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+        test_client.admin.command('ping')
+        test_client.close()
+        print("✅ Database connection test successful")
+    except Exception as e:
+        print(f"⚠️ Database connection warning: {e}")
+        print("🔧 Bot will start but database features may not work")
+    
+    # Start the bot
     main()

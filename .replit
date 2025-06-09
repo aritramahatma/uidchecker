@@ -1,99 +1,26 @@
-modules = ["python-3.11"]
-run = "python setup_dependencies.py && python main.py"
+modules = ["python-3.11:v18-20230807-322e88b"]
 
 [nix]
-channel = "stable-24_05"
-packages = ["cacert", "freetype", "lcms2", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "tcl", "tk", "zlib"]
+channel = "stable-23_11"
+packages = ["freetype", "lcms2", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "tcl", "tk", "zlib"]
 
-[workflows]
-runButton = "Setup and Run Bot"
+[packager]
+language = "python3"
+ignoredPackages = ["telegram"]
 
-[[workflows.workflow]]
-name = "Project"
-mode = "parallel"
-author = "agent"
+[packager.features]
+guessImports = true
+packageSearch = true
+enabledForHosting = false
 
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Telegram Bot"
+[env]
+PYTHONPATH = "/home/runner/workspace"
 
-[[workflows.workflow]]
-name = "Run Bot"
-author = 43378888
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python main.py"
-
-[[workflows.workflow]]
-name = "Start Bot"
-author = 43378888
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python main.py"
-
-[[workflows.workflow]]
-name = "Install and Run Bot"
-author = 43382223
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "pip install -r requirements.txt"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python main.py"
-
-[[workflows.workflow]]
-name = "Start Telegram Bot"
-author = 43383230
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "pip install -r requirements.txt"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python main.py"
-
-[[workflows.workflow]]
-name = "Telegram Bot"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python main.py"
-
-[[workflows.workflow]]
-name = "Run Telegram Bot"
-author = 43538773
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "pip install -r requirements.txt"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python main.py"
-
-[[workflows.workflow]]
-name = "Setup and Run Bot"
-author = 43540754
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python setup_dependencies.py"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python main.py"
+[run]
+args = ["python", "main.py"]
 
 [deployment]
-run = ["sh", "-c", "npm start"]
+run = ["python", "main.py"]
+
+[workflows]
+runButton = "Run Bot"
