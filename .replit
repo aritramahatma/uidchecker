@@ -1,7 +1,8 @@
-modules = ["python-3.11:v18-20230807-322e88b"]
+modules = ["python-3.11"]
+run = "python main.py"
 
 [nix]
-channel = "stable-23_11"
+channel = "stable-24_05"
 packages = ["freetype", "lcms2", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "tcl", "tk", "zlib"]
 
 [packager]
@@ -16,11 +17,8 @@ enabledForHosting = false
 [env]
 PYTHONPATH = "/home/runner/workspace"
 
-[run]
-args = ["python", "main.py"]
-
 [deployment]
-run = ["python", "main.py"]
+run = ["sh", "-c", "python main.py"]
 
 [workflows]
 runButton = "Run Bot"
