@@ -24,3 +24,12 @@ run = ["python", "main.py"]
 
 [workflows]
 runButton = "Run Bot"
+
+[[workflows.workflow]]
+name = "Run Bot"
+author = 43625454
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
