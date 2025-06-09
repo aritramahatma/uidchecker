@@ -5575,7 +5575,6 @@ def main():
             # Start polling with optimized settings for Replit
             updater.start_polling(
                 drop_pending_updates=True,
-                clean=True,
                 bootstrap_retries=3,
                 read_latency=2.0,
                 timeout=30
