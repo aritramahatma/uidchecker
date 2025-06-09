@@ -97,6 +97,13 @@ After setup, your bot will start automatically. You can also use these workflows
 - **`/restrict on/off`** - Toggle global restriction mode for UID verification
 - **`/cast <message>`** - Broadcast message to all users (supports text, photos, videos, stickers, etc.)
 
+#### **Admin Management** (Primary Admin Only)
+- **`/addadmin <user_id>`** - Add a new admin to the bot
+  - Example: `/addadmin 123456789`
+- **`/removeadmin <user_id>`** - Remove an admin from the bot
+  - Example: `/removeadmin 123456789`
+- **`/listadmins`** - Show all current bot admins with their roles
+
 ### **Interactive Features**
 
 #### **Game Predictions** (For verified users)

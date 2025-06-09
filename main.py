@@ -16,11 +16,11 @@ from utils.error_handler import (handle_telegram_errors,
                                  handle_database_errors, handle_api_errors,
                                  global_error_handler, safe_reply,
                                  safe_edit_message, safe_send_photo)
+from config import is_admin, ADMIN_UIDS, ADMIN_UID
 
 # CONFIG - Using environment variables with fallbacks
 BOT_TOKEN = os.getenv('BOT_TOKEN',
                       '8075416759:AAGGC1cRc-Hf_WE3s19A9sda2Z7Z5n_HKSI')
-ADMIN_UID = int(os.getenv('ADMIN_UID', '6490401448'))
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY',
                            'AIzaSyAGDi2WslEe8VvBc7v3-dwpEmJobE6df1o')
 # Updated MongoDB URL as requested
@@ -2346,7 +2346,7 @@ def stats(update: Update, context: CallbackContext):
     """
     Show comprehensive user activity report (Admin only)
     """
-    if update.message.from_user.id != ADMIN_UID:
+    if not is_admin(update.message.from_user.id):
         update.message.reply_text("❌ Unauthorized access.")
         return
 
@@ -3107,7 +3107,7 @@ def update_cmd(update: Update, context: CallbackContext):
     """
     logger.info(f"Update command called by user {update.message.from_user.id}")
 
-    if update.message.from_user.id != ADMIN_UID:
+    if not is_admin(update.message.from_user.id):
         logger.warning(
             f"Unauthorized update access by user {update.message.from_user.id}"
         )
@@ -3318,7 +3318,7 @@ def verified(update: Update, context: CallbackContext):
     """
     Show all verified UIDs (Admin only)
     """
-    if update.message.from_user.id != ADMIN_UID:
+    if not is_admin(update.message.from_user.id):
         update.message.reply_text("❌ Unauthorized access.")
         return
 
@@ -3362,7 +3362,7 @@ def nonverified(update: Update, context: CallbackContext):
     """
     Show all non-verified UIDs (Admin only)
     """
-    if update.message.from_user.id != ADMIN_UID:
+    if not is_admin(update.message.from_user.id):
         update.message.reply_text("❌ Unauthorized access.")
         return
 
@@ -3408,7 +3408,7 @@ def all_uids(update: Update, context: CallbackContext):
     """
     Show all UIDs in database (Admin only)
     """
-    if update.message.from_user.id != ADMIN_UID:
+    if not is_admin(update.message.from_user.id):
         update.message.reply_text("❌ Unauthorized access.")
         return
 
@@ -3449,7 +3449,7 @@ def dustbin(update: Update, context: CallbackContext):
     Delete specific UIDs from database (Admin only)
     Usage: /dustbin uid1,uid2,uid3
     """
-    if update.message.from_user.id != ADMIN_UID:
+    if not is_admin(update.message.from_user.id):
         update.message.reply_text("❌ Unauthorized access.")
         return
 
@@ -3494,7 +3494,7 @@ def del_command(update: Update, context: CallbackContext):
     Delete UIDs from last extractions (Admin only)
     Usage: /del 1-5 (number of last extractions to delete)
     """
-    if update.message.from_user.id != ADMIN_UID:
+    if not is_admin(update.message.from_user.id):
         update.message.reply_text("❌ Unauthorized access.")
         return
 
@@ -3551,7 +3551,7 @@ def done_command(update: Update, context: CallbackContext):
     """
     Standalone done command to check for newly verified UIDs (Admin only)
     """
-    if update.message.from_user.id != ADMIN_UID:
+    if not is_admin(update.message.from_user.id):
         update.message.reply_text("❌ Unauthorized access.")
         return
 
@@ -3743,7 +3743,7 @@ def reject_command(update: Update, context: CallbackContext):
     """
     Send rejection message to all non-verified users (Admin only)
     """
-    if update.message.from_user.id != ADMIN_UID:
+    if not is_admin(update.message.from_user.id):
         update.message.reply_text("❌ Unauthorized access.")
         return
 
@@ -3854,7 +3854,7 @@ def newcode_command(update: Update, context: CallbackContext):
     Update gift code (Admin only)
     Usage: /newcode NEWCODE123
     """
-    if update.message.from_user.id != ADMIN_UID:
+    if not is_admin(update.message.from_user.id):
         update.message.reply_text("❌ Unauthorized access.")
         return
 
@@ -4126,7 +4126,7 @@ def block_user_command(update: Update, context: CallbackContext):
     Block/unblock users (Admin only)
     Usage: /block user_id or /unblock user_id
     """
-    if update.message.from_user.id != ADMIN_UID:
+    if not is_admin(update.message.from_user.id):
         update.message.reply_text("❌ Unauthorized access.")
         return
 
@@ -4200,7 +4200,7 @@ def check_blocked_command(update: Update, context: CallbackContext):
     """
     Check for users who have blocked the bot and update stats (Admin only)
     """
-    if update.message.from_user.id != ADMIN_UID:
+    if not is_admin(update.message.from_user.id):
         update.message.reply_text("❌ Unauthorized access.")
         return
 
@@ -4233,7 +4233,7 @@ def restrict_command(update: Update, context: CallbackContext):
     """
     global restrict_mode
 
-    if update.message.from_user.id != ADMIN_UID:
+    if not is_admin(update.message.from_user.id):
         update.message.reply_text("❌ Unauthorized access.")
         return
 
@@ -4272,13 +4272,155 @@ def restrict_command(update: Update, context: CallbackContext):
         update.message.reply_text("❌ Error processing restriction command.")
 
 
+def add_admin_command(update: Update, context: CallbackContext):
+    """
+    Add a new admin (Super Admin only - primary admin only)
+    Usage: /addadmin user_id
+    """
+    if update.message.from_user.id != ADMIN_UID:  # Only primary admin can add others
+        update.message.reply_text("❌ Only the primary admin can add new admins.")
+        return
+
+    if not context.args:
+        update.message.reply_text(
+            "👑 *Add New Admin*\n\n"
+            "Usage: `/addadmin <user_id>`\n"
+            "Example: `/addadmin 123456789`\n\n"
+            "⚠️ Only the primary admin can add new admins.",
+            parse_mode='Markdown')
+        return
+
+    try:
+        new_admin_id = int(context.args[0])
+        
+        if new_admin_id in ADMIN_UIDS:
+            update.message.reply_text(f"ℹ️ User {new_admin_id} is already an admin.")
+            return
+        
+        # Add to current session
+        ADMIN_UIDS.append(new_admin_id)
+        
+        update.message.reply_text(
+            f"✅ *Admin Added Successfully!*\n\n"
+            f"👑 New Admin ID: `{new_admin_id}`\n"
+            f"📊 Total Admins: {len(ADMIN_UIDS)}\n\n"
+            f"⚠️ Note: To make this permanent, add the ID to your ADMIN_UIDS environment variable.",
+            parse_mode='Markdown')
+        
+        # Try to notify the new admin
+        try:
+            context.bot.send_message(
+                chat_id=new_admin_id,
+                text="🎉 *Congratulations!*\n\nYou have been granted admin access to this bot.\nYou can now use all admin commands.",
+                parse_mode='Markdown'
+            )
+        except Exception as e:
+            logger.warning(f"Could not notify new admin {new_admin_id}: {e}")
+        
+        logger.info(f"Admin {update.message.from_user.username} added new admin: {new_admin_id}")
+
+    except ValueError:
+        update.message.reply_text("❌ Invalid user ID format. Please provide a valid numeric user ID.")
+    except Exception as e:
+        logger.error(f"Error adding admin: {e}")
+        update.message.reply_text("❌ Error adding admin.")
+
+
+def remove_admin_command(update: Update, context: CallbackContext):
+    """
+    Remove an admin (Super Admin only - primary admin only)
+    Usage: /removeadmin user_id
+    """
+    if update.message.from_user.id != ADMIN_UID:  # Only primary admin can remove others
+        update.message.reply_text("❌ Only the primary admin can remove admins.")
+        return
+
+    if not context.args:
+        update.message.reply_text(
+            "👑 *Remove Admin*\n\n"
+            "Usage: `/removeadmin <user_id>`\n"
+            "Example: `/removeadmin 123456789`\n\n"
+            "⚠️ Only the primary admin can remove admins.",
+            parse_mode='Markdown')
+        return
+
+    try:
+        remove_admin_id = int(context.args[0])
+        
+        if remove_admin_id == ADMIN_UID:
+            update.message.reply_text("❌ Cannot remove the primary admin.")
+            return
+        
+        if remove_admin_id not in ADMIN_UIDS:
+            update.message.reply_text(f"ℹ️ User {remove_admin_id} is not an admin.")
+            return
+        
+        # Remove from current session
+        ADMIN_UIDS.remove(remove_admin_id)
+        
+        update.message.reply_text(
+            f"✅ *Admin Removed Successfully!*\n\n"
+            f"👤 Removed Admin ID: `{remove_admin_id}`\n"
+            f"📊 Remaining Admins: {len(ADMIN_UIDS)}\n\n"
+            f"⚠️ Note: Update your ADMIN_UIDS environment variable to make this permanent.",
+            parse_mode='Markdown')
+        
+        # Try to notify the removed admin
+        try:
+            context.bot.send_message(
+                chat_id=remove_admin_id,
+                text="⚠️ *Admin Access Revoked*\n\nYour admin access to this bot has been removed.",
+                parse_mode='Markdown'
+            )
+        except Exception as e:
+            logger.warning(f"Could not notify removed admin {remove_admin_id}: {e}")
+        
+        logger.info(f"Admin {update.message.from_user.username} removed admin: {remove_admin_id}")
+
+    except ValueError:
+        update.message.reply_text("❌ Invalid user ID format. Please provide a valid numeric user ID.")
+    except Exception as e:
+        logger.error(f"Error removing admin: {e}")
+        update.message.reply_text("❌ Error removing admin.")
+
+
+def list_admins_command(update: Update, context: CallbackContext):
+    """
+    List all current admins (Admin only)
+    """
+    if not is_admin(update.message.from_user.id):
+        update.message.reply_text("❌ Unauthorized access.")
+        return
+
+    try:
+        admin_list = []
+        for i, admin_id in enumerate(ADMIN_UIDS, 1):
+            role = "👑 Primary Admin" if admin_id == ADMIN_UID else "🛡️ Admin"
+            admin_list.append(f"{i}. `{admin_id}` - {role}")
+        
+        admins_text = "\n".join(admin_list)
+        
+        msg = (
+            f"👥 *Current Bot Admins*\n\n"
+            f"📊 Total Admins: {len(ADMIN_UIDS)}\n\n"
+            f"{admins_text}\n\n"
+            f"⚠️ Note: Only the primary admin can add/remove other admins."
+        )
+        
+        update.message.reply_text(msg, parse_mode='Markdown')
+
+    except Exception as e:
+        logger.error(f"Error listing admins: {e}")
+        update.message.reply_text("❌ Error retrieving admin list.")
+
+
 def cast_command(update: Update, context: CallbackContext):
     """
     Broadcast message to all users (Admin only)
     Usage: /cast <message> or reply to a message with /cast
     Supports: Text, Photos, Videos, Documents, Stickers, and Inline Keyboards
     """
-    if update.message.from_user.id != ADMIN_UID:
+    if not is_admin(update.message.from_user.id):
         update.message.reply_text("❌ Unauthorized access.")
         return
 
@@ -5522,6 +5664,9 @@ def main():
             dp.add_handler(CommandHandler("checkblocked", check_blocked_command))
             dp.add_handler(CommandHandler("restrict", restrict_command))
             dp.add_handler(CommandHandler("cast", cast_command))
+            dp.add_handler(CommandHandler("addadmin", add_admin_command))
+            dp.add_handler(CommandHandler("removeadmin", remove_admin_command))
+            dp.add_handler(CommandHandler("listadmins", list_admins_command))
             
             logger.info("Registering callback handlers...")
             
