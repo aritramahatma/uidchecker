@@ -4304,7 +4304,7 @@ def add_admin_command(update: Update, context: CallbackContext):
             f"✅ *Admin Added Successfully!*\n\n"
             f"👑 New Admin ID: {new_admin_id}\n"
             f"📊 Total Admins: {len(ADMIN_UIDS)}\n\n"
-            f"⚠️ Note: To make this permanent, add the ID to your ADMIN_UIDS environment variable.",
+            f"⚠️ Note: To make this permanent, add the ID to your ADMIN\\_UIDS environment variable.",
             parse_mode='Markdown')
         
         # Try to notify the new admin
@@ -4362,7 +4362,7 @@ def remove_admin_command(update: Update, context: CallbackContext):
             f"✅ *Admin Removed Successfully!*\n\n"
             f"👤 Removed Admin ID: {remove_admin_id}\n"
             f"📊 Remaining Admins: {len(ADMIN_UIDS)}\n\n"
-            f"⚠️ Note: Update your ADMIN_UIDS environment variable to make this permanent.",
+            f"⚠️ Note: Update your ADMIN\\_UIDS environment variable to make this permanent.",
             parse_mode='Markdown')
         
         # Try to notify the removed admin
