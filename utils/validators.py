@@ -6,7 +6,7 @@ import re
 import logging
 from datetime import datetime
 from services.database import uids_col, ensure_db_connection
-from services.gemini import gemini_ocr
+from services.gemini import gemini_ocr, detect_fake_screenshot
 from config import restrict_mode, ADMIN_UID
 
 logger = logging.getLogger(__name__)
@@ -385,42 +385,26 @@ def handle_wallet(update, context):
             )
             return
 
-        # Extract balance and UID from OCR text
-        balance = None
-        matched_uid = None
-
-        # Look for balance (₹ or Rs followed by digits, or standalone numbers after balance keywords)
-        balance_patterns = [
-            r'(?:₹|Rs\.?|INR)\s*(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)',
-            r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*(?:₹|Rs\.?|INR)',
-            r'Balance[:\s]*(?:₹|Rs\.?|INR)?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)',
-            r'Total\s+balance[:\s]*(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)',
-            r'(?:Balance|Total|Amount)[:\s]*(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)',
-            r'(\d{1,3}(?:,\d{3})*\.\d{2})',  # Any number with decimal places (like 6,077.40)
-        ]
-
-        for pattern in balance_patterns:
-            balance_match = re.search(pattern, extracted_text, re.IGNORECASE)
-            if balance_match:
-                balance_str = balance_match.group(1).replace(',', '')
-                try:
-                    balance = float(balance_str)
-                    break
-                except ValueError:
-                    continue
-
-        # Look for UID in the screenshot
-        uid_patterns = [
-            r'(?:UID|User\s*ID)[:\s]*(\d{6,12})',
-            r'(\d{6,12})',  # Any 6-12 digit number
-        ]
-
-        for pattern in uid_patterns:
-            uid_match = re.search(pattern, extracted_text)
-            if uid_match:
-                matched_uid = uid_match.group(1)
-                if matched_uid == uid:  # Match with expected UID
-                    break
+        # Use enhanced extraction function
+        from services.gemini import extract_uid_and_balance, analyze_screenshot_quality
+        
+        # Analyze screenshot quality
+        quality_score, quality_issues = analyze_screenshot_quality(img_bytes)
+        
+        if quality_score < 50:
+            update.message.reply_text(
+                f"⚠️ *Screenshot Quality Issues Detected*\n\n"
+                f"Quality Score: {quality_score}/100\n"
+                f"Issues: {', '.join(quality_issues)}\n\n"
+                f"*Please send a clearer, higher quality screenshot*",
+                parse_mode='Markdown'
+            )
+            return
+        
+        # Extract data using enhanced function
+        extracted_data = extract_uid_and_balance(extracted_text)
+        balance = extracted_data['balance']
+        matched_uid = extracted_data['uid']
 
         # Verify wallet
         if matched_uid == uid and balance and balance >= 100.0:

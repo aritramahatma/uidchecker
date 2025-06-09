@@ -1,270 +1,336 @@
+
 """
-Gemini AI service for OCR and image analysis
+Gemini AI OCR and fake detection service
 """
+import os
+import re
 import logging
 import requests
 import base64
-import re
-from config import GEMINI_API_KEY
+from PIL import Image, ImageEnhance, ImageFilter
+from io import BytesIO
+import json
 
 logger = logging.getLogger(__name__)
 
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', 'AIzaSyAGDi2WslEe8VvBc7v3-dwpEmJobE6df1o')
 
-def gemini_ocr(image_bytes):
-    """
-    Process image using Gemini OCR to extract text with comprehensive error handling
-    """
-    max_retries = 2
-    retry_count = 0
 
-    while retry_count < max_retries:
-        try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
-            img_base64 = base64.b64encode(image_bytes).decode('utf-8')
+def preprocess_image(img_bytes):
+    """Preprocess image for better OCR accuracy"""
+    try:
+        # Open image from bytes
+        image = Image.open(BytesIO(img_bytes))
+        
+        # Convert to RGB if necessary
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+        
+        # Resize if image is too large (max 2048x2048)
+        max_size = 2048
+        if image.width > max_size or image.height > max_size:
+            image.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
+        
+        # Enhance contrast and sharpness for better OCR
+        enhancer = ImageEnhance.Contrast(image)
+        image = enhancer.enhance(1.2)
+        
+        enhancer = ImageEnhance.Sharpness(image)
+        image = enhancer.enhance(1.1)
+        
+        # Convert back to bytes
+        output = BytesIO()
+        image.save(output, format='JPEG', quality=95)
+        return output.getvalue()
+        
+    except Exception as e:
+        logger.error(f"Error preprocessing image: {e}")
+        return img_bytes
 
-            data = {
-                "contents": [{
-                    "parts": [{
-                        "text":
-                        "Extract all text from this image, especially focusing on UIDs and balance amounts:"
-                    }, {
+
+def gemini_ocr(img_bytes):
+    """Extract text from image using Gemini Vision API with enhanced prompting"""
+    try:
+        # Preprocess image for better quality
+        processed_img = preprocess_image(img_bytes)
+        
+        # Convert to base64
+        img_base64 = base64.b64encode(processed_img).decode('utf-8')
+        
+        # Enhanced prompt for better text extraction
+        prompt = """
+        You are an expert OCR system. Please extract ALL text from this image with high accuracy.
+        
+        Focus on:
+        1. Numbers (especially UIDs, balances, amounts)
+        2. Currency symbols (₹, Rs, INR)
+        3. Labels and headings
+        4. Any visible text or numbers
+        
+        Extract text exactly as it appears. Include:
+        - UID/User ID numbers
+        - Balance amounts with currency
+        - All visible numbers and text
+        - App names and headers
+        
+        Return the extracted text in a clean, readable format.
+        """
+        
+        # API request payload
+        payload = {
+            "contents": [{
+                "parts": [
+                    {"text": prompt},
+                    {
                         "inline_data": {
                             "mime_type": "image/jpeg",
                             "data": img_base64
                         }
-                    }]
-                }]
-            }
-
-            response = requests.post(url, json=data, timeout=30)
-
-            if response.status_code == 200:
-                try:
-                    result = response.json()
-                    text = result['candidates'][0]['content']['parts'][0]['text']
-                    return text if text else ''
-                except (KeyError, IndexError) as e:
-                    logger.error(f"Error parsing Gemini response: {e}")
-                    logger.error(f"Response content: {response.text}")
-                    return ''
-            elif response.status_code == 429:
-                # Rate limit exceeded
-                retry_count += 1
-                if retry_count < max_retries:
-                    logger.warning(f"Gemini API rate limited, retrying (attempt {retry_count}/{max_retries})")
-                    import time
-                    time.sleep(5)
-                    continue
-                else:
-                    logger.error("Gemini API rate limit exceeded after retries")
-                    raise APIQuotaError("Gemini API rate limit exceeded")
-            elif response.status_code in [500, 502, 503, 504]:
-                # Server errors - retry
-                retry_count += 1
-                if retry_count < max_retries:
-                    logger.warning(f"Gemini API server error {response.status_code}, retrying (attempt {retry_count}/{max_retries})")
-                    import time
-                    time.sleep(3)
-                    continue
-                else:
-                    logger.error(f"Gemini API server error after retries: {response.status_code}")
-                    raise APIServiceError("Gemini API service unavailable")
-            elif response.status_code == 401:
-                logger.error("Gemini API authentication failed")
-                raise APIAuthError("Gemini API authentication failed")
-            else:
-                logger.error(f"Gemini API error: {response.status_code} - {response.text}")
-                raise APIError(f"Gemini API error: {response.status_code}")
-
-        except requests.exceptions.Timeout:
-            retry_count += 1
-            if retry_count < max_retries:
-                logger.warning(f"Gemini API timeout, retrying (attempt {retry_count}/{max_retries})")
-                continue
-            else:
-                logger.error("Gemini API timeout after retries")
-                raise APIServiceError("Gemini API timeout")
-        except requests.exceptions.ConnectionError as e:
-            retry_count += 1
-            if retry_count < max_retries:
-                logger.warning(f"Gemini API connection error, retrying (attempt {retry_count}/{max_retries}): {e}")
-                import time
-                time.sleep(2)
-                continue
-            else:
-                logger.error(f"Gemini API connection error after retries: {e}")
-                raise APIServiceError("Gemini API connection failed")
-        except Exception as e:
-            logger.error(f"Unexpected error in gemini_ocr: {e}")
-            raise APIError(f"Gemini OCR failed: {e}")
-
-    return ''
-
-
-# Import custom exceptions
-class APIError(Exception):
-    """Base exception for API-related errors"""
-    pass
-
-
-class APIServiceError(APIError):
-    """Raised when external API service is unavailable"""
-    pass
-
-
-class APIQuotaError(APIError):
-    """Raised when API quota is exceeded"""
-    pass
-
-
-class APIAuthError(APIError):
-    """Raised when API authentication fails"""
-    pass
-
-
-def detect_fake_screenshot(image_bytes):
-    """Use Gemini AI to detect if a screenshot has been digitally edited or manipulated"""
-    try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
-        img_base64 = base64.b64encode(image_bytes).decode('utf-8')
-
-        # Focused prompt for detecting digital editing and manipulation
-        detection_prompt = """
-DIGITAL EDITING DETECTION: Analyze this screenshot to detect if it has been digitally edited or manipulated using photo editing software.
-
-IMPORTANT: Only flag as EDITED if you find CLEAR evidence of digital manipulation. Natural compression artifacts, normal screenshot quality variations, and typical mobile app interface elements should NOT be considered editing.
-
-FOCUS ON THESE EDITING INDICATORS:
-
-1. TEXT EDITING SIGNS:
-   - Text that looks pasted or overlaid (not natural UI text)
-   - Inconsistent fonts within similar elements
-   - Text with different pixelation/quality than surroundings
-   - Numbers that appear copied from elsewhere
-   - Text with unnatural edges or artifacts
-   - Inconsistent text alignment or spacing
-
-2. DIGITAL MANIPULATION ARTIFACTS:
-   - Copy-paste selection artifacts
-   - Clone stamp tool marks
-   - Brush tool evidence
-   - Selection box remnants
-   - Layer blend inconsistencies
-   - Compression artifacts around edited areas (not normal JPEG compression)
-
-3. VISUAL EDITING EVIDENCE:
-   - Color mismatches in similar elements
-   - Inconsistent lighting/shadows on text
-   - Pixelation differences between areas (not normal compression)
-   - Unnatural sharp edges around numbers/text
-   - Background inconsistencies behind text
-   - Different image quality in specific regions
-
-4. PHOTO EDITING SOFTWARE TRACES:
-   - Healing tool artifacts
-   - Content-aware fill marks
-   - Transform tool distortions
-   - Filter inconsistencies
-   - Digital watermark removal traces
-
-PROVIDE ANALYSIS IN THIS FORMAT:
-EDITING_STATUS: [UNEDITED/EDITED/HEAVILY_EDITED]
-CONFIDENCE: [0-100]%
-EDITING_EVIDENCE: [List specific editing signs found, or "None found" if unedited]
-TEXT_ALTERED: [YES/NO - Details of text manipulation]
-DIGITAL_ARTIFACTS: [YES/NO - Software editing traces]
-RECOMMENDATION: [ACCEPT/REVIEW/REJECT]
-
-If NO clear editing evidence is found, mark as UNEDITED with ACCEPT recommendation.
-Focus ONLY on whether the image has been digitally modified/edited, not on whether the content is "real" or "fake".
-"""
-
-        data = {
-            "contents": [{
-                "parts": [{
-                    "text": detection_prompt
-                }, {
-                    "inline_data": {
-                        "mime_type": "image/jpeg",
-                        "data": img_base64
                     }
-                }]
+                ]
             }],
             "generationConfig": {
-                "temperature": 0.1,  # Low temperature for consistent analysis
-                "maxOutputTokens": 1000
+                "temperature": 0.1,
+                "topK": 32,
+                "topP": 1,
+                "maxOutputTokens": 2048,
             }
         }
+        
+        # Make API request
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+        
+        response = requests.post(
+            url,
+            headers={"Content-Type": "application/json"},
+            json=payload,
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            if 'candidates' in result and len(result['candidates']) > 0:
+                text = result['candidates'][0]['content']['parts'][0]['text']
+                logger.info(f"OCR extracted text: {text[:200]}...")
+                return text.strip()
+            else:
+                logger.error("No text extracted from image")
+                return ""
+        else:
+            logger.error(f"Gemini API error: {response.status_code} - {response.text}")
+            return ""
+            
+    except Exception as e:
+        logger.error(f"Error in gemini_ocr: {e}")
+        return ""
 
-        response = requests.post(url, json=data, timeout=30)
 
-        if response.ok:
-            try:
-                result = response.json()
-                analysis = result['candidates'][0]['content']['parts'][0][
-                    'text']
-
+def detect_fake_screenshot(img_bytes):
+    """
+    Advanced fake screenshot detection using Gemini AI
+    Returns: (is_unedited, confidence_score, editing_evidence, full_analysis)
+    """
+    try:
+        # Preprocess image
+        processed_img = preprocess_image(img_bytes)
+        img_base64 = base64.b64encode(processed_img).decode('utf-8')
+        
+        # Enhanced fake detection prompt
+        prompt = """
+        You are an expert digital forensics analyst specializing in screenshot authenticity verification.
+        
+        Analyze this image for signs of digital editing, manipulation, or fakery. Look for:
+        
+        TECHNICAL INDICATORS:
+        1. Compression artifacts inconsistencies
+        2. Pixel-level anomalies
+        3. Font rendering inconsistencies
+        4. Shadow/lighting mismatches
+        5. Resolution inconsistencies
+        6. Color gradient abnormalities
+        
+        CONTENT INDICATORS:
+        1. Unrealistic UI elements
+        2. Misaligned text or buttons
+        3. Inconsistent app styling
+        4. Suspicious number patterns
+        5. Copy-paste evidence
+        6. Template usage signs
+        
+        METADATA ANALYSIS:
+        1. Image quality vs claimed source
+        2. Aspect ratio consistency
+        3. Screen recording vs screenshot markers
+        
+        Provide analysis in this EXACT format:
+        
+        AUTHENTICITY: [GENUINE/SUSPICIOUS/EDITED]
+        CONFIDENCE: [0-100]%
+        EVIDENCE: [list specific signs found]
+        ANALYSIS: [detailed technical explanation]
+        
+        Be strict in evaluation. Even minor editing signs should be flagged.
+        """
+        
+        payload = {
+            "contents": [{
+                "parts": [
+                    {"text": prompt},
+                    {
+                        "inline_data": {
+                            "mime_type": "image/jpeg",
+                            "data": img_base64
+                        }
+                    }
+                ]
+            }],
+            "generationConfig": {
+                "temperature": 0.1,
+                "topK": 32,
+                "topP": 1,
+                "maxOutputTokens": 1024,
+            }
+        }
+        
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+        
+        response = requests.post(
+            url,
+            headers={"Content-Type": "application/json"},
+            json=payload,
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            if 'candidates' in result and len(result['candidates']) > 0:
+                analysis = result['candidates'][0]['content']['parts'][0]['text']
+                
                 # Parse the analysis
                 is_unedited = True
-                confidence_score = 100
-                suspicious_elements = []
-
-                # Check editing status
-                if "EDITING_STATUS:" in analysis:
-                    edit_line = [
-                        line for line in analysis.split('\n')
-                        if 'EDITING_STATUS:' in line
-                    ][0]
-                    if "UNEDITED" in edit_line.upper():
-                        is_unedited = True
-                    elif any(word in edit_line.upper()
-                             for word in ['EDITED', 'HEAVILY_EDITED']):
+                confidence_score = 0
+                editing_evidence = []
+                
+                # Extract authenticity
+                auth_match = re.search(r'AUTHENTICITY:\s*(\w+)', analysis, re.IGNORECASE)
+                if auth_match:
+                    authenticity = auth_match.group(1).upper()
+                    if authenticity in ['SUSPICIOUS', 'EDITED']:
                         is_unedited = False
-
-                # Get confidence score
-                if "CONFIDENCE:" in analysis:
-                    conf_line = [
-                        line for line in analysis.split('\n')
-                        if 'CONFIDENCE:' in line
-                    ][0]
-                    conf_match = re.search(r'(\d+)', conf_line)
-                    if conf_match:
-                        confidence_score = int(conf_match.group(1))
-
-                # Get evidence only if editing was detected
-                if "EDITING_EVIDENCE:" in analysis and not is_unedited:
-                    evidence_line = [
-                        line for line in analysis.split('\n')
-                        if 'EDITING_EVIDENCE:' in line
-                    ]
-                    if evidence_line:
-                        evidence_text = evidence_line[0].replace(
-                            'EDITING_EVIDENCE:', '').strip()
-                        if evidence_text and evidence_text.lower() not in [
-                                'none', 'no evidence', 'not found'
-                        ]:
-                            suspicious_elements.append(evidence_text)
-
-                # Only check for specific editing indicators if not already marked as unedited
-                if is_unedited:
-                    # Additional checks for definitive editing indicators
-                    if any(keyword in analysis.upper() for keyword in [
-                            'TEXT_ALTERED: YES', 'DIGITAL_ARTIFACTS: YES',
-                            'RECOMMENDATION: REJECT'
-                    ]):
-                        is_unedited = False
-
-                return is_unedited, confidence_score, suspicious_elements, analysis
-
-            except (KeyError, IndexError) as e:
-                logger.error(f"Error parsing editing detection response: {e}")
-                return False, 0, ["Error parsing AI response"], ""
+                
+                # Extract confidence
+                conf_match = re.search(r'CONFIDENCE:\s*(\d+)', analysis)
+                if conf_match:
+                    confidence_score = int(conf_match.group(1))
+                
+                # Extract evidence
+                evidence_match = re.search(r'EVIDENCE:\s*(.+?)(?=ANALYSIS:|$)', analysis, re.DOTALL)
+                if evidence_match:
+                    evidence_text = evidence_match.group(1).strip()
+                    editing_evidence = [item.strip() for item in evidence_text.split(',') if item.strip()]
+                
+                logger.info(f"Fake detection - Unedited: {is_unedited}, Confidence: {confidence_score}%")
+                return is_unedited, confidence_score, editing_evidence, analysis
+                
+            else:
+                logger.error("No analysis returned from Gemini")
+                return True, 0, [], "Analysis failed"
         else:
-            logger.error(
-                f"Gemini editing detection API error: {response.status_code} - {response.text}"
-            )
-            return False, 0, ["API Error"], ""
-
+            logger.error(f"Gemini API error in fake detection: {response.status_code}")
+            return True, 0, [], "API error"
+            
     except Exception as e:
-        logger.error(f"Error in detect_fake_screenshot: {e}")
-        return False, 0, [f"Detection error: {str(e)}"], ""
+        logger.error(f"Error in fake detection: {e}")
+        return True, 0, [], f"Error: {e}"
+
+
+def extract_uid_and_balance(text):
+    """
+    Enhanced extraction of UID and balance from OCR text
+    """
+    try:
+        extracted_data = {
+            'uid': None,
+            'balance': None,
+            'currency': None
+        }
+        
+        # Enhanced UID patterns
+        uid_patterns = [
+            r'(?:UID|User\s*ID|ID)[:\s]*(\d{6,12})',  # Labeled UID
+            r'(\d{8,12})',  # 8-12 digit numbers (most likely UIDs)
+            r'(\d{6,7})',   # 6-7 digit numbers (shorter UIDs)
+        ]
+        
+        for pattern in uid_patterns:
+            uid_match = re.search(pattern, text, re.IGNORECASE)
+            if uid_match:
+                potential_uid = uid_match.group(1)
+                # Avoid very common numbers like years, small amounts
+                if len(potential_uid) >= 6 and not potential_uid.startswith('20'):
+                    extracted_data['uid'] = potential_uid
+                    break
+        
+        # Enhanced balance patterns
+        balance_patterns = [
+            r'(?:₹|Rs\.?|INR)\s*(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)',
+            r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*(?:₹|Rs\.?|INR)',
+            r'(?:Balance|Total|Amount|Available)[:\s]*(?:₹|Rs\.?|INR)?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)',
+            r'(?:Balance|Total)[:\s]*(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)',
+            r'(\d{1,3}(?:,\d{3})*\.\d{2})',  # Any decimal number format
+            r'(\d{3,6})\s*(?:₹|Rs)',  # Numbers before currency
+        ]
+        
+        for pattern in balance_patterns:
+            balance_match = re.search(pattern, text, re.IGNORECASE)
+            if balance_match:
+                balance_str = balance_match.group(1).replace(',', '')
+                try:
+                    balance = float(balance_str)
+                    # Reasonable balance range check
+                    if 0 <= balance <= 1000000:  # Up to 10 lakh
+                        extracted_data['balance'] = balance
+                        # Detect currency
+                        if '₹' in text or 'Rs' in text or 'INR' in text:
+                            extracted_data['currency'] = 'INR'
+                        break
+                except ValueError:
+                    continue
+        
+        logger.info(f"Extracted data: UID={extracted_data['uid']}, Balance={extracted_data['balance']}")
+        return extracted_data
+        
+    except Exception as e:
+        logger.error(f"Error extracting UID and balance: {e}")
+        return {'uid': None, 'balance': None, 'currency': None}
+
+
+def analyze_screenshot_quality(img_bytes):
+    """Analyze screenshot quality and provide recommendations"""
+    try:
+        image = Image.open(BytesIO(img_bytes))
+        
+        quality_score = 100
+        issues = []
+        
+        # Check resolution
+        if image.width < 300 or image.height < 500:
+            quality_score -= 30
+            issues.append("Low resolution")
+        
+        # Check aspect ratio (should be mobile-like)
+        aspect_ratio = image.height / image.width
+        if aspect_ratio < 1.3 or aspect_ratio > 2.5:
+            quality_score -= 20
+            issues.append("Unusual aspect ratio")
+        
+        # Check if image is too small in bytes
+        if len(img_bytes) < 10000:  # Less than 10KB
+            quality_score -= 25
+            issues.append("Very small file size")
+        
+        return quality_score, issues
+        
+    except Exception as e:
+        logger.error(f"Error analyzing screenshot quality: {e}")
+        return 50, ["Quality analysis failed"]
