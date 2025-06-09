@@ -4302,7 +4302,7 @@ def add_admin_command(update: Update, context: CallbackContext):
         
         update.message.reply_text(
             f"✅ *Admin Added Successfully!*\n\n"
-            f"👑 New Admin ID: `{new_admin_id}`\n"
+            f"👑 New Admin ID: {new_admin_id}\n"
             f"📊 Total Admins: {len(ADMIN_UIDS)}\n\n"
             f"⚠️ Note: To make this permanent, add the ID to your ADMIN_UIDS environment variable.",
             parse_mode='Markdown')
@@ -4360,7 +4360,7 @@ def remove_admin_command(update: Update, context: CallbackContext):
         
         update.message.reply_text(
             f"✅ *Admin Removed Successfully!*\n\n"
-            f"👤 Removed Admin ID: `{remove_admin_id}`\n"
+            f"👤 Removed Admin ID: {remove_admin_id}\n"
             f"📊 Remaining Admins: {len(ADMIN_UIDS)}\n\n"
             f"⚠️ Note: Update your ADMIN_UIDS environment variable to make this permanent.",
             parse_mode='Markdown')
@@ -4396,7 +4396,7 @@ def list_admins_command(update: Update, context: CallbackContext):
         admin_list = []
         for i, admin_id in enumerate(ADMIN_UIDS, 1):
             role = "👑 Primary Admin" if admin_id == ADMIN_UID else "🛡️ Admin"
-            admin_list.append(f"{i}. `{admin_id}` - {role}")
+            admin_list.append(f"{i}. {admin_id} - {role}")
         
         admins_text = "\n".join(admin_list)
         
