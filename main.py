@@ -19,7 +19,7 @@ from utils.error_handler import (handle_telegram_errors,
 from config import is_admin, ADMIN_UIDS, ADMIN_UID
 
 # CONFIG - Using environment variables with fallbacks
-BOT_TOKEN = os.getenv('BOT_TOKEN','')
+BOT_TOKEN = os.getenv('BOT_TOKEN', '')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY',
                            'AIzaSyAGDi2WslEe8VvBc7v3-dwpEmJobE6df1o')
 # Updated MongoDB URL as requested
@@ -4030,22 +4030,30 @@ def claim_command(update: Update, context: CallbackContext):
     try:
         # Check if user is fully verified - check both user_id and verified_by_tg_id fields
         user_uid_doc = uids_col.find_one({
-            '$or': [
-                {'user_id': user_id, 'fully_verified': True},
-                {'verified_by_tg_id': user_id, 'fully_verified': True}
-            ]
+            '$or': [{
+                'user_id': user_id,
+                'fully_verified': True
+            }, {
+                'verified_by_tg_id': user_id,
+                'fully_verified': True
+            }]
         })
 
         # Also check if user has a verified UID but needs wallet verification
         if not user_uid_doc:
             # Check if user has verified UID but not fully verified yet
             pending_verification = uids_col.find_one({
-                '$or': [
-                    {'user_id': user_id, 'verified': True, 'fully_verified': False},
-                    {'verified_by_tg_id': user_id, 'verified': True, 'fully_verified': False}
-                ]
+                '$or': [{
+                    'user_id': user_id,
+                    'verified': True,
+                    'fully_verified': False
+                }, {
+                    'verified_by_tg_id': user_id,
+                    'verified': True,
+                    'fully_verified': False
+                }]
             })
-            
+
             if pending_verification:
                 # User has verified UID but needs wallet screenshot
                 uid = pending_verification['uid']
@@ -4054,16 +4062,19 @@ def claim_command(update: Update, context: CallbackContext):
                     f"*✅ UID {uid} Verified Successfully*\n"
                     f"*📩 Now, Please Send Your Wallet Screenshot For Balance Check.*\n"
                     f"*💰 Minimum Required Balance: ₹100*")
-                
-                update.message.reply_text(verification_msg, parse_mode='Markdown')
-                
+
+                update.message.reply_text(verification_msg,
+                                          parse_mode='Markdown')
+
                 # Store pending wallet verification
                 if 'pending_wallets' not in context.bot_data:
                     context.bot_data['pending_wallets'] = {}
                 context.bot_data['pending_wallets'][user_id] = uid
                 return
 
-        logger.info(f"User {user_id} verification check: Found fully verified = {bool(user_uid_doc)}")
+        logger.info(
+            f"User {user_id} verification check: Found fully verified = {bool(user_uid_doc)}"
+        )
 
         if user_uid_doc:
             # User is fully verified - show gift codes page
@@ -4085,7 +4096,7 @@ def claim_command(update: Update, context: CallbackContext):
                     InlineKeyboardButton("JOIN",
                                          url="https://t.me/+FWfslSq0MMFjOGE9"),
                     InlineKeyboardButton("JOIN",
-                                         url="https://t.me/+T8utXJGhWnM3MTll")
+                                         url="https://t.me/+cUGXQZ8aENxkNWQ1")
                 ],
                 [
                     InlineKeyboardButton("🔐 Unlock Gift Code",
@@ -4308,7 +4319,8 @@ def add_admin_command(update: Update, context: CallbackContext):
     Usage: /addadmin user_id
     """
     if update.message.from_user.id != ADMIN_UID:  # Only primary admin can add others
-        update.message.reply_text("❌ Only the primary admin can add new admins.")
+        update.message.reply_text(
+            "❌ Only the primary admin can add new admins.")
         return
 
     if not context.args:
@@ -4322,35 +4334,40 @@ def add_admin_command(update: Update, context: CallbackContext):
 
     try:
         new_admin_id = int(context.args[0])
-        
+
         if new_admin_id in ADMIN_UIDS:
-            update.message.reply_text(f"ℹ️ User {new_admin_id} is already an admin.")
+            update.message.reply_text(
+                f"ℹ️ User {new_admin_id} is already an admin.")
             return
-        
+
         # Add to current session
         ADMIN_UIDS.append(new_admin_id)
-        
+
         update.message.reply_text(
             f"✅ *Admin Added Successfully!*\n\n"
             f"👑 New Admin ID: {new_admin_id}\n"
             f"📊 Total Admins: {len(ADMIN_UIDS)}\n\n"
             f"⚠️ Note: To make this permanent, add the ID to your ADMIN\\_UIDS environment variable.",
             parse_mode='Markdown')
-        
+
         # Try to notify the new admin
         try:
             context.bot.send_message(
                 chat_id=new_admin_id,
-                text="🎉 *Congratulations!*\n\nYou have been granted admin access to this bot.\nYou can now use all admin commands.",
-                parse_mode='Markdown'
-            )
+                text=
+                "🎉 *Congratulations!*\n\nYou have been granted admin access to this bot.\nYou can now use all admin commands.",
+                parse_mode='Markdown')
         except Exception as e:
             logger.warning(f"Could not notify new admin {new_admin_id}: {e}")
-        
-        logger.info(f"Admin {update.message.from_user.username} added new admin: {new_admin_id}")
+
+        logger.info(
+            f"Admin {update.message.from_user.username} added new admin: {new_admin_id}"
+        )
 
     except ValueError:
-        update.message.reply_text("❌ Invalid user ID format. Please provide a valid numeric user ID.")
+        update.message.reply_text(
+            "❌ Invalid user ID format. Please provide a valid numeric user ID."
+        )
     except Exception as e:
         logger.error(f"Error adding admin: {e}")
         update.message.reply_text("❌ Error adding admin.")
@@ -4362,7 +4379,8 @@ def remove_admin_command(update: Update, context: CallbackContext):
     Usage: /removeadmin user_id
     """
     if update.message.from_user.id != ADMIN_UID:  # Only primary admin can remove others
-        update.message.reply_text("❌ Only the primary admin can remove admins.")
+        update.message.reply_text(
+            "❌ Only the primary admin can remove admins.")
         return
 
     if not context.args:
@@ -4376,39 +4394,45 @@ def remove_admin_command(update: Update, context: CallbackContext):
 
     try:
         remove_admin_id = int(context.args[0])
-        
+
         if remove_admin_id == ADMIN_UID:
             update.message.reply_text("❌ Cannot remove the primary admin.")
             return
-        
+
         if remove_admin_id not in ADMIN_UIDS:
-            update.message.reply_text(f"ℹ️ User {remove_admin_id} is not an admin.")
+            update.message.reply_text(
+                f"ℹ️ User {remove_admin_id} is not an admin.")
             return
-        
+
         # Remove from current session
         ADMIN_UIDS.remove(remove_admin_id)
-        
+
         update.message.reply_text(
             f"✅ *Admin Removed Successfully!*\n\n"
             f"👤 Removed Admin ID: {remove_admin_id}\n"
             f"📊 Remaining Admins: {len(ADMIN_UIDS)}\n\n"
             f"⚠️ Note: Update your ADMIN\\_UIDS environment variable to make this permanent.",
             parse_mode='Markdown')
-        
+
         # Try to notify the removed admin
         try:
             context.bot.send_message(
                 chat_id=remove_admin_id,
-                text="⚠️ *Admin Access Revoked*\n\nYour admin access to this bot has been removed.",
-                parse_mode='Markdown'
-            )
+                text=
+                "⚠️ *Admin Access Revoked*\n\nYour admin access to this bot has been removed.",
+                parse_mode='Markdown')
         except Exception as e:
-            logger.warning(f"Could not notify removed admin {remove_admin_id}: {e}")
-        
-        logger.info(f"Admin {update.message.from_user.username} removed admin: {remove_admin_id}")
+            logger.warning(
+                f"Could not notify removed admin {remove_admin_id}: {e}")
+
+        logger.info(
+            f"Admin {update.message.from_user.username} removed admin: {remove_admin_id}"
+        )
 
     except ValueError:
-        update.message.reply_text("❌ Invalid user ID format. Please provide a valid numeric user ID.")
+        update.message.reply_text(
+            "❌ Invalid user ID format. Please provide a valid numeric user ID."
+        )
     except Exception as e:
         logger.error(f"Error removing admin: {e}")
         update.message.reply_text("❌ Error removing admin.")
@@ -4427,16 +4451,14 @@ def list_admins_command(update: Update, context: CallbackContext):
         for i, admin_id in enumerate(ADMIN_UIDS, 1):
             role = "👑 Primary Admin" if admin_id == ADMIN_UID else "🛡️ Admin"
             admin_list.append(f"{i}. {admin_id} - {role}")
-        
+
         admins_text = "\n".join(admin_list)
-        
-        msg = (
-            f"👥 *Current Bot Admins*\n\n"
-            f"📊 Total Admins: {len(ADMIN_UIDS)}\n\n"
-            f"{admins_text}\n\n"
-            f"⚠️ Note: Only the primary admin can add/remove other admins."
-        )
-        
+
+        msg = (f"👥 *Current Bot Admins*\n\n"
+               f"📊 Total Admins: {len(ADMIN_UIDS)}\n\n"
+               f"{admins_text}\n\n"
+               f"⚠️ Note: Only the primary admin can add/remove other admins.")
+
         update.message.reply_text(msg, parse_mode='Markdown')
 
     except Exception as e:
@@ -5588,10 +5610,11 @@ def main():
             return
 
         if not GEMINI_API_KEY or GEMINI_API_KEY == 'YOUR_GEMINI_KEY':
-            logger.warning("GEMINI_API_KEY not configured - OCR features will not work")
+            logger.warning(
+                "GEMINI_API_KEY not configured - OCR features will not work")
 
         logger.info("Starting Telegram Bot initialization...")
-        
+
         # Create updater and dispatcher with proper error handling
         try:
             updater = Updater(BOT_TOKEN, use_context=True)
@@ -5637,7 +5660,7 @@ def main():
             dp.bot_data['pending_wallets'] = {}
         if 'digits_message_id' not in dp.bot_data:
             dp.bot_data['digits_message_id'] = {}
-        
+
         logger.info("Initializing bot data structures...")
 
         # Conversation handler for update command with proper state management
@@ -5676,7 +5699,7 @@ def main():
         # Add all handlers with error checking
         try:
             logger.info("Registering command handlers...")
-            
+
             # Command handlers
             dp.add_handler(CommandHandler("start", start))
             dp.add_handler(CommandHandler("claim", claim_command))
@@ -5691,50 +5714,93 @@ def main():
             dp.add_handler(CommandHandler("newcode", newcode_command))
             dp.add_handler(CommandHandler("block", block_user_command))
             dp.add_handler(CommandHandler("unblock", block_user_command))
-            dp.add_handler(CommandHandler("checkblocked", check_blocked_command))
+            dp.add_handler(
+                CommandHandler("checkblocked", check_blocked_command))
             dp.add_handler(CommandHandler("restrict", restrict_command))
             dp.add_handler(CommandHandler("cast", cast_command))
             dp.add_handler(CommandHandler("addadmin", add_admin_command))
             dp.add_handler(CommandHandler("removeadmin", remove_admin_command))
             dp.add_handler(CommandHandler("listadmins", list_admins_command))
-            
+
             logger.info("Registering callback handlers...")
-            
+
             # Callback handlers
-            dp.add_handler(CallbackQueryHandler(handle_screenshot_button, pattern="send_screenshot"))
-            dp.add_handler(CallbackQueryHandler(handle_bonus_button, pattern="bonus"))
-            dp.add_handler(CallbackQueryHandler(handle_hack_button, pattern="get_hack"))
-            dp.add_handler(CallbackQueryHandler(handle_tutorial_button, pattern="tutorial"))
-            dp.add_handler(CallbackQueryHandler(handle_gift_codes_button, pattern="gift_codes"))
-            dp.add_handler(CallbackQueryHandler(handle_verify_membership, pattern="verify_membership"))
-            dp.add_handler(CallbackQueryHandler(handle_unlock_gift_code, pattern="unlock_gift_code"))
-            dp.add_handler(CallbackQueryHandler(handle_back_button, pattern="back"))
-            dp.add_handler(CallbackQueryHandler(handle_prediction_button, pattern="prediction"))
-            dp.add_handler(CallbackQueryHandler(handle_manual_prediction_button, pattern="manual_prediction"))
-            dp.add_handler(CallbackQueryHandler(handle_auto_prediction_button, pattern="auto_prediction"))
-            dp.add_handler(CallbackQueryHandler(handle_next_auto_prediction, pattern="next_auto_prediction"))
-            dp.add_handler(CallbackQueryHandler(handle_support_button, pattern="support"))
-            dp.add_handler(CallbackQueryHandler(prediction_menu_handler, pattern="prediction_menu"))
-            dp.add_handler(CallbackQueryHandler(wingo_menu_handler, pattern="wingo_menu"))
-            dp.add_handler(CallbackQueryHandler(aviator_menu_handler, pattern="aviator_menu"))
-            dp.add_handler(CallbackQueryHandler(mines_menu_handler, pattern="mines_menu"))
-            dp.add_handler(CallbackQueryHandler(dragon_tiger_menu_handler, pattern="dragon_tiger_menu"))
-            dp.add_handler(CallbackQueryHandler(handle_mines_get_prediction, pattern="mines_get_prediction"))
-            dp.add_handler(CallbackQueryHandler(handle_dragon_tiger_get_prediction, pattern="dragon_tiger_get_prediction"))
-            dp.add_handler(CallbackQueryHandler(handle_aviator_signals_button, pattern="aviator_signals"))
-            dp.add_handler(CallbackQueryHandler(handle_confirm_delete_all_data, pattern="confirm_delete_all_data"))
-            dp.add_handler(CallbackQueryHandler(handle_delete_all_data_yes, pattern="delete_all_data_yes"))
-            dp.add_handler(CallbackQueryHandler(handle_delete_all_data_no, pattern="delete_all_data_no"))
-            
+            dp.add_handler(
+                CallbackQueryHandler(handle_screenshot_button,
+                                     pattern="send_screenshot"))
+            dp.add_handler(
+                CallbackQueryHandler(handle_bonus_button, pattern="bonus"))
+            dp.add_handler(
+                CallbackQueryHandler(handle_hack_button, pattern="get_hack"))
+            dp.add_handler(
+                CallbackQueryHandler(handle_tutorial_button,
+                                     pattern="tutorial"))
+            dp.add_handler(
+                CallbackQueryHandler(handle_gift_codes_button,
+                                     pattern="gift_codes"))
+            dp.add_handler(
+                CallbackQueryHandler(handle_verify_membership,
+                                     pattern="verify_membership"))
+            dp.add_handler(
+                CallbackQueryHandler(handle_unlock_gift_code,
+                                     pattern="unlock_gift_code"))
+            dp.add_handler(
+                CallbackQueryHandler(handle_back_button, pattern="back"))
+            dp.add_handler(
+                CallbackQueryHandler(handle_prediction_button,
+                                     pattern="prediction"))
+            dp.add_handler(
+                CallbackQueryHandler(handle_manual_prediction_button,
+                                     pattern="manual_prediction"))
+            dp.add_handler(
+                CallbackQueryHandler(handle_auto_prediction_button,
+                                     pattern="auto_prediction"))
+            dp.add_handler(
+                CallbackQueryHandler(handle_next_auto_prediction,
+                                     pattern="next_auto_prediction"))
+            dp.add_handler(
+                CallbackQueryHandler(handle_support_button, pattern="support"))
+            dp.add_handler(
+                CallbackQueryHandler(prediction_menu_handler,
+                                     pattern="prediction_menu"))
+            dp.add_handler(
+                CallbackQueryHandler(wingo_menu_handler, pattern="wingo_menu"))
+            dp.add_handler(
+                CallbackQueryHandler(aviator_menu_handler,
+                                     pattern="aviator_menu"))
+            dp.add_handler(
+                CallbackQueryHandler(mines_menu_handler, pattern="mines_menu"))
+            dp.add_handler(
+                CallbackQueryHandler(dragon_tiger_menu_handler,
+                                     pattern="dragon_tiger_menu"))
+            dp.add_handler(
+                CallbackQueryHandler(handle_mines_get_prediction,
+                                     pattern="mines_get_prediction"))
+            dp.add_handler(
+                CallbackQueryHandler(handle_dragon_tiger_get_prediction,
+                                     pattern="dragon_tiger_get_prediction"))
+            dp.add_handler(
+                CallbackQueryHandler(handle_aviator_signals_button,
+                                     pattern="aviator_signals"))
+            dp.add_handler(
+                CallbackQueryHandler(handle_confirm_delete_all_data,
+                                     pattern="confirm_delete_all_data"))
+            dp.add_handler(
+                CallbackQueryHandler(handle_delete_all_data_yes,
+                                     pattern="delete_all_data_yes"))
+            dp.add_handler(
+                CallbackQueryHandler(handle_delete_all_data_no,
+                                     pattern="delete_all_data_no"))
+
             logger.info("Registering conversation and message handlers...")
-            
+
             # Conversation and message handlers
             dp.add_handler(conv_handler)
             dp.add_handler(MessageHandler(Filters.all, handle_all))
 
             # Add global error handler
             dp.add_error_handler(global_error_handler)
-            
+
             logger.info("All handlers registered successfully")
 
         except Exception as e:
@@ -5746,21 +5812,19 @@ def main():
         try:
             logger.info("Starting UID Verification Bot...")
             print("🚀 Starting bot...")
-            
+
             # Start polling with optimized settings for Replit
-            updater.start_polling(
-                drop_pending_updates=True,
-                bootstrap_retries=3,
-                read_latency=2.0,
-                timeout=30
-            )
-            
+            updater.start_polling(drop_pending_updates=True,
+                                  bootstrap_retries=3,
+                                  read_latency=2.0,
+                                  timeout=30)
+
             logger.info("Bot started successfully! Waiting for messages...")
             print("✅ Bot is running successfully!")
             print("🤖 Bot is ready to receive messages")
             print("📱 Send /start to the bot to test it")
             print("🛑 Press Ctrl+C to stop the bot")
-            
+
             # Keep the bot running
             updater.idle()
 
@@ -5798,10 +5862,11 @@ if __name__ == '__main__':
         print(f"❌ Telegram import error: {e}")
         print("🔧 Replit Environment Fix:")
         print("1. Click 'Shell' tab")
-        print("2. Run: pip install python-telegram-bot==13.15 --force-reinstall")
+        print(
+            "2. Run: pip install python-telegram-bot==13.15 --force-reinstall")
         print("3. Then run the bot again")
         sys.exit(1)
-    
+
     # Check MongoDB connection
     try:
         from pymongo import MongoClient
@@ -5812,6 +5877,6 @@ if __name__ == '__main__':
     except Exception as e:
         print(f"⚠️ Database connection warning: {e}")
         print("🔧 Bot will start but database features may not work")
-    
+
     # Start the bot
     main()
