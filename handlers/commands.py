@@ -157,7 +157,7 @@ def claim_command(update: Update, context: CallbackContext):
                 ],
                 [
                     InlineKeyboardButton("JOIN",
-                                         url="https://t.me/+mm3dF_L31cg2NjA1"),
+                                         url="https://t.me/+OwW3OUa3XzJjZTc1"),
                     InlineKeyboardButton("JOIN",
                                          url="https://t.me/+2u_ekSv7S71lZTll")
                 ],
