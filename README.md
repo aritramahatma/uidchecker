@@ -1,140 +1,173 @@
+📘 UIDChecker Telegram Bot – Setup & Admin Guide
+uidchecker is a powerful Telegram bot for verifying gaming UIDs through screenshots using AI, managing users, gift code claims, and more. It supports image-based UID scanning, wallet proof, and complete admin control.
 
-# Telegram Bot Setup Guide
+GitHub Repo: github.com/aritramahatma/uidchecker
 
-## Quick Start (For New Users)
+🚀 Quick Setup (Replit Recommended)
+Step 1: Fork & Open
+Go to Replit
 
-1. **Clone this project to your Replit account**
-2. **Click the RUN button** - it will automatically fix all dependencies
-3. **Add your environment variables** in Secrets:
-   - `BOT_TOKEN`: Your Telegram bot token
-   - `ADMIN_UID`: Your Telegram user ID
-   - `GEMINI_API_KEY`: Your Gemini API key
+Import the repo:
+https://github.com/aritramahatma/uidchecker
 
-## Manual Setup (If needed)
+Step 2: Click Run
+Replit will:
 
-If you face any dependency issues, run this command in Shell:
+Install all Python dependencies
 
-```bash
+Auto-correct any broken Telegram packages
+
+Step 3: Add Secrets
+Click the "lock" icon on the left side (Secrets/Environment Variables), and add:
+
+Key	Value
+BOT_TOKEN	Your bot token from @BotFather
+ADMIN_UID	Your Telegram numeric user ID
+GEMINI_API_KEY	Your Google Gemini Vision API key
+
+🖥️ VPS Deployment Guide (Contabo/DigitalOcean/Any Ubuntu Server)
+✅ Requirements
+Ubuntu 20.04+ VPS
+
+Python 3.8+
+
+Git installed
+
+SSH access
+
+📦 VPS Installation Steps
+bash
+Copy
+Edit
+# 1. Connect to VPS
+ssh root@your-vps-ip
+
+# 2. Update system
+apt update && apt upgrade -y
+
+# 3. Install dependencies
+apt install git python3-pip python3-venv -y
+
+# 4. Clone your repo
+git clone https://github.com/aritramahatma/uidchecker.git
+cd uidchecker
+
+# 5. Create virtual environment (optional)
+python3 -m venv venv
+source venv/bin/activate
+
+# 6. Install required packages
+pip install -r requirements.txt
+
+# 7. Fix dependency issues (if any)
 python setup_dependencies.py
-```
 
-This script will:
-- Remove conflicting telegram packages
-- Install the correct `python-telegram-bot==13.15`
-- Verify the installation
-- Install all other dependencies
+# 8. Set environment variables (temporary method)
+export BOT_TOKEN='your_bot_token'
+export ADMIN_UID='your_admin_uid'
+export GEMINI_API_KEY='your_gemini_api_key'
 
-## Common Issues Fixed
+# 9. Start the bot
+python main.py
+✅ To keep bot running in background:
 
-✅ **ImportError: cannot import name 'Update' from 'telegram'**
-- Automatically removes wrong `telegram` package (v0.0.1)
-- Installs correct `python-telegram-bot==13.15`
+bash
+Copy
+Edit
+nohup python main.py &
+🔁 To run bot on boot, use systemd (ask me if you want the service file).
 
-✅ **Package conflicts**
-- Clears pip cache
-- Force reinstalls with correct versions
+🤖 Bot Command Reference
+🔓 User Commands
+/start – Welcome + begin verification
 
-✅ **Dependency management**
-- Handles both requirements.txt and pyproject.toml
+/claim – Claim gift code (if fully verified)
 
-## Running the Bot
+🔐 Admin Commands (ADMIN_UID only)
+📊 Analytics
+/stats – Total users, UID stats, verification %
 
-After setup, your bot will start automatically. You can also use these workflows:
-- **Setup and Run Bot** (recommended)
-- **Run Telegram Bot**
+🧾 UID Tools
+/update – Add UIDs (manual or screenshot via OCR)
 
-## Bot Commands & Functions
+/done – Finalize UID update and notify users
 
-### **User Commands**
-- **`/start`** - Welcome message with registration link and verification options
-- **`/claim`** - Access gift codes (requires full verification)
+/verified – Show verified UIDs
 
-### **Admin Commands** (Only for ADMIN_UID: 6490401448)
+/nonverified – Show non-verified UIDs
 
-#### **Statistics & Monitoring**
-- **`/stats`** - Comprehensive user activity report showing:
-  - Total bot users
-  - Blocked users (admin blocked vs user blocked)
-  - Verified UIDs
-  - Fully verified users
-  - Non-verified users
-  - Admin updated UIDs
-  - Pending wallet verifications
-  - Users with valid balance
-  - Verification rate percentage
+/all – Show all UIDs in DB
 
-#### **UID Management**
-- **`/update`** - Dual mode UID management system:
-  - **Single UID Mode**: Add UIDs one by one (6-12 digits)
-  - **Bulk Screenshot Mode**: Extract UIDs from images using AI OCR
-  - Type `/done` to finish either mode
+👥 User Management
+/block <user_id> – Block user
 
-- **`/verified`** - Show all verified UIDs with usernames and balances
-- **`/nonverified`** - Show all non-verified UIDs
-- **`/all`** - Show all UIDs in database with verification status
+/unblock <user_id> – Unblock user
 
-#### **User Management**
-- **`/done`** - Check for newly verified UIDs and notify users
-- **`/reject`** - Send rejection messages to all non-verified users and auto-delete their UIDs
-- **`/block <user_id>`** - Block a specific user from using the bot
-- **`/unblock <user_id>`** - Unblock a previously blocked user
-- **`/checkblocked`** - Check for users who have blocked the bot and update stats
+/checkblocked – Find users who blocked bot
 
-#### **Data Management**
-- **`/dustbin <uid1,uid2,uid3>`** - Delete specific UIDs from database
-  - Example: `/dustbin 123456,789012,345678`
-- **`/del <number>`** - Delete UIDs from last bulk extractions
-  - Example: `/del 2` (deletes UIDs from last 2 extractions)
+/reject – Reject all non-verified users
 
-#### **Gift Code Management**
-- **`/newcode <gift_code>`** - Update the daily gift code:
-  - Deactivates old codes
-  - Sets new active code
-  - Broadcasts notification to all users
-  - Example: `/newcode ABC123XYZ789`
+🧹 UID Cleanup
+/dustbin 123456,654321,... – Delete selected UIDs
 
-#### **System Controls**
-- **`/restrict on/off`** - Toggle global restriction mode for UID verification
-- **`/cast <message>`** - Broadcast message to all users (supports text, photos, videos, stickers, etc.)
+/del 2 – Delete last 2 bulk extracted UID batches
 
-#### **Admin Management** (Primary Admin Only)
-- **`/addadmin <user_id>`** - Add a new admin to the bot
-  - Example: `/addadmin 123456789`
-- **`/removeadmin <user_id>`** - Remove an admin from the bot
-  - Example: `/removeadmin 123456789`
-- **`/listadmins`** - Show all current bot admins with their roles
+🎁 Gift Code Control
+/newcode ABC123XYZ – Set new gift code and broadcast
 
-### **Interactive Features**
+📢 Broadcast & Restrictions
+/cast <msg> – Broadcast message to all users
 
-#### **Game Predictions** (For verified users)
-- **Wingo** - 1-minute color/number predictions (Manual & Auto modes)
-- **Aviator** - Multiplier signal predictions
-- **Mines Pro** - Safe tile position predictions
-- **Dragon Tiger** - Card game predictions
+/restrict on/off – Enable or disable UID verification globally
 
-#### **Callback Button Functions**
-- **Send Screenshot** - Start UID verification process
-- **Prediction** - Access game prediction menu
-- **Gift Codes** - Join channels to unlock gift codes
-- **Get Hack** - Access bonus/hack features
-- **Support** - Contact official support bot
-- **Unlock Gift Code** - Verify channel membership and get gift codes
+👑 Admin Roles
+/addadmin <user_id> – Add admin
 
-### **Verification Process**
-1. **UID Submission** - Users send 6-12 digit gaming platform UID
-2. **Screenshot Analysis** - AI-powered fake detection using Google Gemini
-3. **Wallet Verification** - Minimum ₹100 balance check
-4. **Full Verification** - Access to all premium features
+/removeadmin <user_id> – Remove admin
 
-### **System Capabilities**
-- **MongoDB Integration** - Stores all user data and statistics
-- **AI Screenshot Analysis** - Detects edited/fake images
-- **Auto User Management** - Tracks blocked users and activity
-- **Broadcast System** - Mass notifications for gift codes
-- **Anti-Fraud Protection** - Multiple verification layers
-- **Real-time Predictions** - Period-based gaming predictions
-- **Channel Membership Verification** - Must join 4 Telegram channels for rewards
+/listadmins – Show all admins
 
-## Support
+🧠 Verification Flow (AI + Manual)
+User sends UID (6–12 digits)
 
-If you still face issues, the setup script provides detailed logs to help debug the problem.
+User uploads screenshot of game profile
+
+AI (Gemini Vision) checks if image is:
+
+Real or edited/fake
+
+Contains matching UID
+
+If verified:
+
+User gets access to gift claim
+
+Optionally verifies wallet balance
+
+All verified UIDs are stored in MongoDB
+
+🔍 Advanced Features
+✅ Google Gemini API for real-time fake screenshot detection
+
+✅ MongoDB data storage
+
+✅ Channel join verification (configurable)
+
+✅ Broadcast to all users
+
+✅ Block detection
+
+✅ Multi-mode UID input (manual + image OCR)
+
+🧪 Need Help?
+Want auto-start on VPS reboot, domain support, or advanced security?
+
+Ask me to:
+
+Create systemd service for auto-start
+
+Add .env file support for easier variable management
+
+Add MongoDB cloud setup
+
+Add verification channel locks
