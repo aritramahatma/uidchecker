@@ -1,75 +1,48 @@
-
 """
 Helper utilities for the Telegram bot
 """
 import logging
 from datetime import datetime
 from services.database import user_stats_col
+from telegram.error import Unauthorized, BadRequest, TimedOut
 
 logger = logging.getLogger(__name__)
 
 
-def safe_send_message(context, chat_id, text, parse_mode=None, reply_markup=None):
-    """Send a message, handling potential block by the user."""
+def safe_send_message(context, chat_id, text, parse_mode='Markdown', reply_markup=None, **kwargs):
+    """
+    Safely send a message with error handling
+    Returns message object if successful, None if failed
+    """
     try:
-        return context.bot.send_message(chat_id=chat_id,
-                                        text=text,
-                                        parse_mode=parse_mode,
-                                        reply_markup=reply_markup)
-    except Exception as e:
-        error_msg = str(e).lower()
-        if any(keyword in error_msg for keyword in [
-                "blocked", "deactivated", "user is deactivated",
-                "bot was blocked", "forbidden", "chat not found"
-        ]):
-            logger.warning(
-                f"User {chat_id} has blocked the bot. Error: {error_msg}")
-
-            # Mark user as blocked in database
-            try:
-                # Check if user was previously not blocked
-                user_doc = user_stats_col.find_one({'user_id': chat_id})
-                was_blocked = user_doc.get('is_blocked',
-                                           False) if user_doc else False
-
-                # Update user as blocked
-                user_stats_col.update_one(
-                    {'user_id': chat_id},
-                    {
-                        '$set': {
-                            'is_blocked': True,
-                            'blocked_date': datetime.now(),
-                            'blocked_by_user':
-                            True  # Flag to indicate user blocked the bot
-                        }
-                    },
-                    upsert=True)
-
-                # Update global counts only if user wasn't already marked as blocked
-                if not was_blocked:
-                    user_stats_col.update_one(
-                        {'_id': 'global_stats'},
-                        {
-                            '$inc': {
-                                'blocked_users': 1,
-                                'total_users':
-                                -1  # Remove from total user count when blocked
-                            }
-                        },
-                        upsert=True)
-                    logger.info(
-                        f"User {chat_id} automatically marked as blocked and removed from total users"
-                    )
-
-            except Exception as db_error:
-                logger.error(
-                    f"Error updating blocked status for user {chat_id}: {db_error}"
-                )
-
-            return None
+        message = context.bot.send_message(
+            chat_id=chat_id,
+            text=text,
+            parse_mode=parse_mode,
+            reply_markup=reply_markup,
+            disable_web_page_preview=True,  # Prevent link previews
+            **kwargs
+        )
+        logger.debug(f"Message sent successfully to {chat_id}")
+        return message
+    except Unauthorized:
+        # User blocked the bot
+        logger.warning(f"User {chat_id} has blocked the bot - cannot send message")
+        return None
+    except BadRequest as e:
+        if "chat not found" in str(e).lower():
+            logger.warning(f"Chat {chat_id} not found - user may have deleted account")
+        elif "message is too long" in str(e).lower():
+            logger.error(f"Message too long for {chat_id}: {len(text)} characters")
         else:
-            logger.error(f"Error sending message to {chat_id}: {e}")
-            return None
+            logger.error(f"Bad request when sending to {chat_id}: {e}")
+        return None
+    except TimedOut:
+        logger.warning(f"Timeout when sending message to {chat_id}")
+        return None
+    except Exception as e:
+        logger.error(f"Unexpected error sending message to {chat_id}: {e}")
+        return None
 
 
 def broadcast_gift_code_notification(context, new_code: str):
