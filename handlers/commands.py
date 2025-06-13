@@ -151,15 +151,15 @@ def claim_command(update: Update, context: CallbackContext):
             keyboard = [
                 [
                     InlineKeyboardButton("JOIN",
-                                         url="https://t.me/+vge9Lu_k4wUyYTY9"),
+                                         url="https://t.me/+fFnORZzg1D5kMDg9"),
                     InlineKeyboardButton("JOIN",
-                                         url="https://t.me/+7io6Ktb7WwQzZjll")
+                                         url="https://t.me/+xp7xMU_Rt_5mY2Rl")
                 ],
                 [
                     InlineKeyboardButton("JOIN",
                                          url="https://t.me/+OwW3OUa3XzJjZTc1"),
                     InlineKeyboardButton("JOIN",
-                                         url="https://t.me/+2u_ekSv7S71lZTll")
+                                         url="https://t.me/+cUGXQZ8aENxkNWQ1")
                 ],
                 [
                     InlineKeyboardButton("🔐 Unlock Gift Code",
