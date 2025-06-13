@@ -1,4 +1,4 @@
-#📘 UIDChecker Telegram Bot – Setup & Admin Guide
+[https://chatgpt.com/c/684be915-7270-8008-a6c5-6ab2c76f7c9b#:~:text=Notepad%20without%20issues%3A-,UIDChecker%20Telegram%20Bot%20%E2%80%93%20Setup%20%26%20Admin%20Guide,Channel%20join%20verification%20support%20(optional),-Need%20Help%3F#📘 UIDChecker Telegram Bot – Setup & Admin Guide
 uidchecker is a powerful Telegram bot for verifying gaming UIDs through screenshots using AI, managing users, gift code claims, and more. It supports image-based UID scanning, wallet proof, and complete admin control.
 
 GitHub Repo: github.com/aritramahatma/uidchecker
@@ -171,3 +171,4 @@ Add .env file support for easier variable management
 Add MongoDB cloud setup
 
 Add verification channel locks
+](https://chatgpt.com/c/684be915-7270-8008-a6c5-6ab2c76f7c9b#:~:text=Notepad%20without%20issues%3A-,UIDChecker%20Telegram%20Bot%20%E2%80%93%20Setup%20%26%20Admin%20Guide,Channel%20join%20verification%20support%20(optional),-Need%20Help%3F)
