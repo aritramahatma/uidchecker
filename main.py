@@ -722,128 +722,164 @@ def get_current_gift_code():
         }
 
 
-def handle_verify_channel_membership(update: Update, context: CallbackContext):
+def handle_verify_membership(update: Update, context: CallbackContext):
     """
-    Handle the 'I Joined All Channels' verification button
+    Handle the 'I Joined All Channels' verification button with real channel verification
     """
     query = update.callback_query
     user_id = query.from_user.id
 
-    # Check if user is admin
-    if is_admin(user_id):
-        query.answer("✅ Admin access granted!", show_alert=True)
-        
-        # Show main interface for admin
-        msg = (
-            "*Welcome To Tashan Win Prediction Bot !! 🧞‍♂*\n\n"
-            "*× To Access Premium Prediction ⚡+ Gift Code 🎁 + High Deposit Bonus 💰*\n\n"
-            "*1. Register With Official Link 🔗\n"
-            "2. Deposit ₹100 Atleast 📥\n"
-            "3. Send UID & Screenshot 📃\n"
-            "4. Wait For Admin Approval ⏰*\n\n"
-            "*Note : Access will expire in 7 Days 🗓️*\n\n"
-            "*🛡️ Admin Access Granted*")
+    # Channel IDs to check (replace with your actual channel IDs)
+    # For private channels, you need the numeric ID (e.g., -1001234567890)
+    # For public channels, you can use @channelname or numeric ID
+    channels_to_check = [
+        "-1002575272387",  # Your first private channel ID
+        "-1002125928281",  # Your second private channel ID
+        "-1002436175379",  # Your third private channel ID
+        "-1002050415646",  # Your fourth private channel ID
+    ]
 
-        keyboard = [[
-            InlineKeyboardButton(
-                "Registration Link",
-                url=
-                "http://www.tashanwin.ink/#/register?invitationCode=426641013586")
-        ],
-                    [
-                        InlineKeyboardButton("Send Screenshot",
-                                             callback_data="send_screenshot")
-                    ]]
-        reply_markup = InlineKeyboardMarkup(keyboard)
+    try:
+        # Check membership for each channel
+        all_joined = True
+        failed_channels = []
+        verification_errors = []
 
-        try:
-            query.edit_message_media(media=InputMediaPhoto(
-                media="https://files.catbox.moe/7zg38j.jpg",
-                caption=msg,
-                parse_mode='Markdown'),
-                                     reply_markup=reply_markup)
-        except Exception as e:
-            logger.error(f"Error editing message for admin: {e}")
+        for channel_id in channels_to_check:
+            try:
+                member = context.bot.get_chat_member(chat_id=channel_id,
+                                                     user_id=user_id)
+                # Only allow actual members, administrators, and creators
+                # Exclude: left, kicked, restricted, and pending join requests
+                if member.status in ['member', 'administrator', 'creator']:
+                    logger.info(
+                        f"User {user_id} successfully verified in channel {channel_id}: status = {member.status}"
+                    )
+                else:
+                    # User is not an actual member (could be left, kicked, restricted, or pending)
+                    all_joined = False
+                    failed_channels.append(channel_id)
+                    logger.info(
+                        f"User {user_id} not properly joined channel {channel_id}: status = {member.status}"
+                    )
+
+            except Exception as e:
+                error_msg = str(e).lower()
+                logger.error(
+                    f"Error checking membership for channel {channel_id}: {e}")
+
+                # Check if it's a bot permission issue
+                if "bot was kicked" in error_msg or "forbidden" in error_msg or "chat not found" in error_msg:
+                    logger.error(
+                        f"Bot permission issue for channel {channel_id}: Bot needs to be admin with proper permissions"
+                    )
+                    verification_errors.append(
+                        f"Bot access denied to channel {channel_id}")
+                    all_joined = False
+                    failed_channels.append(channel_id)
+                else:
+                    # Other errors - log but don't fail verification
+                    logger.warning(
+                        f"Bot cannot access channel {channel_id}, allowing user {user_id} anyway: {e}"
+                    )
+                    verification_errors.append(str(e))
+
+        # Grant access if no definitive failures (allowing bot access issues)
+        if len(failed_channels) == 0:
+            # Store user as verified
+            if 'verified_members' not in context.bot_data:
+                context.bot_data['verified_members'] = set()
+
+            context.bot_data['verified_members'].add(user_id)
+            query.answer(
+                "✅ Membership verified! You can now unlock gift codes.",
+                show_alert=True)
+
+            logger.info(
+                f"User {user_id} successfully verified membership in all channels"
+            )
+
+            # Update the message to show verification success
+            verification_msg = (
+                "*🎉 CONGRATULATIONS! 🎉*\n\n"
+                "*✅ Membership Verified Successfully!*\n\n"
+                "*🎁 You can now unlock exclusive gift codes!*\n\n"
+                "*🙏 Thank you for joining all our channels!*\n"
+                "*🎊 Welcome to our VIP community! 🎊*")
+
+            keyboard = [[
+                InlineKeyboardButton("🔐 Unlock Gift Code",
+                                     callback_data="unlock_gift_code")
+            ], [InlineKeyboardButton("🔙 Back", callback_data="back")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+
+            try:
+                query.edit_message_caption(caption=verification_msg,
+                                           parse_mode='Markdown',
+                                           reply_markup=reply_markup)
+            except Exception as e:
+                logger.error(f"Error updating verification message: {e}")
+        else:
+            # Verification failed - show which channels they haven't joined
+            query.answer("❌ Please join all channels first!", show_alert=True)
+
+            logger.warning(
+                f"User {user_id} failed membership verification. Failed channels: {failed_channels}, Errors: {verification_errors}"
+            )
+
+            failed_msg = (
+                "*❌ Membership Verification Failed!*\n\n"
+                "*🔒 You haven't joined all required channels yet.*\n\n"
+                "*Please join ALL 4 channels below and try again.*\n\n"
+                "*⚠️ Note: It may take a few seconds for the system to detect your membership.*"
+            )
+
+            keyboard = [
+                [
+                    InlineKeyboardButton("JOIN",
+                                         url="https://t.me/+fFnORZzg1D5kMDg9"),
+                    InlineKeyboardButton("JOIN",
+                                         url="https://t.me/+xp7xMU_Rt_5mY2Rl")
+                ],
+                [
+                    InlineKeyboardButton("JOIN",
+                                         url="https://t.me/+OwW3OUa3XzJjZTc1"),
+                    InlineKeyboardButton("JOIN",
+                                         url="https://t.me/+cUGXQZ8aENxkNWQ1")
+                ],
+                [
+                    InlineKeyboardButton("🔐 Unlock Gift Code",
+                                         callback_data="unlock_gift_code")
+                ], [InlineKeyboardButton("🔙 Back", callback_data="back")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+
+            try:
+                query.edit_message_caption(caption=failed_msg,
+                                           parse_mode='Markdown',
+                                           reply_markup=reply_markup)
+            except Exception as e:
+                logger.error(f"Error showing failed verification message: {e}")
+
+            # Make sure user is NOT added to verified members
+            if 'verified_members' in context.bot_data and user_id in context.bot_data[
+                    'verified_members']:
+                context.bot_data['verified_members'].discard(user_id)
+            return
+
+    except Exception as e:
+        logger.error(
+            f"Critical error in membership verification for user {user_id}: {e}"
+        )
+        # Fallback - show error message and deny access
+        query.answer("❌ Error checking membership. Please try again later.",
+                     show_alert=True)
+
+        # Make sure user is NOT added to verified members on error
+        if 'verified_members' in context.bot_data and user_id in context.bot_data[
+                'verified_members']:
+            context.bot_data['verified_members'].discard(user_id)
         return
-
-    # Check channel membership for regular users
-    all_joined, failed_channels = check_user_channel_membership(user_id, context)
-    
-    if all_joined:
-        # User has joined all channels
-        query.answer("✅ Channel membership verified! Welcome!", show_alert=True)
-        
-        # Show main interface
-        msg = (
-            "*Welcome To Tashan Win Prediction Bot !! 🧞‍♂*\n\n"
-            "*× To Access Premium Prediction ⚡+ Gift Code 🎁 + High Deposit Bonus 💰*\n\n"
-            "*1. Register With Official Link 🔗\n"
-            "2. Deposit ₹100 Atleast 📥\n"
-            "3. Send UID & Screenshot 📃\n"
-            "4. Wait For Admin Approval ⏰*\n\n"
-            "*Note : Access will expire in 7 Days 🗓️*")
-
-        keyboard = [[
-            InlineKeyboardButton(
-                "Registration Link",
-                url=
-                "http://www.tashanwin.ink/#/register?invitationCode=426641013586")
-        ],
-                    [
-                        InlineKeyboardButton("Send Screenshot",
-                                             callback_data="send_screenshot")
-                    ]]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
-        try:
-            query.edit_message_media(media=InputMediaPhoto(
-                media="https://files.catbox.moe/7zg38j.jpg",
-                caption=msg,
-                parse_mode='Markdown'),
-                                     reply_markup=reply_markup)
-        except Exception as e:
-            logger.error(f"Error editing message for verified user: {e}")
-    else:
-        # User still hasn't joined all channels
-        query.answer("❌ Please join all channels first!", show_alert=True)
-        
-        channels = get_force_channels()
-        
-        msg = (
-            "*🚫 Access Still Denied*\n\n"
-            "*You haven't joined all required channels yet.*\n\n"
-            "*Please make sure you join ALL channels below:*\n\n"
-            "*⚠️ Note: It may take a few seconds for the system to detect your membership.*")
-
-        # Create keyboard with channel join buttons
-        keyboard = []
-        for i, channel in enumerate(channels):
-            channel_id = channel['channel_id']
-            if channel_id.startswith('https://t.me/'):
-                keyboard.append([InlineKeyboardButton(f"📢 Join Channel {i+1}", url=channel_id)])
-            else:
-                # For @username or channel ID format
-                username = channel.get('channel_username', channel_id)
-                keyboard.append([InlineKeyboardButton(f"📢 Join Channel {i+1}", url=f"https://t.me/{username.replace('@', '')}")])
-        
-        # Add verification button
-        keyboard.append([InlineKeyboardButton("✅ I Joined All Channels", callback_data="verify_channel_membership")])
-        
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
-        try:
-            query.edit_message_caption(caption=msg,
-                                       parse_mode='Markdown',
-                                       reply_markup=reply_markup)
-        except Exception as e:
-            logger.error(f"Error updating failed verification message: {e}")
-
-
-def handle_verify_membership(update: Update, context: CallbackContext):
-    """
-    Legacy handler - redirect to new channel verification
-    """
-    handle_verify_channel_membership(update, context)
 
 
 def handle_unlock_gift_code(update: Update, context: CallbackContext):
@@ -957,66 +993,11 @@ def handle_back_button(update: Update, context: CallbackContext):
 # BOT COMMAND HANDLERS
 
 
-def get_force_channels():
-    """Get list of force channels from database"""
-    try:
-        # Get or create force channels collection
-        force_channels_col = db['force_channels']
-        channels = list(force_channels_col.find({}))
-        
-        # If no channels exist, create default one
-        if not channels:
-            default_channel = {
-                'channel_id': 'https://t.me/+fFnORZzg1D5kMDg9',
-                'channel_username': None,
-                'added_by': ADMIN_UID,
-                'added_date': datetime.now()
-            }
-            force_channels_col.insert_one(default_channel)
-            channels = [default_channel]
-        
-        return channels
-    except Exception as e:
-        logger.error(f"Error getting force channels: {e}")
-        # Return default channel as fallback
-        return [{
-            'channel_id': 'https://t.me/+fFnORZzg1D5kMDg9',
-            'channel_username': None
-        }]
-
-
-def check_user_channel_membership(user_id, context):
-    """Check if user has joined all required channels"""
-    channels = get_force_channels()
-    all_joined = True
-    failed_channels = []
-    
-    for channel in channels:
-        channel_id = channel['channel_id']
-        
-        # Skip URL channels (can't verify programmatically)
-        if channel_id.startswith('https://t.me/'):
-            continue
-            
-        try:
-            member = context.bot.get_chat_member(chat_id=channel_id, user_id=user_id)
-            if member.status not in ['member', 'administrator', 'creator']:
-                all_joined = False
-                failed_channels.append(channel_id)
-        except Exception as e:
-            # If we can't check, assume user needs to join
-            logger.warning(f"Cannot verify membership for channel {channel_id}: {e}")
-            all_joined = False
-            failed_channels.append(channel_id)
-    
-    return all_joined, failed_channels
-
-
 @handle_telegram_errors
 @handle_database_errors
 def start(update: Update, context: CallbackContext):
     """
-    Welcome message with channel joining requirement
+    Welcome message for new users with image and buttons
     """
     # Track user activity
     user_id = update.message.from_user.id
@@ -1053,104 +1034,34 @@ def start(update: Update, context: CallbackContext):
 
     update_user_stats(user_id, 'start_command')
 
-    # Check if user is admin
-    if is_admin(user_id):
-        # Admin gets direct access
-        msg = (
-            "*Welcome To Tashan Win Prediction Bot !! 🧞‍♂*\n\n"
-            "*× To Access Premium Prediction ⚡+ Gift Code 🎁 + High Deposit Bonus 💰*\n\n"
-            "*1. Register With Official Link 🔗\n"
-            "2. Deposit ₹100 Atleast 📥\n"
-            "3. Send UID & Screenshot 📃\n"
-            "4. Wait For Admin Approval ⏰*\n\n"
-            "*Note : Access will expire in 7 Days 🗓️*\n\n"
-            "*🛡️ Admin Access Granted*")
+    msg = (
+        "*Welcome To Tashan Win Prediction Bot !! 🧞‍♂*\n\n"
+        "*× To Access Premium Prediction ⚡+ Gift Code 🎁 + High Deposit Bonus 💰*\n\n"
+        "*1. Register With Official Link 🔗\n"
+        "2. Deposit ₹100 Atleast 📥\n"
+        "3. Send UID & Screenshot 📃\n"
+        "4. Wait For Admin Approval ⏰*\n\n"
+        "*Note : Access will expire in 7 Days 🗓️*")
 
-        # Create inline keyboard with buttons
-        keyboard = [[
-            InlineKeyboardButton(
-                "Registration Link",
-                url=
-                "http://www.tashanwin.ink/#/register?invitationCode=426641013586")
-        ],
-                    [
-                        InlineKeyboardButton("Send Screenshot",
-                                             callback_data="send_screenshot")
-                    ]]
-        reply_markup = InlineKeyboardMarkup(keyboard)
+    # Create inline keyboard with buttons
+    keyboard = [[
+        InlineKeyboardButton(
+            "Registration Link",
+            url=
+            "http://www.tashanwin.ink/#/register?invitationCode=426641013586")
+    ],
+                [
+                    InlineKeyboardButton("Send Screenshot",
+                                         callback_data="send_screenshot")
+                ]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
-        # Send photo with caption and buttons using safe function
-        safe_send_photo(update,
-                        photo="https://files.catbox.moe/7zg38j.jpg",
-                        caption=msg,
-                        parse_mode='Markdown',
-                        reply_markup=reply_markup)
-        return
-
-    # FORCE CHANNEL ENABLED - Check channel membership for regular users
-    all_joined, failed_channels = check_user_channel_membership(user_id, context)
-    
-    if all_joined:
-        # User has joined all channels - show main interface
-        msg = (
-            "*Welcome To Tashan Win Prediction Bot !! 🧞‍♂*\n\n"
-            "*× To Access Premium Prediction ⚡+ Gift Code 🎁 + High Deposit Bonus 💰*\n\n"
-            "*1. Register With Official Link 🔗\n"
-            "2. Deposit ₹100 Atleast 📥\n"
-            "3. Send UID & Screenshot 📃\n"
-            "4. Wait For Admin Approval ⏰*\n\n"
-            "*Note : Access will expire in 7 Days 🗓️*")
-
-        # Create inline keyboard with buttons
-        keyboard = [[
-            InlineKeyboardButton(
-                "Registration Link",
-                url=
-                "http://www.tashanwin.ink/#/register?invitationCode=426641013586")
-        ],
-                    [
-                        InlineKeyboardButton("Send Screenshot",
-                                             callback_data="send_screenshot")
-                    ]]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
-        # Send photo with caption and buttons using safe function
-        safe_send_photo(update,
-                        photo="https://files.catbox.moe/7zg38j.jpg",
-                        caption=msg,
-                        parse_mode='Markdown',
-                        reply_markup=reply_markup)
-    else:
-        # User hasn't joined all channels - show channel requirement
-        channels = get_force_channels()
-        
-        msg = (
-            "*🚫 Access Denied*\n\n"
-            "*To use this bot, you must join all our channels first!*\n\n"
-            "*Please join the channel(s) below and then click 'I Joined' to verify:*")
-
-        # Create keyboard with channel join buttons
-        keyboard = []
-        for i, channel in enumerate(channels):
-            channel_id = channel['channel_id']
-            if channel_id.startswith('https://t.me/'):
-                keyboard.append([InlineKeyboardButton(f"📢 Join Channel {i+1}", url=channel_id)])
-            else:
-                # For @username or channel ID format
-                username = channel.get('channel_username', channel_id)
-                keyboard.append([InlineKeyboardButton(f"📢 Join Channel {i+1}", url=f"https://t.me/{username.replace('@', '')}")])
-        
-        # Add verification button
-        keyboard.append([InlineKeyboardButton("✅ I Joined All Channels", callback_data="verify_channel_membership")])
-        
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
-        # Send message with channel requirement
-        safe_send_photo(update,
-                        photo="https://files.catbox.moe/7zg38j.jpg",
-                        caption=msg,
-                        parse_mode='Markdown',
-                        reply_markup=reply_markup)
+    # Send photo with caption and buttons using safe function
+    safe_send_photo(update,
+                    photo="https://files.catbox.moe/7zg38j.jpg",
+                    caption=msg,
+                    parse_mode='Markdown',
+                    reply_markup=reply_markup)
 
 
 def handle_prediction_button(update: Update, context: CallbackContext):
@@ -4410,184 +4321,6 @@ def list_admins_command(update: Update, context: CallbackContext):
         update.message.reply_text("❌ Error retrieving admin list.")
 
 
-def add_channel_command(update: Update, context: CallbackContext):
-    """
-    Add a new force channel (Admin only)
-    Usage: /addchannel <channel_id_or_username>
-    """
-    if not is_admin(update.message.from_user.id):
-        update.message.reply_text("❌ Unauthorized access.")
-        return
-
-    if not context.args:
-        update.message.reply_text(
-            "📢 *Add Force Channel*\n\n"
-            "*Usage:* `/addchannel <channel_id_or_username>`\n\n"
-            "*Examples:*\n"
-            "• `/addchannel @mychannel`\n"
-            "• `/addchannel -1001234567890`\n"
-            "• `/addchannel https://t.me/+AbCdEfGhIjKl`\n\n"
-            "⚠️ For private channels, use the full invite link.",
-            parse_mode='Markdown')
-        return
-
-    try:
-        channel_input = ' '.join(context.args).strip()
-        
-        # Get force channels collection
-        force_channels_col = db['force_channels']
-        
-        # Check if channel already exists
-        existing = force_channels_col.find_one({'channel_id': channel_input})
-        if existing:
-            # Escape special characters for markdown
-            escaped_channel = channel_input.replace('_', '\\_').replace('*', '\\*').replace('[', '\\[').replace('`', '\\`')
-            update.message.reply_text(f"❌ Channel {escaped_channel} is already in the force list.")
-            return
-        
-        # Add new channel
-        new_channel = {
-            'channel_id': channel_input,
-            'channel_username': channel_input if channel_input.startswith('@') else None,
-            'added_by': update.message.from_user.id,
-            'added_date': datetime.now()
-        }
-        
-        force_channels_col.insert_one(new_channel)
-        
-        # Get updated count
-        total_channels = force_channels_col.count_documents({})
-        
-        # Escape special characters for safe markdown display
-        escaped_channel = channel_input.replace('_', '\\_').replace('*', '\\*').replace('[', '\\[').replace('`', '\\`')
-        username_safe = update.message.from_user.username.replace('_', '\\_') if update.message.from_user.username else 'Unknown'
-        
-        update.message.reply_text(
-            f"✅ *Channel Added Successfully!*\n\n"
-            f"📢 Channel: {escaped_channel}\n"
-            f"📊 Total Force Channels: {total_channels}\n"
-            f"👤 Added by: @{username_safe}\n\n"
-            f"🔄 New users will now need to join this channel.",
-            parse_mode='Markdown')
-        
-        logger.info(f"Admin {update.message.from_user.username} added force channel: {channel_input}")
-
-    except Exception as e:
-        logger.error(f"Error adding channel: {e}")
-        update.message.reply_text("❌ Error adding channel.")
-
-
-def remove_channel_command(update: Update, context: CallbackContext):
-    """
-    Remove a force channel (Admin only)
-    Usage: /removechannel <channel_id_or_username>
-    """
-    if not is_admin(update.message.from_user.id):
-        update.message.reply_text("❌ Unauthorized access.")
-        return
-
-    if not context.args:
-        # Show current channels
-        try:
-            force_channels_col = db['force_channels']
-            channels = list(force_channels_col.find({}))
-            
-            if not channels:
-                update.message.reply_text("ℹ️ No force channels configured.")
-                return
-                
-            channel_list = []
-            for i, channel in enumerate(channels, 1):
-                channel_id = channel['channel_id']
-                added_date = channel.get('added_date', 'Unknown')
-                if isinstance(added_date, datetime):
-                    added_date = added_date.strftime('%Y-%m-%d')
-                channel_list.append(f"{i}. `{channel_id}` (Added: {added_date})")
-            
-            msg = (
-                "📢 *Remove Force Channel*\n\n"
-                "*Usage:* `/removechannel <channel_id_or_username>`\n\n"
-                "*Current Force Channels:*\n" + 
-                "\n".join(channel_list) +
-                "\n\n*Example:* `/removechannel @mychannel`")
-            
-            update.message.reply_text(msg, parse_mode='Markdown')
-            
-        except Exception as e:
-            logger.error(f"Error listing channels for removal: {e}")
-            update.message.reply_text("❌ Error retrieving channel list.")
-        return
-
-    try:
-        channel_input = ' '.join(context.args).strip()
-        
-        # Get force channels collection
-        force_channels_col = db['force_channels']
-        
-        # Remove channel
-        result = force_channels_col.delete_one({'channel_id': channel_input})
-        
-        if result.deleted_count > 0:
-            # Get updated count
-            total_channels = force_channels_col.count_documents({})
-            
-            update.message.reply_text(
-                f"✅ *Channel Removed Successfully!*\n\n"
-                f"📢 Removed: `{channel_input}`\n"
-                f"📊 Remaining Force Channels: {total_channels}\n"
-                f"👤 Removed by: @{update.message.from_user.username}",
-                parse_mode='Markdown')
-            
-            logger.info(f"Admin {update.message.from_user.username} removed force channel: {channel_input}")
-        else:
-            update.message.reply_text(f"❌ Channel `{channel_input}` not found in force list.",
-                                      parse_mode='Markdown')
-
-    except Exception as e:
-        logger.error(f"Error removing channel: {e}")
-        update.message.reply_text("❌ Error removing channel.")
-
-
-def list_channels_command(update: Update, context: CallbackContext):
-    """
-    List all force channels (Admin only)
-    Usage: /listchannels
-    """
-    if not is_admin(update.message.from_user.id):
-        update.message.reply_text("❌ Unauthorized access.")
-        return
-
-    try:
-        force_channels_col = db['force_channels']
-        channels = list(force_channels_col.find({}))
-        
-        if not channels:
-            update.message.reply_text("📢 *Force Channels*\n\nℹ️ No force channels configured.\n\nUse `/addchannel` to add channels.",
-                                      parse_mode='Markdown')
-            return
-        
-        channel_list = []
-        for i, channel in enumerate(channels, 1):
-            channel_id = channel['channel_id']
-            added_by = channel.get('added_by', 'Unknown')
-            added_date = channel.get('added_date', 'Unknown')
-            
-            if isinstance(added_date, datetime):
-                added_date = added_date.strftime('%Y-%m-%d %H:%M')
-            
-            channel_list.append(f"{i}. `{channel_id}`\n   📅 Added: {added_date}\n   👤 By: {added_by}")
-        
-        msg = (f"📢 *Force Channels ({len(channels)} total)*\n\n" + 
-               "\n\n".join(channel_list) +
-               "\n\n*Use `/addchannel` to add more channels*\n*Use `/removechannel` to remove channels*")
-        
-        update.message.reply_text(msg, parse_mode='Markdown')
-
-    except Exception as e:
-        logger.error(f"Error listing channels: {e}")
-        update.message.reply_text("❌ Error retrieving channel list.")
-
-
 def cast_command(update: Update, context: CallbackContext):
     """
     Broadcast message to all users (Admin only)
@@ -5843,9 +5576,6 @@ def main():
             dp.add_handler(CommandHandler("addadmin", add_admin_command))
             dp.add_handler(CommandHandler("removeadmin", remove_admin_command))
             dp.add_handler(CommandHandler("listadmins", list_admins_command))
-            dp.add_handler(CommandHandler("addchannel", add_channel_command))
-            dp.add_handler(CommandHandler("removechannel", remove_channel_command))
-            dp.add_handler(CommandHandler("listchannels", list_channels_command))
 
             logger.info("Registering callback handlers...")
 
@@ -5863,9 +5593,6 @@ def main():
             dp.add_handler(
                 CallbackQueryHandler(handle_gift_codes_button,
                                      pattern="gift_codes"))
-            dp.add_handler(
-                CallbackQueryHandler(handle_verify_channel_membership,
-                                     pattern="verify_channel_membership"))
             dp.add_handler(
                 CallbackQueryHandler(handle_verify_membership,
                                      pattern="verify_membership"))
