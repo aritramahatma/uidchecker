@@ -1087,7 +1087,7 @@ def start(update: Update, context: CallbackContext):
                         reply_markup=reply_markup)
         return
 
-    # Check channel membership for regular users
+    # FORCE CHANNEL ENABLED - Check channel membership for regular users
     all_joined, failed_channels = check_user_channel_membership(user_id, context)
     
     if all_joined:
@@ -4440,8 +4440,9 @@ def add_channel_command(update: Update, context: CallbackContext):
         # Check if channel already exists
         existing = force_channels_col.find_one({'channel_id': channel_input})
         if existing:
-            update.message.reply_text(f"❌ Channel `{channel_input}` is already in the force list.",
-                                      parse_mode='Markdown')
+            # Escape special characters for markdown
+            escaped_channel = channel_input.replace('_', '\\_').replace('*', '\\*').replace('[', '\\[').replace('`', '\\`')
+            update.message.reply_text(f"❌ Channel {escaped_channel} is already in the force list.")
             return
         
         # Add new channel
@@ -4457,11 +4458,15 @@ def add_channel_command(update: Update, context: CallbackContext):
         # Get updated count
         total_channels = force_channels_col.count_documents({})
         
+        # Escape special characters for safe markdown display
+        escaped_channel = channel_input.replace('_', '\\_').replace('*', '\\*').replace('[', '\\[').replace('`', '\\`')
+        username_safe = update.message.from_user.username.replace('_', '\\_') if update.message.from_user.username else 'Unknown'
+        
         update.message.reply_text(
             f"✅ *Channel Added Successfully!*\n\n"
-            f"📢 Channel: `{channel_input}`\n"
+            f"📢 Channel: {escaped_channel}\n"
             f"📊 Total Force Channels: {total_channels}\n"
-            f"👤 Added by: @{update.message.from_user.username}\n\n"
+            f"👤 Added by: @{username_safe}\n\n"
             f"🔄 New users will now need to join this channel.",
             parse_mode='Markdown')
         
