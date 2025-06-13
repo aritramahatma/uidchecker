@@ -1,174 +1,154 @@
-[https://chatgpt.com/c/684be915-7270-8008-a6c5-6ab2c76f7c9b#:~:text=Notepad%20without%20issues%3A-,UIDChecker%20Telegram%20Bot%20%E2%80%93%20Setup%20%26%20Admin%20Guide,Channel%20join%20verification%20support%20(optional),-Need%20Help%3F#📘 UIDChecker Telegram Bot – Setup & Admin Guide
-uidchecker is a powerful Telegram bot for verifying gaming UIDs through screenshots using AI, managing users, gift code claims, and more. It supports image-based UID scanning, wallet proof, and complete admin control.
+UIDChecker Telegram Bot – Setup & Admin Guide
+uidchecker is a Telegram bot that verifies gaming UIDs using screenshots, detects fakes with AI, manages users, and handles gift code claims.
 
-GitHub Repo: github.com/aritramahatma/uidchecker
+GitHub Repo: https://github.com/aritramahatma/uidchecker
 
-#🚀 Quick Setup (Replit Recommended)
-Step 1: Fork & Open
-Go to Replit
+1. Quick Setup (Replit)
+Step 1: Fork or Import
 
-Import the repo:
-https://github.com/aritramahatma/uidchecker
+Open Replit
 
-Step 2: Click Run
-Replit will:
+Import the repo: https://github.com/aritramahatma/uidchecker
 
-Install all Python dependencies
+Step 2: Click "Run"
 
-Auto-correct any broken Telegram packages
+This auto-installs dependencies and fixes broken packages
 
 Step 3: Add Secrets
-Click the "lock" icon on the left side (Secrets/Environment Variables), and add:
+Go to Replit > Secrets and add the following:
 
-Key	Value
-BOT_TOKEN	Your bot token from @BotFather
-ADMIN_UID	Your Telegram numeric user ID
-GEMINI_API_KEY	Your Google Gemini Vision API key
+BOT_TOKEN = Your Telegram bot token
 
-#🖥️ VPS Deployment Guide (Contabo/DigitalOcean/Any Ubuntu Server)
-✅ Requirements
-Ubuntu 20.04+ VPS
+ADMIN_UID = Your Telegram numeric user ID
+
+GEMINI_API_KEY = Your Gemini Vision API key
+
+2. VPS Setup (Contabo / DigitalOcean)
+Requirements:
+
+Ubuntu 20.04+ server
 
 Python 3.8+
 
 Git installed
 
-SSH access
+Installation Steps:
 
-#📦 VPS Installation Steps
 bash
 Copy
 Edit
-# 1. Connect to VPS
+# Connect to VPS
 ssh root@your-vps-ip
 
-# 2. Update system
+# Update packages
 apt update && apt upgrade -y
 
-# 3. Install dependencies
+# Install Python, Git
 apt install git python3-pip python3-venv -y
 
-# 4. Clone your repo
+# Clone the repo
 git clone https://github.com/aritramahatma/uidchecker.git
 cd uidchecker
 
-# 5. Create virtual environment (optional)
+# Create virtual environment
 python3 -m venv venv
 source venv/bin/activate
 
-# 6. Install required packages
+# Install requirements
 pip install -r requirements.txt
 
-# 7. Fix dependency issues (if any)
+# Fix dependencies (optional)
 python setup_dependencies.py
 
-# 8. Set environment variables (temporary method)
+# Set environment variables temporarily
 export BOT_TOKEN='your_bot_token'
 export ADMIN_UID='your_admin_uid'
 export GEMINI_API_KEY='your_gemini_api_key'
 
-# 9. Start the bot
+# Run the bot
 python main.py
-✅ To keep bot running in background:
+To keep the bot running in background:
 
 bash
 Copy
 Edit
 nohup python main.py &
-🔁 To run bot on boot, use systemd (ask me if you want the service file).
+3. User Commands
+/start – Shows welcome message and verification steps
 
-🤖 Bot Command Reference
-🔓 User Commands
-/start – Welcome + begin verification
+/claim – Claim gift code (only for verified users)
 
-/claim – Claim gift code (if fully verified)
+4. Admin Commands (for ADMIN_UID only)
+Statistics & Reports
 
-🔐 Admin Commands (ADMIN_UID only)
-📊 Analytics
-/stats – Total users, UID stats, verification %
+/stats – Total users, verified, blocked, pending, balance checks
 
-🧾 UID Tools
-/update – Add UIDs (manual or screenshot via OCR)
+UID Management
 
-/done – Finalize UID update and notify users
+/update – Add UIDs manually or by image
 
-/verified – Show verified UIDs
+/done – Finalize the update and notify users
 
-/nonverified – Show non-verified UIDs
+/verified – List of all verified UIDs
 
-/all – Show all UIDs in DB
+/nonverified – List of non-verified UIDs
 
-👥 User Management
-/block <user_id> – Block user
+/all – Show all UIDs with status
 
-/unblock <user_id> – Unblock user
+User Management
 
-/checkblocked – Find users who blocked bot
+/block <user_id> – Block a user
 
-/reject – Reject all non-verified users
+/unblock <user_id> – Unblock a user
 
-🧹 UID Cleanup
-/dustbin 123456,654321,... – Delete selected UIDs
+/checkblocked – Scan for users who blocked the bot
 
-/del 2 – Delete last 2 bulk extracted UID batches
+/reject – Reject non-verified users and delete their data
 
-🎁 Gift Code Control
-/newcode ABC123XYZ – Set new gift code and broadcast
+Data Cleanup
 
-📢 Broadcast & Restrictions
-/cast <msg> – Broadcast message to all users
+/dustbin <uid1,uid2,...> – Delete specific UIDs
 
-/restrict on/off – Enable or disable UID verification globally
+/del <number> – Delete UIDs from last N extractions
 
-👑 Admin Roles
-/addadmin <user_id> – Add admin
+Gift Code Management
 
-/removeadmin <user_id> – Remove admin
+/newcode <code> – Set and broadcast new gift code
 
-/listadmins – Show all admins
+System Controls
 
-🧠 Verification Flow (AI + Manual)
-User sends UID (6–12 digits)
+/restrict on or /restrict off – Toggle verification lock
 
-User uploads screenshot of game profile
+/cast <message> – Broadcast to all users (text, images, videos)
 
-AI (Gemini Vision) checks if image is:
+Admin Controls
 
-Real or edited/fake
+/addadmin <user_id> – Add new admin
 
-Contains matching UID
+/removeadmin <user_id> – Remove an admin
 
-If verified:
+/listadmins – List all admins
 
-User gets access to gift claim
+5. Verification Process
+User sends a 6–12 digit UID
 
-Optionally verifies wallet balance
+Uploads screenshot of profile
 
-All verified UIDs are stored in MongoDB
+AI checks image (real/fake and UID match)
 
-🔍 Advanced Features
-✅ Google Gemini API for real-time fake screenshot detection
+Optionally checks wallet balance (min ₹100)
 
-✅ MongoDB data storage
+If verified, user gains access to all features
 
-✅ Channel join verification (configurable)
+6. Features Summary
+Google Gemini Vision API for fake screenshot detection
 
-✅ Broadcast to all users
+MongoDB database for storing UIDs and user data
 
-✅ Block detection
+Image-based UID extraction (OCR)
 
-✅ Multi-mode UID input (manual + image OCR)
+Broadcast support
 
-🧪 Need Help?
-Want auto-start on VPS reboot, domain support, or advanced security?
+Anti-fraud and block check system
 
-Ask me to:
-
-Create systemd service for auto-start
-
-Add .env file support for easier variable management
-
-Add MongoDB cloud setup
-
-Add verification channel locks
-](https://chatgpt.com/c/684be915-7270-8008-a6c5-6ab2c76f7c9b#:~:text=Notepad%20without%20issues%3A-,UIDChecker%20Telegram%20Bot%20%E2%80%93%20Setup%20%26%20Admin%20Guide,Channel%20join%20verification%20support%20(optional),-Need%20Help%3F)
+Channel join verification support (optional)
