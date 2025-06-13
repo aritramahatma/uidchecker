@@ -147,22 +147,10 @@ def claim_command(update: Update, context: CallbackContext):
                 "*⚠️ You must join ALL 4 channels below to unlock gift codes:*"
             )
 
-            # Create inline keyboard with JOIN buttons for all 4 channels and unlock button
+            # Create inline keyboard with direct unlock button - no channel requirements
             keyboard = [
                 [
-                    InlineKeyboardButton("JOIN",
-                                         url="https://t.me/+fFnORZzg1D5kMDg9"),
-                    InlineKeyboardButton("JOIN",
-                                         url="https://t.me/+xp7xMU_Rt_5mY2Rl")
-                ],
-                [
-                    InlineKeyboardButton("JOIN",
-                                         url="https://t.me/+OwW3OUa3XzJjZTc1"),
-                    InlineKeyboardButton("JOIN",
-                                         url="https://t.me/+cUGXQZ8aENxkNWQ1")
-                ],
-                [
-                    InlineKeyboardButton("🔐 Unlock Gift Code",
+                    InlineKeyboardButton("🔓 Get Gift Code",
                                          callback_data="unlock_gift_code")
                 ]
             ]
