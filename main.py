@@ -4028,11 +4028,42 @@ def claim_command(update: Update, context: CallbackContext):
         logger.error(f"Error checking/updating unblock status in claim: {e}")
 
     try:
-        # Check if user is fully verified
+        # Check if user is fully verified - check both user_id and verified_by_tg_id fields
         user_uid_doc = uids_col.find_one({
-            'user_id': user_id,
-            'fully_verified': True
+            '$or': [
+                {'user_id': user_id, 'fully_verified': True},
+                {'verified_by_tg_id': user_id, 'fully_verified': True}
+            ]
         })
+
+        # Also check if user has a verified UID but needs wallet verification
+        if not user_uid_doc:
+            # Check if user has verified UID but not fully verified yet
+            pending_verification = uids_col.find_one({
+                '$or': [
+                    {'user_id': user_id, 'verified': True, 'fully_verified': False},
+                    {'verified_by_tg_id': user_id, 'verified': True, 'fully_verified': False}
+                ]
+            })
+            
+            if pending_verification:
+                # User has verified UID but needs wallet screenshot
+                uid = pending_verification['uid']
+                verification_msg = (
+                    f"*⚡Great News, Champ! 🧞‍♂️*\n\n"
+                    f"*✅ UID {uid} Verified Successfully*\n"
+                    f"*📩 Now, Please Send Your Wallet Screenshot For Balance Check.*\n"
+                    f"*💰 Minimum Required Balance: ₹100*")
+                
+                update.message.reply_text(verification_msg, parse_mode='Markdown')
+                
+                # Store pending wallet verification
+                if 'pending_wallets' not in context.bot_data:
+                    context.bot_data['pending_wallets'] = {}
+                context.bot_data['pending_wallets'][user_id] = uid
+                return
+
+        logger.info(f"User {user_id} verification check: Found fully verified = {bool(user_uid_doc)}")
 
         if user_uid_doc:
             # User is fully verified - show gift codes page
