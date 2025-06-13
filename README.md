@@ -1,4 +1,5 @@
-UIDChecker Telegram Bot – Setup & Admin Guide
+**UIDChecker Telegram Bot – Setup & Admin Guide
+**
 uidchecker is a Telegram bot that verifies gaming UIDs using screenshots, detects fakes with AI, manages users, and handles gift code claims.
 
 GitHub Repo: https://github.com/aritramahatma/uidchecker
