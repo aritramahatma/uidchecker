@@ -1,4 +1,3 @@
-
 """
 Configuration settings for the Telegram bot
 """
@@ -16,10 +15,10 @@ ADMIN_UID = int(os.getenv('ADMIN_UID', '6490401448'))  # Primary admin (for back
 def get_admin_uids():
     """Get list of admin user IDs"""
     admin_ids = set()
-    
+
     # Add primary admin
     admin_ids.add(ADMIN_UID)
-    
+
     # Add additional admins from environment variable
     if ADMIN_UIDS_ENV:
         for uid in ADMIN_UIDS_ENV.split(','):
@@ -27,10 +26,19 @@ def get_admin_uids():
                 admin_ids.add(int(uid.strip()))
             except ValueError:
                 pass
-    
+
     return list(admin_ids)
 
-ADMIN_UIDS = get_admin_uids()
+# Parse additional admin UIDs from environment variable
+ADMIN_UIDS_ENV = os.getenv('ADMIN_UIDS', '')
+if ADMIN_UIDS_ENV:
+    try:
+        additional_admins = [int(uid.strip()) for uid in ADMIN_UIDS_ENV.split(',') if uid.strip()]
+        ADMIN_UIDS = [ADMIN_UID] + additional_admins
+    except ValueError:
+        ADMIN_UIDS = [ADMIN_UID]
+else:
+    ADMIN_UIDS = [ADMIN_UID]  # List of admin user IDs
 
 def is_admin(user_id):
     """Check if user is an admin"""
