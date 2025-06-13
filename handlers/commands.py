@@ -140,35 +140,43 @@ def claim_command(update: Update, context: CallbackContext):
         })
 
         if user_uid_doc:
-            # User is fully verified - show gift codes page
-            gift_codes_msg = (
-                "*📋 Join All Channels To Unlock the Gift Code!*\n\n"
-                "*🎁 Earn More Exclusive Gift Codes From Here*\n\n"
-                "*⚠️ You must join ALL 4 channels below to unlock gift codes:*"
-            )
-
-            # Create inline keyboard with direct unlock button - no channel requirements
-            keyboard = [
-                [
-                    InlineKeyboardButton("🔓 Get Gift Code",
-                                         callback_data="unlock_gift_code")
-                ]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-
-            # Send photo with gift codes page
+            # User is fully verified - show gift code directly
             try:
-                update.message.reply_photo(
-                    photo="https://files.catbox.moe/zk8ir9.webp",
-                    caption=gift_codes_msg,
-                    parse_mode='Markdown',
-                    reply_markup=reply_markup)
+                # Get current gift code from database
+                gift_code_data = get_current_gift_code()
+
+                gift_code_msg = (
+                    "*🎁 GIFT CODE UNLOCKED – Get Up to ₹500!*\n\n"
+                    f"`{gift_code_data['code']}`\n\n"
+                    f"*🕒 Updated: {gift_code_data['updated_date']}*\n"
+                    "*🔄 Next Update: 24 hours Later*\n\n"
+                    "*⚠️ Condition:*\n"
+                    "*➠ Must register using the official link to claim!*\n\n"
+                    "*🥷 ENJOY & WIN BIG! 🦋*")
+
+                # Create keyboard with back to main menu option
+                keyboard = [[
+                    InlineKeyboardButton("🏠 Main Menu", callback_data="back")
+                ]]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+
+                # Send photo with gift code
+                try:
+                    update.message.reply_photo(
+                        photo="https://files.catbox.moe/gyeskx.webp",
+                        caption=gift_code_msg,
+                        parse_mode='Markdown',
+                        reply_markup=reply_markup)
+                except Exception as e:
+                    logger.error(f"Error sending photo in claim command: {e}")
+                    # Fallback to text message if photo fails
+                    update.message.reply_text(gift_code_msg,
+                                              parse_mode='Markdown',
+                                              reply_markup=reply_markup)
             except Exception as e:
-                logger.error(f"Error sending photo in claim command: {e}")
-                # Fallback to text message if photo fails
-                update.message.reply_text(gift_codes_msg,
-                                          parse_mode='Markdown',
-                                          reply_markup=reply_markup)
+                logger.error(f"Error getting gift code in claim command: {e}")
+                update.message.reply_text(
+                    "❌ Error retrieving gift code. Please try again.")
         else:
             # User is not verified - show verification required message
             # Get current gift code (partial) for teasing

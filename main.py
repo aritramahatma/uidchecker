@@ -643,40 +643,49 @@ def handle_tutorial_button(update: Update, context: CallbackContext):
 
 def handle_gift_codes_button(update: Update, context: CallbackContext):
     """
-    Handle the 'Gift Codes' button callback
+    Handle the 'Gift Codes' button callback - show gift code directly
     """
     query = update.callback_query
-    query.answer()
+    query.answer("✅ Gift code unlocked! Direct access enabled.", show_alert=True)
 
-    # Create gift codes message - force channel disabled
-    gift_codes_msg = (
-        "*🎁 Free Gift Codes Available!*\n\n"
-        "*💰 Get Your Exclusive Gift Codes Here*\n\n"
-        "*✅ No channel joining required - Direct access enabled!*")
-
-    # Create inline keyboard with only unlock button - no channel requirements
-    keyboard = [[
-        InlineKeyboardButton("🔓 Get Gift Code",
-                             callback_data="unlock_gift_code")
-    ], [InlineKeyboardButton("🔙 Back", callback_data="back")]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    # Edit existing message with new photo and content
     try:
-        query.edit_message_media(media=InputMediaPhoto(
-            media="https://files.catbox.moe/zk8ir9.webp",
-            caption=gift_codes_msg,
-            parse_mode='Markdown'),
-                                 reply_markup=reply_markup)
-    except Exception as e:
-        logger.error(f"Error editing message in gift codes button: {e}")
-        # Fallback to editing just caption if photo edit fails
+        # Get current gift code from database
+        gift_code_data = get_current_gift_code()
+
+        gift_code_msg = (
+            "*🎁 GIFT CODE UNLOCKED – Get Up to ₹500!*\n\n"
+            f"`{gift_code_data['code']}`\n\n"
+            f"*🕒 Updated: {gift_code_data['updated_date']}*\n"
+            "*🔄 Next Update: 24 hours Later*\n\n"
+            "*⚠️ Condition:*\n"
+            "*➠ Must register using the official link to claim!*\n\n"
+            "*🥷 ENJOY & WIN BIG! 🦋*")
+
+        # Create back button
+        keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="back")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        # Edit existing message with gift code
         try:
-            query.edit_message_caption(caption=gift_codes_msg,
-                                       parse_mode='Markdown',
-                                       reply_markup=reply_markup)
-        except Exception as e2:
-            logger.error(f"Error editing caption in gift codes button: {e2}")
+            query.edit_message_media(media=InputMediaPhoto(
+                media="https://files.catbox.moe/gyeskx.webp",
+                caption=gift_code_msg,
+                parse_mode='Markdown'),
+                                     reply_markup=reply_markup)
+        except Exception as e:
+            logger.error(f"Error editing message with gift code photo: {e}")
+            # Fallback to editing just caption
+            try:
+                query.edit_message_caption(caption=gift_code_msg,
+                                           parse_mode='Markdown',
+                                           reply_markup=reply_markup)
+            except Exception as e2:
+                logger.error(f"Error editing caption with gift code: {e2}")
+
+    except Exception as e:
+        logger.error(f"Error in gift codes button handler: {e}")
+        query.answer("❌ Error processing request. Please try again.",
+                     show_alert=True)
 
 
 def get_current_gift_code():
@@ -3927,47 +3936,43 @@ def claim_command(update: Update, context: CallbackContext):
         )
 
         if user_uid_doc:
-            # User is fully verified - show gift codes page
-            gift_codes_msg = (
-                "*📋 Join All Channels To Unlock the Gift Code!*\n\n"
-                "*🎁 Earn More Exclusive Gift Codes From Here*\n\n"
-                "*⚠️ You must join ALL 4 channels below to unlock gift codes:*"
-            )
-
-            # Create inline keyboard with JOIN buttons for all 4 channels and unlock button
-            keyboard = [
-                [
-                    InlineKeyboardButton("JOIN",
-                                         url="https://t.me/+fFnORZzg1D5kMDg9"),
-                    InlineKeyboardButton("JOIN",
-                                         url="https://t.me/+xp7xMU_Rt_5mY2Rl")
-                ],
-                [
-                    InlineKeyboardButton("JOIN",
-                                         url="https://t.me/+FWfslSq0MMFjOGE9"),
-                    InlineKeyboardButton("JOIN",
-                                         url="https://t.me/+cUGXQZ8aENxkNWQ1")
-                ],
-                [
-                    InlineKeyboardButton("🔐 Unlock Gift Code",
-                                         callback_data="unlock_gift_code")
-                ]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-
-            # Send photo with gift codes page
+            # User is fully verified - show gift code directly
             try:
-                update.message.reply_photo(
-                    photo="https://files.catbox.moe/zk8ir9.webp",
-                    caption=gift_codes_msg,
-                    parse_mode='Markdown',
-                    reply_markup=reply_markup)
+                # Get current gift code from database
+                gift_code_data = get_current_gift_code()
+
+                gift_code_msg = (
+                    "*🎁 GIFT CODE UNLOCKED – Get Up to ₹500!*\n\n"
+                    f"`{gift_code_data['code']}`\n\n"
+                    f"*🕒 Updated: {gift_code_data['updated_date']}*\n"
+                    "*🔄 Next Update: 24 hours Later*\n\n"
+                    "*⚠️ Condition:*\n"
+                    "*➠ Must register using the official link to claim!*\n\n"
+                    "*🥷 ENJOY & WIN BIG! 🦋*")
+
+                # Create keyboard with back to main menu option
+                keyboard = [[
+                    InlineKeyboardButton("🏠 Main Menu", callback_data="back")
+                ]]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+
+                # Send photo with gift code
+                try:
+                    update.message.reply_photo(
+                        photo="https://files.catbox.moe/gyeskx.webp",
+                        caption=gift_code_msg,
+                        parse_mode='Markdown',
+                        reply_markup=reply_markup)
+                except Exception as e:
+                    logger.error(f"Error sending photo in claim command: {e}")
+                    # Fallback to text message if photo fails
+                    update.message.reply_text(gift_code_msg,
+                                              parse_mode='Markdown',
+                                              reply_markup=reply_markup)
             except Exception as e:
-                logger.error(f"Error sending photo in claim command: {e}")
-                # Fallback to text message if photo fails
-                update.message.reply_text(gift_codes_msg,
-                                          parse_mode='Markdown',
-                                          reply_markup=reply_markup)
+                logger.error(f"Error getting gift code in claim command: {e}")
+                update.message.reply_text(
+                    "❌ Error retrieving gift code. Please try again.")
         else:
             # User is not verified - show verification required message
             # Get current gift code (partial) for teasing
