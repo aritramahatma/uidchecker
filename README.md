@@ -1,9 +1,9 @@
-📘 UIDChecker Telegram Bot – Setup & Admin Guide
+#📘 UIDChecker Telegram Bot – Setup & Admin Guide
 uidchecker is a powerful Telegram bot for verifying gaming UIDs through screenshots using AI, managing users, gift code claims, and more. It supports image-based UID scanning, wallet proof, and complete admin control.
 
 GitHub Repo: github.com/aritramahatma/uidchecker
 
-🚀 Quick Setup (Replit Recommended)
+#🚀 Quick Setup (Replit Recommended)
 Step 1: Fork & Open
 Go to Replit
 
@@ -25,7 +25,7 @@ BOT_TOKEN	Your bot token from @BotFather
 ADMIN_UID	Your Telegram numeric user ID
 GEMINI_API_KEY	Your Google Gemini Vision API key
 
-🖥️ VPS Deployment Guide (Contabo/DigitalOcean/Any Ubuntu Server)
+#🖥️ VPS Deployment Guide (Contabo/DigitalOcean/Any Ubuntu Server)
 ✅ Requirements
 Ubuntu 20.04+ VPS
 
@@ -35,7 +35,7 @@ Git installed
 
 SSH access
 
-📦 VPS Installation Steps
+#📦 VPS Installation Steps
 bash
 Copy
 Edit
