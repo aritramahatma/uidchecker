@@ -661,9 +661,9 @@ def handle_gift_codes_button(update: Update, context: CallbackContext):
     ],
                 [
                     InlineKeyboardButton("JOIN",
-                                         url="https://t.me/+FWfslSq0MMFjOGE9"),
+                                         url="https://t.me/+OwW3OUa3XzJjZTc1"),
                     InlineKeyboardButton("JOIN",
-                                         url="https://t.me/+T8utXJGhWnM3MTll")
+                                         url="https://t.me/+cUGXQZ8aENxkNWQ1")
                 ],
                 [
                     InlineKeyboardButton("🔐 Unlock Gift Code",
@@ -737,7 +737,7 @@ def handle_verify_membership(update: Update, context: CallbackContext):
         "-1002575272387",  # Your first private channel ID
         "-1002125928281",  # Your second private channel ID
         "-1002436175379",  # Your third private channel ID
-        "-1002369534694",  # Your fourth private channel ID
+        "-1002050415646",  # Your fourth private channel ID
     ]
 
     try:
@@ -844,9 +844,9 @@ def handle_verify_membership(update: Update, context: CallbackContext):
                 ],
                 [
                     InlineKeyboardButton("JOIN",
-                                         url="https://t.me/+FWfslSq0MMFjOGE9"),
+                                         url="https://t.me/+OwW3OUa3XzJjZTc1"),
                     InlineKeyboardButton("JOIN",
-                                         url="https://t.me/+T8utXJGhWnM3MTll")
+                                         url="https://t.me/+cUGXQZ8aENxkNWQ1")
                 ],
                 [
                     InlineKeyboardButton("🔐 Unlock Gift Code",
@@ -895,7 +895,7 @@ def handle_unlock_gift_code(update: Update, context: CallbackContext):
         "-1002575272387",  # Your first private channel ID
         "-1002125928281",  # Your second private channel ID
         "-1002436175379",  # Your third private channel ID
-        "-1002369534694",  # Your fourth private channel ID
+        "-1002050415646",  # Your fourth private channel ID
     ]
 
     try:
