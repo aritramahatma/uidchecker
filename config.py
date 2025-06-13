@@ -47,7 +47,7 @@ def is_admin(user_id):
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', 'AIzaSyAGDi2WslEe8VvBc7v3-dwpEmJobE6df1o')
 
 # Database Configuration
-MONGO_URI = 'mongodb+srv://404movie:404moviepass@cluster0.fca76c9.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'
+MONGO_URI = 'mongodb+srv://birbhaiyadb:birbhaiyadbpass@cluster0.eqi584o.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'
 
 # Conversation States
 MODE_SELECT, SINGLE_UID, BULK_IMG = range(3)
