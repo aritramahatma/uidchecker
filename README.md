@@ -1,155 +1,215 @@
-**UIDChecker Telegram Bot – Setup & Admin Guide
-**
-uidchecker is a Telegram bot that verifies gaming UIDs using screenshots, detects fakes with AI, manages users, and handles gift code claims.
 
-GitHub Repo: https://github.com/aritramahatma/uidchecker
+# 🤖 UIDChecker Telegram Bot
 
-1. Quick Setup (Replit)
-Step 1: Fork or Import
+A powerful Telegram bot that verifies gaming UIDs using AI-powered screenshot analysis, detects fake submissions, manages users, and handles gift code distribution with advanced fraud detection.
 
-Open Replit
+## 🌟 Features
 
-Import the repo: https://github.com/aritramahatma/uidchecker
+- **AI-Powered Verification**: Uses Google Gemini Vision API to detect fake screenshots
+- **UID Extraction**: OCR-based UID extraction from profile screenshots
+- **User Management**: Block/unblock users, track statistics
+- **Gift Code System**: Secure gift code distribution to verified users
+- **Broadcast System**: Send messages, images, and videos to all users
+- **Anti-Fraud Protection**: Advanced detection and prevention systems
+- **MongoDB Integration**: Reliable data storage and management
+- **Admin Panel**: Comprehensive admin controls and statistics
 
-Step 2: Click "Run"
+## 🚀 Quick Setup on Replit
 
-This auto-installs dependencies and fixes broken packages
+### Step 1: Fork the Repository
+1. Open [Replit](https://replit.com)
+2. Click "Import from GitHub"
+3. Enter repository URL: `https://github.com/aritramahatma/uidchecker`
+4. Click "Import"
 
-Step 3: Add Secrets
-Go to Replit > Secrets and add the following:
+### Step 2: Configure Environment Variables
+1. Go to **Secrets** tab in your Replit
+2. Add the following secrets:
 
-BOT_TOKEN = Your Telegram bot token
+| Secret Name | Description | Required |
+|-------------|-------------|----------|
+| `BOT_TOKEN` | Your Telegram bot token from @BotFather | ✅ |
+| `ADMIN_UID` | Your Telegram numeric user ID | ✅ |
+| `GEMINI_API_KEY` | Google Gemini Vision API key | ✅ |
 
-ADMIN_UID = Your Telegram numeric user ID
+### Step 3: Run the Bot
+1. Click the **"Run"** button
+2. Wait for dependencies to install automatically
+3. Bot will start and show connection status
 
-GEMINI_API_KEY = Your Gemini Vision API key
+## 🔑 Getting Required Tokens
 
-2. VPS Setup (Contabo / DigitalOcean)
-Requirements:
+### Telegram Bot Token
+1. Open Telegram and search for [@BotFather](https://t.me/botfather)
+2. Send `/newbot` command
+3. Follow instructions to create your bot
+4. Copy the provided token
 
-Ubuntu 20.04+ server
+### Your Telegram User ID
+1. Search for [@userinfobot](https://t.me/userinfobot) on Telegram
+2. Send `/start` command
+3. Copy your numeric user ID
 
-Python 3.8+
+### Google Gemini API Key
+1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Create a new API key
+3. Copy the generated key
 
-Git installed
+## 📱 User Commands
 
-Installation Steps:
+| Command | Description |
+|---------|-------------|
+| `/start` | Initialize bot and show welcome message |
+| `/claim` | Claim gift codes (verified users only) |
 
-bash
-Copy
-Edit
-# Connect to VPS
-ssh root@your-vps-ip
+## 👑 Admin Commands
 
-# Update packages
-apt update && apt upgrade -y
+### 📊 Statistics & Reports
+- `/stats` - View total users, verified count, blocked users, and balance statistics
 
-# Install Python, Git
-apt install git python3-pip python3-venv -y
+### 🔧 UID Management
+- `/update` - Add UIDs manually or by uploading images
+- `/done` - Finalize UID updates and notify users
+- `/verified` - List all verified UIDs
+- `/nonverified` - List non-verified UIDs
+- `/all` - Show all UIDs with their verification status
 
-# Clone the repo
-git clone https://github.com/aritramahatma/uidchecker.git
-cd uidchecker
+### 👥 User Management
+- `/block <user_id>` - Block a specific user
+- `/unblock <user_id>` - Unblock a user
+- `/checkblocked` - Scan for users who blocked the bot
+- `/reject` - Remove non-verified users and delete their data
 
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate
+### 🗑️ Data Management
+- `/dustbin <uid1,uid2,...>` - Delete specific UIDs (comma-separated)
+- `/del <number>` - Delete UIDs from last N extractions
 
-# Install requirements
-pip install -r requirements.txt
+### 🎁 Gift Code Management
+- `/newcode <code>` - Set new gift code and broadcast to all users
 
-# Fix dependencies (optional)
-python setup_dependencies.py
+### 🔒 System Controls
+- `/restrict on` or `/restrict off` - Toggle verification lock
+- `/cast <message>` - Broadcast messages to all users (supports text, images, videos)
 
-# Set environment variables temporarily
-export BOT_TOKEN='your_bot_token'
-export ADMIN_UID='your_admin_uid'
-export GEMINI_API_KEY='your_gemini_api_key'
+### 👨‍💼 Admin Controls
+- `/addadmin <user_id>` - Add new administrator
+- `/removeadmin <user_id>` - Remove administrator privileges
+- `/listadmins` - Display all current administrators
 
-# Run the bot
-python main.py
-To keep the bot running in background:
+## 🔍 Verification Process
 
-bash
-Copy
-Edit
-nohup python main.py &
-3. User Commands
-/start – Shows welcome message and verification steps
+1. **UID Submission**: User sends a 6-12 digit gaming UID
+2. **Screenshot Upload**: User uploads profile screenshot
+3. **AI Analysis**: Google Gemini Vision API analyzes image for:
+   - Screenshot authenticity (real vs fake)
+   - UID matching verification
+4. **Balance Check** (Optional): Verify minimum wallet balance (₹100)
+5. **Verification**: If all checks pass, user gains full access
 
-/claim – Claim gift code (only for verified users)
+## 🛠️ Technical Stack
 
-4. Admin Commands (for ADMIN_UID only)
-Statistics & Reports
+- **Language**: Python 3.11+
+- **Framework**: python-telegram-bot 13.15
+- **Database**: MongoDB
+- **AI Vision**: Google Gemini Vision API
+- **Image Processing**: Pillow (PIL)
+- **Hosting**: Replit (recommended)
 
-/stats – Total users, verified, blocked, pending, balance checks
+## 📁 Project Structure
 
-UID Management
+```
+uidchecker/
+├── handlers/           # Command and callback handlers
+│   ├── admin.py       # Admin command handlers
+│   ├── callbacks.py   # Inline keyboard callbacks
+│   ├── commands.py    # User command handlers
+│   └── messages.py    # Message processing
+├── services/          # Core services
+│   ├── database.py    # MongoDB operations
+│   ├── gemini.py      # AI vision processing
+│   └── predictions.py # Prediction algorithms
+├── utils/             # Utility functions
+│   ├── error_handler.py
+│   ├── helpers.py
+│   └── validators.py
+├── main.py           # Main bot application
+├── config.py         # Configuration settings
+└── requirements.txt  # Python dependencies
+```
 
-/update – Add UIDs manually or by image
+## 🔧 Configuration
 
-/done – Finalize the update and notify users
+The bot uses environment variables for configuration. All settings are managed through Replit Secrets:
 
-/verified – List of all verified UIDs
+```python
+# Core Configuration
+BOT_TOKEN = "your_telegram_bot_token"
+ADMIN_UID = "your_telegram_user_id"
+GEMINI_API_KEY = "your_gemini_api_key"
 
-/nonverified – List of non-verified UIDs
+# Optional Settings (configured in code)
+MIN_BALANCE = 100  # Minimum wallet balance for verification
+MAX_UID_LENGTH = 12  # Maximum UID length
+MIN_UID_LENGTH = 6   # Minimum UID length
+```
 
-/all – Show all UIDs with status
+## 🚨 Troubleshooting
 
-User Management
+### Common Issues
 
-/block <user_id> – Block a user
+**Bot not responding:**
+- Check if BOT_TOKEN is correct
+- Verify bot is not blocked by Telegram
+- Check Replit console for error messages
 
-/unblock <user_id> – Unblock a user
+**AI verification failing:**
+- Ensure GEMINI_API_KEY is valid
+- Check API quota limits
+- Verify image format is supported
 
-/checkblocked – Scan for users who blocked the bot
+**Database connection issues:**
+- MongoDB connection is automatically handled
+- Check console logs for connection status
 
-/reject – Reject non-verified users and delete their data
+### Debug Commands
 
-Data Cleanup
+Run the test script to verify all components:
+```bash
+python test_bot.py
+```
 
-/dustbin <uid1,uid2,...> – Delete specific UIDs
+## 📋 Requirements
 
-/del <number> – Delete UIDs from last N extractions
+- Python 3.11+
+- Valid Telegram Bot Token
+- Google Gemini API Key
+- Internet connection
+- Replit account (for easy hosting)
 
-Gift Code Management
+## 🤝 Contributing
 
-/newcode <code> – Set and broadcast new gift code
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
-System Controls
+## 📄 License
 
-/restrict on or /restrict off – Toggle verification lock
+This project is open source. Feel free to use and modify according to your needs.
 
-/cast <message> – Broadcast to all users (text, images, videos)
+## 🆘 Support
 
-Admin Controls
+For support and questions:
+- GitHub Issues: [Create an issue](https://github.com/aritramahatma/uidchecker/issues)
+- Telegram: Contact the bot administrator
 
-/addadmin <user_id> – Add new admin
+## 🔗 Links
 
-/removeadmin <user_id> – Remove an admin
+- **GitHub Repository**: https://github.com/aritramahatma/uidchecker
+- **Replit Template**: Fork and run instantly on Replit
+- **Demo Bot**: Contact repository owner for demo access
 
-/listadmins – List all admins
+---
 
-5. Verification Process
-User sends a 6–12 digit UID
-
-Uploads screenshot of profile
-
-AI checks image (real/fake and UID match)
-
-Optionally checks wallet balance (min ₹100)
-
-If verified, user gains access to all features
-
-6. Features Summary
-Google Gemini Vision API for fake screenshot detection
-
-MongoDB database for storing UIDs and user data
-
-Image-based UID extraction (OCR)
-
-Broadcast support
-
-Anti-fraud and block check system
-
-Channel join verification support (optional)
+**⚠️ Important**: Keep your API keys secure and never share them publicly. Use Replit Secrets for secure environment variable management.
